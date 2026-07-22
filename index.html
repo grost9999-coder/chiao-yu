@@ -415,6 +415,12 @@ section.active{display:block;}
       <button class="chip" data-list="op-list" data-name="交通費">交通費</button>
     </div>
 
+    <div class="section-label">市場雜費</div>
+    <div class="chips" id="chips-op-market">
+      <button class="chip" data-list="op-list" data-name="市場電費">市場電費</button>
+      <button class="chip" data-list="op-list" data-name="清潔費">清潔費</button>
+    </div>
+
     <div class="section-label">調味料</div>
     <div class="chips" id="chips-op-season">
       <button class="chip" data-list="op-list" data-name="胡椒鹽">胡椒鹽</button>
@@ -592,6 +598,8 @@ section.active{display:block;}
         <button class="chip p-mar-chip" data-name="紅麴豆腐乳">紅麴豆腐乳</button>
         <button class="chip p-mar-chip" data-name="地瓜粉">地瓜粉</button>
         <button class="chip p-mar-chip" data-name="玉米粉">玉米粉</button>
+        <button class="chip p-mar-chip" data-name="醬油">醬油</button>
+        <button class="chip p-mar-chip" data-name="豆漿粉">豆漿粉</button>
       </div>
       <div id="p-mar-list"></div>
       <button class="add-btn p-mar-add">＋ 新增醃料</button>
@@ -722,6 +730,28 @@ section.active{display:block;}
     <div id="inv-monthly-usage"></div>
   </div>
 
+  <!-- BOM 配方表 -->
+  <div class="card">
+    <div class="card-title">📋 紅麴豆乳雞 BOM（每公斤標準配方）</div>
+    <div class="muted" style="font-size:12px;margin-bottom:8px;">適用翅腿／二節翅／三節翅，比例相同；新增自製批次時會依此配方自動扣除醃料庫存。</div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <tbody>
+        <tr><td style="padding:4px 0;">雞肉（翅腿／二節翅／三節翅）</td><td style="text-align:right;font-weight:700;">1000 g</td></tr>
+        <tr><td style="padding:4px 0;">紅麴豆腐乳</td><td style="text-align:right;font-weight:700;">40 g</td></tr>
+        <tr><td style="padding:4px 0;">醬油</td><td style="text-align:right;font-weight:700;">10 ml</td></tr>
+        <tr><td style="padding:4px 0;">米酒</td><td style="text-align:right;font-weight:700;">10 ml</td></tr>
+        <tr><td style="padding:4px 0;">豆漿粉</td><td style="text-align:right;font-weight:700;">3 g</td></tr>
+        <tr><td style="padding:4px 0;">紅麴粉</td><td style="text-align:right;font-weight:700;">0.5～1 g</td></tr>
+        <tr><td style="padding:4px 0;">蒜粉</td><td style="text-align:right;font-weight:700;">3 g</td></tr>
+        <tr><td style="padding:4px 0;">白砂糖</td><td style="text-align:right;font-weight:700;">4 g</td></tr>
+        <tr><td style="padding:4px 0;">白胡椒粉</td><td style="text-align:right;font-weight:700;">1.5 g</td></tr>
+        <tr><td style="padding:4px 0;">地瓜粉</td><td style="text-align:right;font-weight:700;">50 g</td></tr>
+        <tr><td style="padding:4px 0;">玉米粉</td><td style="text-align:right;font-weight:700;">12 g</td></tr>
+        <tr><td style="padding:4px 0;">冰水（不列入庫存扣除）</td><td style="text-align:right;font-weight:700;">40～45 ml</td></tr>
+      </tbody>
+    </table>
+  </div>
+
 
   <!-- 醃料庫存 -->
   <div class="card">
@@ -735,6 +765,8 @@ section.active{display:block;}
       <button class="chip inv-mar-chip" data-name="紅麴豆腐乳">紅麴豆腐乳</button>
       <button class="chip inv-mar-chip" data-name="地瓜粉">地瓜粉</button>
       <button class="chip inv-mar-chip" data-name="玉米粉">玉米粉</button>
+      <button class="chip inv-mar-chip" data-name="醬油">醬油</button>
+      <button class="chip inv-mar-chip" data-name="豆漿粉">豆漿粉</button>
     </div>
     <div id="inv-marinade-list"></div>
     <button class="add-btn inv-mar-add">＋ 新增醃料品項</button>
@@ -903,11 +935,8 @@ function load(){
   // 預設單價（每公斤），若使用者已有進貨記錄則沿用，不覆蓋
   const DEFAULT_KG_PRICES = {
     '外購三節翅':      Math.round(1500/18*100)/100,
-    '自製三節翅':      Math.round(1500/18*100)/100,
     '外購翅腿':        Math.round(825/9*100)/100,
     '外購二節翅':      Math.round(825/9*100)/100,
-    '自製翅腿':        Math.round(825/9*100)/100,
-    '自製二節翅':      Math.round(825/9*100)/100,
     '外購翅腿二節翅':   Math.round(1650/18*100)/100,
     '外購翅小腿/二節翅':Math.round(1650/18*100)/100,
     // 耗材每個單價（強制更新確保正確）
@@ -917,12 +946,15 @@ function load(){
     '炸物盆塑膠袋':    Math.round(284/150*100)/100,
     '炸物盆襯紙':      1,
   };
-  const FORCE_UPDATE = ['紙袋','一斤塑膠袋','炸物盆塑膠袋','炸物盆襯紙','外購三節翅','自製三節翅','外購翅腿','外購二節翅','自製翅腿','自製二節翅'];
+  // 自製翅腿／自製二節翅／自製三節翅目前沒有固定價格，不自動帶入單價（讓使用者每次自己填）
+  const FORCE_UPDATE = ['紙袋','一斤塑膠袋','炸物盆塑膠袋','炸物盆襯紙','外購三節翅','外購翅腿','外購二節翅'];
   Object.entries(DEFAULT_KG_PRICES).forEach(([name,price])=>{
-    // 強制更新耗材與雞肉單價（修正過的價格）
+    // 強制更新耗材與外購雞肉單價（修正過的價格）
     if(FORCE_UPDATE.includes(name)) unitPrices[name]=price;
     else if(!unitPrices[name]) unitPrices[name]=price;
   });
+  // 自製翅腿／二節翅／三節翅還沒有固定價格，清掉先前誤植的預設值，讓輸入框保持空白
+  ['自製翅腿','自製二節翅','自製三節翅'].forEach(n=>{ delete unitPrices[n]; });
 }
 function saveDaily(){ localStorage.setItem(KEYS.daily, JSON.stringify(dailyRecs)); }
 function savePurchase(){ localStorage.setItem(KEYS.purchase, JSON.stringify(purchaseRecs)); localStorage.setItem(KEYS.prices, JSON.stringify(unitPrices)); }
@@ -2016,6 +2048,40 @@ function deductRawMeatByName(name, kgDelta, date){
 }
 function saveInventory(){ localStorage.setItem(INV_KEY, JSON.stringify(inventory)); }
 
+// 醃料 BOM 配方（每公斤生雞肉用量，換算為公斤/公升，對應庫存單位）
+const BOM_PER_KG_CHICKEN = {
+  '紅麴豆腐乳': 40/1000,
+  '醬油':      10/1000,
+  '米酒':      10/1000,
+  '豆漿粉':    3/1000,
+  '紅麴粉':    0.75/1000, // 標準配方0.5~1g，取中間值
+  '蒜粉':      3/1000,
+  '白砂糖':    4/1000,
+  '白胡椒粉':  1.5/1000,
+  '地瓜粉':    50/1000,
+  '玉米粉':    12/1000,
+};
+const BOM_WATER_PER_KG = 40/1000; // 冰水僅供參考，不計入庫存扣除（不追蹤水的庫存）
+
+// 依 BOM 配方，用醃製公斤數自動扣除醃料庫存；回傳扣除明細供顯示
+function deductMarinadeByBOM(kg){
+  if(!kg) return [];
+  const summary = [];
+  Object.entries(BOM_PER_KG_CHICKEN).forEach(([name, perKg])=>{
+    const need = Math.round(perKg*kg*1000)/1000;
+    const item = inventory.marinade.find(m=>m.name===name);
+    if(item){
+      item.qty = Math.round(Math.max(0,(item.qty||0)-need)*1000)/1000;
+      item.lastUpdated = todayStr();
+      summary.push(`${name} ${need}公斤`);
+    } else {
+      summary.push(`${name} ${need}公斤（庫存尚未建立此品項，未扣除）`);
+    }
+  });
+  saveInventory();
+  return summary;
+}
+
 // ── INVENTORY RENDER ──
 function renderInventory(){
   renderDiyBatches();
@@ -2044,11 +2110,9 @@ function renderMonthlyUsage(){
 
 function renderDiyBatches(){
   const el=document.getElementById('inv-diy-batches');
-  const empty=document.getElementById('inv-diy-empty');
   const batches=inventory.diyBatches.filter(b=>b.remaining>0);
-  if(!batches.length){ el.innerHTML=''; el.appendChild(empty); empty.style.display='block'; return; }
-  empty.style.display='none';
   el.innerHTML='';
+  if(!batches.length){ el.innerHTML='<div class="empty" id="inv-diy-empty">尚未有自製批次記錄</div>'; return; }
   batches.forEach((b,i)=>{
     const card=document.createElement('div'); card.className='batch-card';
     card.innerHTML=`<div class="batch-date">${b.date} 自製</div><div class="batch-name">${escH(b.name||'自製批次')}</div><div><span class="batch-qty">${b.remaining}</span><span class="batch-unit">公斤 剩餘</span> <span style="font-size:12px;color:var(--amber2);">（約 ${(b.remaining/KG_PER_BASKET).toFixed(1)} 藍）</span><br><span style="font-size:11px;color:var(--faint)">原始 ${b.totalKg} 公斤 / ${(b.totalKg/KG_PER_BASKET).toFixed(1)} 藍</span></div><div id="diy-edit-${i}" class="inline-edit" style="display:none;"></div><div class="batch-actions"><button class="diy-edit-btn" data-i="${i}">調整數量</button><button class="diy-del-btn danger" data-i="${i}">刪除批次</button></div>`;
@@ -2060,11 +2124,9 @@ function renderDiyBatches(){
 
 function renderPurchasedStock(){
   const el=document.getElementById('inv-purchased-stock');
-  const empty=document.getElementById('inv-purchased-empty');
   const items=inventory.purchasedStock.filter(b=>b.remaining>0);
-  if(!items.length){ el.innerHTML=''; el.appendChild(empty); empty.style.display='block'; return; }
-  empty.style.display='none';
   el.innerHTML='';
+  if(!items.length){ el.innerHTML='<div class="empty" id="inv-purchased-empty">尚未有外購庫存記錄</div>'; return; }
   items.forEach((b,i)=>{
     const card=document.createElement('div'); card.className='batch-card';
     card.innerHTML=`<div class="batch-date">${b.date}</div><div class="batch-name">${escH(b.name)}</div><div><span class="batch-qty">${b.remaining}</span><span class="batch-unit">公斤 剩餘</span> <span style="font-size:12px;color:var(--amber2);">（約 ${(b.remaining/KG_PER_BASKET).toFixed(1)} 藍）</span></div><div id="pur-edit-${i}" class="inline-edit" style="display:none;"></div><div class="batch-actions"><button class="pur-edit-btn" data-i="${i}">調整數量</button><button class="pur-del-btn danger" data-i="${i}">刪除</button></div>`;
@@ -2133,7 +2195,10 @@ document.getElementById('inv-add-diy-batch').onclick=()=>{
   const kg=parseFloat(prompt('總公斤數',''));
   if(!kg||isNaN(kg)){ toast('請輸入有效公斤數'); return; }
   inventory.diyBatches.push({id:uid(),name,totalKg:kg,remaining:kg,date:todayStr()});
-  saveInventory(); renderInventory(); toast('已新增自製批次');
+  const summary = deductMarinadeByBOM(kg);
+  renderInventory();
+  toast('已新增自製批次，並依配方扣除醃料');
+  if(summary.length) alert(`本批次（${kg}公斤）已依配方自動扣除醃料：\n`+summary.join('\n'));
 };
 
 // ── ADD PURCHASED STOCK ──
