@@ -903,10 +903,13 @@ function load(){
   // 預設單價（每公斤），若使用者已有進貨記錄則沿用，不覆蓋
   const DEFAULT_KG_PRICES = {
     '外購三節翅':      Math.round(1500/18*100)/100,
+    '自製三節翅':      Math.round(1500/18*100)/100,
+    '外購翅腿':        Math.round(825/9*100)/100,
+    '外購二節翅':      Math.round(825/9*100)/100,
+    '自製翅腿':        Math.round(825/9*100)/100,
+    '自製二節翅':      Math.round(825/9*100)/100,
     '外購翅腿二節翅':   Math.round(1650/18*100)/100,
     '外購翅小腿/二節翅':Math.round(1650/18*100)/100,
-    '外購翅腿':        Math.round(1650/18*100)/100,
-    '自製翅腿':        Math.round(1200/18*100)/100,
     // 耗材每個單價（強制更新確保正確）
     '紙袋':            0.375,  // 2封150元 ÷ 400個 = $0.375/個
     '半斤塑膠袋':      Math.round(27/41*1000)/1000,   // 27元/封 ÷ 41個 ≈ $0.659/個
@@ -914,9 +917,10 @@ function load(){
     '炸物盆塑膠袋':    Math.round(284/150*100)/100,
     '炸物盆襯紙':      1,
   };
+  const FORCE_UPDATE = ['紙袋','一斤塑膠袋','炸物盆塑膠袋','炸物盆襯紙','外購三節翅','自製三節翅','外購翅腿','外購二節翅','自製翅腿','自製二節翅'];
   Object.entries(DEFAULT_KG_PRICES).forEach(([name,price])=>{
-    // 強制更新耗材單價
-    if(['紙袋','一斤塑膠袋','炸物盆塑膠袋','炸物盆襯紙'].includes(name)) unitPrices[name]=price;
+    // 強制更新耗材與雞肉單價（修正過的價格）
+    if(FORCE_UPDATE.includes(name)) unitPrices[name]=price;
     else if(!unitPrices[name]) unitPrices[name]=price;
   });
 }
@@ -993,16 +997,22 @@ function makePR(container, name, qty, unit, total){
 const KG_PER_BASKET = 18;
 
 // ── MEAT DAILY ROW ──
+// 翅腿／二節翅每單位9公斤(=半籃)，三節翅每單位18公斤(=整籃)，因為賣的時候翅腿二節翅是拆開賣的
+const UNIT_KG_BY_NAME = { '翅腿':9, '二節翅':9, '三節翅':18 };
+function unitKgFor(name){
+  const stripped = (name||'').replace('外購','').replace('自製','');
+  return UNIT_KG_BY_NAME[stripped] || KG_PER_BASKET;
+}
 function makeMeatDailyRow(container, name, baskets, kg, price){
   const r=document.createElement('div'); r.className='ir';
-  const initKg = kg || (baskets ? baskets*KG_PER_BASKET : '');
+  const initKg = kg || (baskets ? baskets*unitKgFor(name) : '');
   r.innerHTML=`
     <div class="ir-head">
       <input class="name" type="text" placeholder="品項名稱" value="${name?escH(name):''}">
       <button class="ir-del">×</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px;">
-      <div class="ir-f"><label>藍數</label><input class="baskets" type="number" inputmode="decimal" placeholder="0" value="${baskets||''}"></div>
+      <div class="ir-f"><label>單位數</label><input class="baskets" type="number" inputmode="decimal" placeholder="0" value="${baskets||''}"></div>
       <div class="ir-f"><label>公斤數</label><input class="kgs" type="number" inputmode="decimal" placeholder="自動換算" value="${initKg||''}"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
@@ -1012,7 +1022,8 @@ function makeMeatDailyRow(container, name, baskets, kg, price){
   `;
   function updKg(){
     const b=parseFloat(r.querySelector('.baskets').value)||0;
-    if(b) r.querySelector('.kgs').value=(b*KG_PER_BASKET);
+    const n=r.querySelector('.name').value.trim();
+    if(b) r.querySelector('.kgs').value=(b*unitKgFor(n));
     updCost();
   }
   function updCost(){
