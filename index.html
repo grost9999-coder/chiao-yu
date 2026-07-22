@@ -793,9 +793,8 @@ section.active{display:block;}
 
   <!-- 手動出攤扣庫存 -->
   <div class="card">
-    <div class="card-title">✂️ 出攤後手動扣庫存</div>
-    <p class="backup-hint">每次出攤後，手動輸入今天用掉的量，系統自動從庫存扣除。炸物盆塑膠袋（固定5個）、炸物盆襯紙（固定2張）自動扣。</p>
-    <div class="field"><label>醃製雞肉使用量（公斤）</label><input type="number" inputmode="decimal" id="inv-use-chicken" placeholder="例：5"></div>
+    <div class="card-title">✂️ 出攤後手動扣耗材庫存</div>
+    <p class="backup-hint">醃製雞肉庫存已經會依「今日記錄」填的用量自動扣除，這裡只需要手動輸入包材耗材的使用量。炸物盆塑膠袋（固定5個）、炸物盆襯紙（固定2張）自動扣。</p>
     <div class="field"><label>紙袋使用量（個）</label><input type="number" inputmode="numeric" id="inv-use-bag" placeholder="例：80"></div>
     <div class="two">
       <div class="field"><label>半斤塑膠袋（個）</label><input type="number" inputmode="numeric" id="inv-use-plastic-half" placeholder="例：20"></div>
@@ -2229,22 +2228,11 @@ document.querySelectorAll('.inv-sup-add').forEach(b=>b.onclick=()=>{ const n=pro
 
 // ── DEDUCT FROM DAILY USE ──
 document.getElementById('inv-deduct-btn').onclick=()=>{
-  const chicken=parseFloat(document.getElementById('inv-use-chicken').value)||0;
   const bags=parseFloat(document.getElementById('inv-use-bag').value)||0;
   const plasticHalf=parseFloat(document.getElementById('inv-use-plastic-half').value)||0;
   const plasticFull=parseFloat(document.getElementById('inv-use-plastic-full').value)||0;
   const today=todayStr();
   let msgs=[];
-
-  // deduct chicken from batches (mix diy + purchased)
-  if(chicken>0){
-    let remaining=chicken;
-    // deduct diy first, then purchased (mixed)
-    for(let b of inventory.diyBatches){ if(remaining<=0) break; const use=Math.min(b.remaining,remaining); b.remaining=Math.round((b.remaining-use)*100)/100; remaining=Math.round((remaining-use)*100)/100; }
-    for(let b of inventory.purchasedStock){ if(remaining<=0) break; const use=Math.min(b.remaining,remaining); b.remaining=Math.round((b.remaining-use)*100)/100; remaining=Math.round((remaining-use)*100)/100; }
-    msgs.push(`醃製雞肉 -${chicken}公斤`);
-    if(remaining>0) msgs.push(`⚠️ 庫存不足，差 ${remaining} 公斤`);
-  }
 
   // deduct supplies
   function deductSupply(name, qty){
@@ -2261,7 +2249,6 @@ document.getElementById('inv-deduct-btn').onclick=()=>{
 
   if(!msgs.length){ toast('請輸入使用量'); return; }
   saveInventory(); renderInventory();
-  document.getElementById('inv-use-chicken').value='';
   document.getElementById('inv-use-bag').value='';
   document.getElementById('inv-use-plastic-half').value='';
   document.getElementById('inv-use-plastic-full').value='';
