@@ -561,8 +561,7 @@ section.active{display:block;}
       <div class="section-label">🛒 外購醃製品品項</div>
       <div class="chips">
         <button class="chip p-meat-chip" data-name="外購三節翅">外購三節翅</button>
-        <button class="chip p-meat-chip" data-name="外購翅腿">外購翅腿</button>
-        <button class="chip p-meat-chip" data-name="外購二節翅">外購二節翅</button>
+        <button class="chip p-meat-chip" data-name="外購翅腿二節翅">外購翅腿二節翅</button>
       </div>
       <div id="p-meat-list"></div>
       <button class="add-btn p-meat-add">＋ 新增品項</button>
@@ -572,8 +571,7 @@ section.active{display:block;}
     <div id="p-chicken-raw" style="display:none;">
       <div class="section-label">🐔 自製生雞肉品項</div>
       <div class="chips">
-        <button class="chip p-raw-chip" data-name="翅腿">翅腿</button>
-        <button class="chip p-raw-chip" data-name="二節翅">二節翅</button>
+        <button class="chip p-raw-chip" data-name="翅腿二節翅">翅腿二節翅</button>
         <button class="chip p-raw-chip" data-name="三節翅">三節翅</button>
       </div>
       <div id="p-raw-list"></div>
@@ -708,8 +706,7 @@ section.active{display:block;}
   <div class="card">
     <div class="card-title">🐔 生雞肉原料庫存</div>
     <div class="chips">
-      <button class="chip inv-raw-chip" data-name="翅腿">翅腿</button>
-      <button class="chip inv-raw-chip" data-name="二節翅">二節翅</button>
+      <button class="chip inv-raw-chip" data-name="翅腿二節翅">翅腿二節翅</button>
       <button class="chip inv-raw-chip" data-name="三節翅">三節翅</button>
     </div>
     <div id="inv-raw-list"></div>
@@ -1431,18 +1428,21 @@ document.getElementById('save-purchase').addEventListener('click',()=>{
   // update unit prices
   items.forEach(it=>{ if(it.unitCost>0) unitPrices[it.name]=it.unitCost; });
 
-  // 耗材/醃料進貨自動加入月支出
+  // 耗材/醃料進貨自動加入月支出；肉品類（外購醃製品／自製生雞肉）只計入庫存，不計入月固定支出
   function addToMonthly(rec){
+    const mid='p-'+rec.id;
+    monthlyRecs=monthlyRecs.filter(r=>r.id!==mid); // 先移除舊的（若為重新編輯或類型已變更）
+    const isMeat = rec.type==='chicken-purchased'||rec.type==='chicken-raw';
+    if(isMeat){ saveMonthly(); return; }
     const total=rec.items.reduce((s,i)=>s+(i.total||0),0);
     if(!total) return;
-    const typeLabel={'supplies':'耗材進貨','marinade':'醃料進貨','chicken-purchased':'外購醃製品','chicken-raw':'自製生雞肉'};
+    const typeLabel={'supplies':'耗材進貨','marinade':'醃料進貨'};
     const mRec={
-      id:'p-'+rec.id, date:rec.date, month:rec.date.slice(0,7),
+      id:mid, date:rec.date, month:rec.date.slice(0,7),
       name: rec.items.map(i=>i.name).join('、')+(rec.note?`（${rec.note}）`:''),
       category: typeLabel[rec.type]||'進貨',
       amount: total, note:'自進貨記錄自動新增'
     };
-    monthlyRecs=monthlyRecs.filter(r=>r.id!==mRec.id); // remove old if re-adding
     monthlyRecs.push(mRec);
     saveMonthly();
   }
@@ -1860,6 +1860,44 @@ let inventory = { diyBatches:[], purchasedStock:[], rawMeat:[], marinade:[], sup
 
 function loadInventory(){
   try{ const d=JSON.parse(localStorage.getItem(INV_KEY)||'{}'); if(d.diyBatches) Object.assign(inventory,d); }catch(e){}
+  migrateMeatCategories();
+}
+
+// 一次性資料轉移：把舊的「翅腿」「二節翅」分開品項合併成「翅腿二節翅」，
+// 對應現在進貨／今日使用共用的名稱，讓庫存扣除能正確配對
+function migrateMeatCategories(){
+  let changed = false;
+  changed = mergeBatchEntries(inventory.purchasedStock, ['外購翅腿','外購二節翅'], '外購翅腿二節翅') || changed;
+  changed = mergeInvEntries(inventory.rawMeat, ['翅腿','二節翅'], '翅腿二節翅') || changed;
+  if(changed) saveInventory();
+}
+function mergeBatchEntries(arr, oldNames, newName){
+  if(!arr) return false;
+  const matches = arr.filter(s=>oldNames.includes(s.name));
+  if(!matches.length) return false;
+  const totalRemaining = matches.reduce((s,m)=>s+(m.remaining||0),0);
+  const totalQty = matches.reduce((s,m)=>s+(m.totalQty||m.remaining||0),0);
+  const earliestDate = matches.map(m=>m.date).filter(Boolean).sort()[0];
+  matches.forEach(m=>{ const idx=arr.indexOf(m); if(idx>-1) arr.splice(idx,1); });
+  const target = arr.find(s=>s.name===newName);
+  if(target){ target.remaining=Math.round(((target.remaining||0)+totalRemaining)*100)/100; target.totalQty=Math.round(((target.totalQty||0)+totalQty)*100)/100; }
+  else arr.push({id:uid(), name:newName, unit:'公斤', totalQty, remaining:totalRemaining, date:earliestDate||todayStr()});
+  return true;
+}
+function mergeInvEntries(arr, oldNames, newName){
+  if(!arr) return false;
+  const matches = arr.filter(s=>oldNames.includes(s.name));
+  if(!matches.length) return false;
+  const totalQty = matches.reduce((s,m)=>s+(m.qty||0),0);
+  const lastUpdated = matches.map(m=>m.lastUpdated).filter(Boolean).sort().pop();
+  matches.forEach(m=>{ const idx=arr.indexOf(m); if(idx>-1) arr.splice(idx,1); });
+  const target = arr.find(s=>s.name===newName);
+  if(target){ target.qty=Math.round(((target.qty||0)+totalQty)*100)/100; if(lastUpdated) target.lastUpdated=lastUpdated; }
+  else arr.push({name:newName, unit:'公斤', qty:totalQty, lastUpdated:lastUpdated||todayStr()});
+  const th1=inventory.thresholds[oldNames[0]]||0, th2=inventory.thresholds[oldNames[1]]||0;
+  if(th1||th2) inventory.thresholds[newName]=Math.max(th1,th2,inventory.thresholds[newName]||0);
+  oldNames.forEach(n=>delete inventory.thresholds[n]);
+  return true;
 }
 
 // deduct (or reverse) meat usage from inventory; multiplier +1=deduct, -1=restore
@@ -1878,6 +1916,8 @@ function deductMeatFromInventory(rec, multiplier){
       s.totalQty=(s.totalQty||s.remaining);
       remaining-=use;
     });
+    // 同步依每日銷售公斤數扣除「生肉品項」庫存，計算剩餘公斤數
+    deductRawMeatByName(it.name, it.qty*multiplier, today);
   });
   // diy items → deduct from diyBatches (自製醃製好的批次，先進先出)
   (rec.diyItems||[]).forEach(it=>{
@@ -1895,6 +1935,22 @@ function deductMeatFromInventory(rec, multiplier){
       const latest=inventory.diyBatches.sort((a,b)=>b.date.localeCompare(a.date))[0];
       if(latest) latest.remaining=Math.round((latest.remaining+Math.abs(remaining))*100)/100;
     }
+    // 同步依每日銷售公斤數扣除「生肉品項」庫存，計算剩餘公斤數
+    deductRawMeatByName(it.name, it.qty*multiplier, today);
+  });
+}
+
+// 依品項名稱找到對應的「生肉品項」庫存並扣除公斤數
+// kgDelta 為正值＝扣除（今日售出／使用），為負值＝退回（編輯記錄時先還原舊值）
+function deductRawMeatByName(name, kgDelta, date){
+  if(!kgDelta || !name) return;
+  const stripped = name.replace('外購','').replace('自製','');
+  const matches = inventory.rawMeat.filter(s=>s.name===name || s.name===stripped || s.name.includes(stripped) || stripped.includes(s.name));
+  if(!matches.length) return;
+  const share = kgDelta/matches.length; // 通常只會有一筆同名品項
+  matches.forEach(s=>{
+    s.qty = Math.round(Math.max(0,(s.qty||0)-share)*100)/100;
+    s.lastUpdated = date;
   });
 }
 function saveInventory(){ localStorage.setItem(INV_KEY, JSON.stringify(inventory)); }
@@ -1947,8 +2003,9 @@ function renderInvList(elId, arr, defaultUnit, cat){
   arr.forEach((item,i)=>{
     const thresh=inventory.thresholds[item.name]||0;
     const low=thresh>0&&item.qty<=thresh;
+    const basketNote = cat==='raw' ? ` <span style="font-size:12px;color:var(--amber2);">（約 ${(item.qty/KG_PER_BASKET).toFixed(1)} 藍）</span>` : '';
     const card=document.createElement('div'); card.className='inv-item';
-    card.innerHTML=`<div class="inv-item-head"><span class="inv-item-name">${escH(item.name)}</span><span class="inv-item-qty ${low?'low':'ok'}">${item.qty} <span style="font-size:12px;font-weight:400;color:var(--faint)">${escH(item.unit||defaultUnit)}</span></span></div><div style="display:flex;justify-content:space-between;align-items:center;"><div class="inv-item-meta">更新：${item.lastUpdated||'—'}</div></div><div class="inv-threshold-row"><label>警示門檻：</label><input type="number" inputmode="decimal" value="${thresh||''}" placeholder="不設定" data-cat="${cat}" data-i="${i}"><span style="font-size:11px;color:var(--faint)">${item.unit||defaultUnit}</span></div><div id="${cat}-edit-${i}" class="inline-edit" style="display:none;"></div><div class="inv-item-actions"><button class="inv-adj-btn" data-cat="${cat}" data-i="${i}">調整數量</button><button class="inv-del-btn danger" data-cat="${cat}" data-i="${i}">刪除</button></div>`;
+    card.innerHTML=`<div class="inv-item-head"><span class="inv-item-name">${escH(item.name)}</span><span class="inv-item-qty ${low?'low':'ok'}">${item.qty} <span style="font-size:12px;font-weight:400;color:var(--faint)">${escH(item.unit||defaultUnit)}</span>${basketNote}</span></div><div style="display:flex;justify-content:space-between;align-items:center;"><div class="inv-item-meta">更新：${item.lastUpdated||'—'}</div></div><div class="inv-threshold-row"><label>警示門檻：</label><input type="number" inputmode="decimal" value="${thresh||''}" placeholder="不設定" data-cat="${cat}" data-i="${i}"><span style="font-size:11px;color:var(--faint)">${item.unit||defaultUnit}</span></div><div id="${cat}-edit-${i}" class="inline-edit" style="display:none;"></div><div class="inv-item-actions"><button class="inv-adj-btn" data-cat="${cat}" data-i="${i}">調整數量</button><button class="inv-del-btn danger" data-cat="${cat}" data-i="${i}">刪除</button></div>`;
     card.querySelector('.inv-adj-btn').onclick=()=>openInvEdit(cat, i, card.querySelector(`#${cat}-edit-${i}`));
     card.querySelector('.inv-del-btn').onclick=()=>{ if(confirm('確定刪除這項庫存？')){ arr.splice(i,1); saveInventory(); renderInventory(); } };
     card.querySelector('.inv-threshold-row input').onchange=(e)=>{ inventory.thresholds[item.name]=parseFloat(e.target.value)||0; saveInventory(); renderAlerts(); };
