@@ -701,7 +701,17 @@ section.active{display:block;}
     <div id="inv-diy-batches">
       <div class="empty" id="inv-diy-empty">尚未有自製批次記錄</div>
     </div>
-    <button class="add-btn" id="inv-add-diy-batch">＋ 新增自製批次</button>
+
+    <div class="field"><label>醃製日期</label><input type="date" id="diy-add-date"></div>
+    <div class="field"><label>品項</label>
+      <select id="diy-add-name" style="width:100%;background:var(--bg2);border:1px solid #38302660;border-radius:8px;color:var(--ink);font-size:15px;padding:10px 11px;">
+        <option value="自製翅腿">自製翅腿</option>
+        <option value="自製二節翅">自製二節翅</option>
+        <option value="自製三節翅">自製三節翅</option>
+      </select>
+    </div>
+    <div class="field"><label>公斤數</label><input type="number" inputmode="decimal" id="diy-add-kg" placeholder="例：36"></div>
+    <button class="add-btn" id="inv-add-diy-batch">＋ 新增自製批次（自動依配方扣醃料）</button>
 
     <hr class="divider">
 
@@ -1936,7 +1946,7 @@ document.querySelectorAll('.m-range-btn').forEach(btn=>{
 
 // ── INVENTORY STORAGE ──
 const INV_KEY = 'qy_inventory_v2';
-let inventory = { diyBatches:[], purchasedStock:[], rawMeat:[], marinade:[], supplies:[], thresholds:{}, monthlyUsage:{} };
+let inventory = { diyBatches:[], purchasedStock:[], rawMeat:[], marinade:[], supplies:[], thresholds:{}, monthlyUsage:{}, marinadeUsed:{} };
 
 function loadInventory(){
   try{ const d=JSON.parse(localStorage.getItem(INV_KEY)||'{}'); if(d.diyBatches) Object.assign(inventory,d); }catch(e){}
@@ -2063,15 +2073,17 @@ const BOM_PER_KG_CHICKEN = {
 const BOM_WATER_PER_KG = 40/1000; // 冰水僅供參考，不計入庫存扣除（不追蹤水的庫存）
 
 // 依 BOM 配方，用醃製公斤數自動扣除醃料庫存；回傳扣除明細供顯示
-function deductMarinadeByBOM(kg){
+function deductMarinadeByBOM(kg, date){
   if(!kg) return [];
+  const d = date || todayStr();
   const summary = [];
   Object.entries(BOM_PER_KG_CHICKEN).forEach(([name, perKg])=>{
     const need = Math.round(perKg*kg*1000)/1000;
     const item = inventory.marinade.find(m=>m.name===name);
     if(item){
       item.qty = Math.round(Math.max(0,(item.qty||0)-need)*1000)/1000;
-      item.lastUpdated = todayStr();
+      item.lastUpdated = d;
+      inventory.marinadeUsed[name] = Math.round(((inventory.marinadeUsed[name]||0)+need)*1000)/1000;
       summary.push(`${name} ${need}公斤`);
     } else {
       summary.push(`${name} ${need}公斤（庫存尚未建立此品項，未扣除）`);
@@ -2142,8 +2154,9 @@ function renderInvList(elId, arr, defaultUnit, cat){
     const thresh=inventory.thresholds[item.name]||0;
     const low=thresh>0&&item.qty<=thresh;
     const basketNote = cat==='raw' ? ` <span style="font-size:12px;color:var(--amber2);">（約 ${(item.qty/KG_PER_BASKET).toFixed(1)} 藍）</span>` : '';
+    const usedNote = cat==='marinade' && inventory.marinadeUsed[item.name] ? `<div class="inv-item-meta">已醃製使用量：${inventory.marinadeUsed[item.name]}${item.unit||defaultUnit}</div>` : '';
     const card=document.createElement('div'); card.className='inv-item';
-    card.innerHTML=`<div class="inv-item-head"><span class="inv-item-name">${escH(item.name)}</span><span class="inv-item-qty ${low?'low':'ok'}">${item.qty} <span style="font-size:12px;font-weight:400;color:var(--faint)">${escH(item.unit||defaultUnit)}</span>${basketNote}</span></div><div style="display:flex;justify-content:space-between;align-items:center;"><div class="inv-item-meta">更新：${item.lastUpdated||'—'}</div></div><div class="inv-threshold-row"><label>警示門檻：</label><input type="number" inputmode="decimal" value="${thresh||''}" placeholder="不設定" data-cat="${cat}" data-i="${i}"><span style="font-size:11px;color:var(--faint)">${item.unit||defaultUnit}</span></div><div id="${cat}-edit-${i}" class="inline-edit" style="display:none;"></div><div class="inv-item-actions"><button class="inv-adj-btn" data-cat="${cat}" data-i="${i}">調整數量</button><button class="inv-del-btn danger" data-cat="${cat}" data-i="${i}">刪除</button></div>`;
+    card.innerHTML=`<div class="inv-item-head"><span class="inv-item-name">${escH(item.name)}</span><span class="inv-item-qty ${low?'low':'ok'}">${item.qty} <span style="font-size:12px;font-weight:400;color:var(--faint)">${escH(item.unit||defaultUnit)}</span>${basketNote}</span></div><div style="display:flex;justify-content:space-between;align-items:center;"><div class="inv-item-meta">更新：${item.lastUpdated||'—'}</div></div>${usedNote}<div class="inv-threshold-row"><label>警示門檻：</label><input type="number" inputmode="decimal" value="${thresh||''}" placeholder="不設定" data-cat="${cat}" data-i="${i}"><span style="font-size:11px;color:var(--faint)">${item.unit||defaultUnit}</span></div><div id="${cat}-edit-${i}" class="inline-edit" style="display:none;"></div><div class="inv-item-actions"><button class="inv-adj-btn" data-cat="${cat}" data-i="${i}">調整數量</button><button class="inv-del-btn danger" data-cat="${cat}" data-i="${i}">刪除</button></div>`;
     card.querySelector('.inv-adj-btn').onclick=()=>openInvEdit(cat, i, card.querySelector(`#${cat}-edit-${i}`));
     card.querySelector('.inv-del-btn').onclick=()=>{ if(confirm('確定刪除這項庫存？')){ arr.splice(i,1); saveInventory(); renderInventory(); } };
     card.querySelector('.inv-threshold-row input').onchange=(e)=>{ inventory.thresholds[item.name]=parseFloat(e.target.value)||0; saveInventory(); renderAlerts(); };
@@ -2189,15 +2202,17 @@ function renderAlerts(){
 
 // ── ADD DIY BATCH ──
 document.getElementById('inv-add-diy-batch').onclick=()=>{
-  const name=prompt('批次名稱（例：6/29自製三節翅）','');
-  if(!name) return;
-  const kg=parseFloat(prompt('總公斤數',''));
-  if(!kg||isNaN(kg)){ toast('請輸入有效公斤數'); return; }
-  inventory.diyBatches.push({id:uid(),name,totalKg:kg,remaining:kg,date:todayStr()});
-  const summary = deductMarinadeByBOM(kg);
+  const dateEl=document.getElementById('diy-add-date');
+  const date=dateEl.value||todayStr();
+  const name=document.getElementById('diy-add-name').value;
+  const kg=parseFloat(document.getElementById('diy-add-kg').value);
+  if(!kg||isNaN(kg)||kg<=0){ toast('請輸入有效公斤數'); return; }
+  inventory.diyBatches.push({id:uid(),name,totalKg:kg,remaining:kg,date});
+  const summary = deductMarinadeByBOM(kg, date);
   renderInventory();
+  document.getElementById('diy-add-kg').value='';
   toast('已新增自製批次，並依配方扣除醃料');
-  if(summary.length) alert(`本批次（${kg}公斤）已依配方自動扣除醃料：\n`+summary.join('\n'));
+  if(summary.length) alert(`${date}｜${name}（${kg}公斤）已依配方自動扣除醃料：\n`+summary.join('\n'));
 };
 
 // ── ADD PURCHASED STOCK ──
@@ -2269,6 +2284,7 @@ document.getElementById('d-date').value=todayStr();
 document.getElementById('p-date').value=todayStr();
 try{ document.getElementById('m-date').value=todayStr(); }catch(e){}
 try{ document.getElementById('m-month').value=thisMonth(); }catch(e){}
+try{ document.getElementById('diy-add-date').value=todayStr(); }catch(e){}
 makeIR(document.getElementById('purchase-list'));
 // ensure first purchase row is meat format
 document.getElementById('purchase-list').innerHTML='';
