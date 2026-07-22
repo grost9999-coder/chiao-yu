@@ -1074,6 +1074,18 @@ function makeChickenPR(container, name, baskets, total){
     </div>
     <div class="ir-total">每藍 18公斤・<span class="kg-display">${initKg||0} 公斤</span>・單位成本 <b class="lt">—</b></div>
   `;
+  const BASKET_PRICES = { '外購三節翅':1500, '外購翅腿二節翅':1650, '外購翅腿':1650, '自製翅腿':1200 };
+  function calcTotal(){
+    const b=parseFloat(r.querySelector('.baskets').value)||0;
+    const kg=parseFloat(r.querySelector('.kgs').value)||0;
+    const n=r.querySelector('.name').value.trim();
+    if(r._totalTouched) return;
+    if(b>0 && BASKET_PRICES[n]!==undefined){
+      r.querySelector('.total').value = Math.round(b*BASKET_PRICES[n]);
+    } else if(kg>0 && unitPrices[n]){
+      r.querySelector('.total').value = Math.round(kg*unitPrices[n]);
+    }
+  }
   function upd(){
     const b=parseFloat(r.querySelector('.baskets').value)||0;
     const t=parseFloat(r.querySelector('.total').value)||0;
@@ -1084,13 +1096,16 @@ function makeChickenPR(container, name, baskets, total){
   function basketChanged(){
     const b=parseFloat(r.querySelector('.baskets').value)||0;
     r.querySelector('.kgs').value=b?b*KG_PER_BASKET:'';
+    calcTotal();
     upd();
   }
+  r._totalTouched = !!total; // 若編輯既有記錄已經有總金額，就不要自動覆蓋
   r.querySelector('.ir-del').onclick=()=>r.remove();
   r.querySelector('.baskets').oninput=basketChanged;
-  r.querySelector('.kgs').oninput=upd;
-  r.querySelector('.total').oninput=upd;
-  container.appendChild(r); upd(); return r;
+  r.querySelector('.kgs').oninput=()=>{ calcTotal(); upd(); };
+  r.querySelector('.total').oninput=()=>{ r._totalTouched=true; upd(); };
+  r.querySelector('.name').oninput=()=>{ calcTotal(); upd(); };
+  container.appendChild(r); calcTotal(); upd(); return r;
 }
 
 function readChickenPR(container){
