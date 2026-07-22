@@ -1,0 +1,2154 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>喬鈺酥香屋 · 記帳系統</title>
+<script>
+// ── Mini Chart (no external dependency) ──
+class Chart {
+  constructor(canvas, config){
+    this.canvas=canvas; this.config=config;
+    if(!canvas) return;
+    this.ctx=canvas.getContext('2d');
+    this.draw();
+  }
+  destroy(){ if(this.canvas){ const ctx=this.canvas.getContext('2d'); ctx.clearRect(0,0,this.canvas.width,this.canvas.height); } }
+  draw(){
+    const canvas=this.canvas; if(!canvas) return;
+    const ctx=this.ctx;
+    const cfg=this.config;
+    const type=cfg.type;
+    const W=canvas.offsetWidth||canvas.width||300;
+    const H=canvas.offsetHeight||canvas.height||160;
+    canvas.width=W; canvas.height=H;
+    ctx.clearRect(0,0,W,H);
+    const PAD={top:10,right:10,bottom:28,left:52};
+    const PW=W-PAD.left-PAD.right;
+    const PH=H-PAD.top-PAD.bottom;
+
+    if(type==='bar'||type==='line'){
+      const dataset=cfg.data.datasets[0];
+      const data=dataset.data||[];
+      const labels=cfg.data.labels||[];
+      if(!data.length){ ctx.fillStyle='#6a5c4a'; ctx.font='12px sans-serif'; ctx.textAlign='center'; ctx.fillText('尚無資料',W/2,H/2); return; }
+      const max=Math.max(...data.map(Math.abs),1);
+      const min=Math.min(...data,0);
+      const range=Math.max(max-min,1);
+      // grid lines
+      ctx.strokeStyle='#38302640'; ctx.lineWidth=1;
+      for(let i=0;i<=4;i++){
+        const y=PAD.top+PH*(1-i/4);
+        ctx.beginPath(); ctx.moveTo(PAD.left,y); ctx.lineTo(PAD.left+PW,y); ctx.stroke();
+        const val=min+range*i/4;
+        ctx.fillStyle='#6a5c4a'; ctx.font='9px sans-serif'; ctx.textAlign='right';
+        ctx.fillText(val>=1000?'$'+(val/1000).toFixed(1)+'k':'$'+Math.round(val), PAD.left-4, y+3);
+      }
+      const bw=Math.max(4,Math.min(28,(PW/Math.max(data.length,1))*0.7));
+      const gap=PW/Math.max(data.length,1);
+      const zeroY=PAD.top+PH*(1-(-min)/range);
+      if(type==='bar'){
+        data.forEach((v,i)=>{
+          const x=PAD.left+gap*i+(gap-bw)/2;
+          const barH=Math.abs(v)/range*PH;
+          const y=v>=0?zeroY-barH:zeroY;
+          ctx.fillStyle=Array.isArray(dataset.backgroundColor)?dataset.backgroundColor[i]:(dataset.backgroundColor||'#e8960c');
+          ctx.beginPath();
+          if(ctx.roundRect) ctx.roundRect(x,y,bw,barH,3); else ctx.rect(x,y,bw,barH);
+          ctx.fill();
+        });
+      } else {
+        ctx.strokeStyle=dataset.borderColor||'#e8960c';
+        ctx.lineWidth=2; ctx.beginPath();
+        data.forEach((v,i)=>{
+          const x=PAD.left+gap*i+gap/2;
+          const y=PAD.top+PH*(1-(v-min)/range);
+          i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+        });
+        ctx.stroke();
+        if(dataset.fill){
+          ctx.fillStyle=(dataset.backgroundColor||'#e8960c22');
+          ctx.lineTo(PAD.left+gap*(data.length-1)+gap/2,zeroY);
+          ctx.lineTo(PAD.left+gap/2,zeroY); ctx.closePath(); ctx.fill();
+        }
+        data.forEach((v,i)=>{
+          const x=PAD.left+gap*i+gap/2;
+          const y=PAD.top+PH*(1-(v-min)/range);
+          ctx.fillStyle=dataset.borderColor||'#e8960c';
+          ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+        });
+      }
+      // x labels
+      ctx.fillStyle='#6a5c4a'; ctx.font='9px sans-serif'; ctx.textAlign='center';
+      const step=Math.max(1,Math.floor(labels.length/6));
+      labels.forEach((l,i)=>{ if(i%step===0) ctx.fillText(l,PAD.left+gap*i+gap/2,H-4); });
+
+    } else if(type==='doughnut'){
+      const data=cfg.data.datasets[0].data||[];
+      const colors=cfg.data.datasets[0].backgroundColor||['#5b9bd5','#e8960c'];
+      const labels=cfg.data.labels||[];
+      const total=data.reduce((s,v)=>s+v,0)||1;
+      const cx=W/2, cy=H/2, r=Math.min(W,H)/2-20;
+      let angle=-Math.PI/2;
+      data.forEach((v,i)=>{
+        const slice=v/total*Math.PI*2;
+        ctx.fillStyle=colors[i]||'#888';
+        ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,angle,angle+slice); ctx.closePath(); ctx.fill();
+        ctx.fillStyle='#18140f';
+        ctx.beginPath(); ctx.arc(cx,cy,r*0.55,0,Math.PI*2); ctx.fill();
+        angle+=slice;
+      });
+      ctx.fillStyle='#a89880'; ctx.font='bold 11px sans-serif'; ctx.textAlign='center';
+      labels.forEach((l,i)=>{
+        ctx.fillStyle=colors[i]||'#888';
+        ctx.fillRect(10,H-20+i*14,10,10);
+        ctx.fillStyle='#a89880'; ctx.textAlign='left';
+        ctx.fillText(l+' '+Math.round(data[i]/total*100)+'%',24,H-11+i*14);
+      });
+    }
+  }
+}
+</script>
+<style>
+:root{
+  --bg:#18140f;
+  --bg2:#211c15;
+  --card:#27211a;
+  --border:#38302600;
+  --ink:#f2e8d9;
+  --dim:#a89880;
+  --faint:#6a5c4a;
+  --amber:#e8960c;
+  --amber2:#c47d0a;
+  --green:#6db56d;
+  --red:#d96b4a;
+  --blue:#5b9bd5;
+  --r:12px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;}
+body{padding-bottom:80px;}
+
+/* ── HEADER ── */
+.hdr{background:var(--bg2);border-bottom:1px solid #38302640;padding:12px 16px;position:sticky;top:0;z-index:20;}
+.hdr-inner{max-width:540px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;}
+.hdr h1{margin:0;font-size:16px;font-weight:800;letter-spacing:.3px;}
+.hdr h1 span{color:var(--amber);}
+.hdr-sub{font-size:10px;color:var(--faint);letter-spacing:1px;}
+
+/* ── TABS ── */
+.tabs{background:var(--bg2);border-bottom:1px solid #38302640;padding:0 16px;}
+.tabs-inner{max-width:540px;margin:0 auto;display:flex;gap:0;}
+.tab{flex:1;padding:10px 0 9px;font-size:13px;font-weight:600;color:var(--faint);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;}
+.tab.active{color:var(--amber);border-bottom-color:var(--amber);}
+
+/* ── WRAP ── */
+.wrap{max-width:540px;margin:0 auto;padding:14px 14px 0;}
+
+/* ── SECTION ── */
+section{display:none;}
+section.active{display:block;}
+
+/* ── CARD ── */
+.card{background:var(--card);border:1px solid #38302648;border-radius:var(--r);padding:14px;margin-bottom:12px;}
+.card-title{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:1px;margin:0 0 12px;font-weight:700;}
+.section-label{font-size:10.5px;color:var(--amber2);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin:12px 0 6px;}
+.divider{border:none;border-top:1px dashed #38302666;margin:14px 0;}
+
+/* ── FIELDS ── */
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:12px;color:var(--dim);margin-bottom:5px;}
+.field input[type=text],.field input[type=number],.field input[type=date]{
+  width:100%;background:var(--bg2);border:1px solid #38302660;border-radius:8px;
+  color:var(--ink);font-size:16px;padding:10px 11px;
+}
+.field input:focus{outline:2px solid var(--amber);border-color:transparent;}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+
+/* ── CHIPS ── */
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px;}
+.chip{font-size:12px;padding:6px 11px;border-radius:99px;border:1px solid #38302660;background:var(--bg2);color:var(--dim);}
+
+/* ── INGREDIENT ROW (price × qty × unit) ── */
+.ir{background:var(--bg2);border:1px solid #38302648;border-radius:9px;padding:10px;margin-bottom:8px;}
+.ir-head{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.ir-head input.name{flex:1;background:var(--card);border:1px solid #38302660;border-radius:7px;color:var(--ink);font-size:14px;padding:7px 9px;}
+.ir-del{flex:0 0 28px;height:28px;border-radius:6px;border:1px solid #38302660;background:var(--card);color:var(--red);font-size:14px;}
+.ir-calc{display:grid;grid-template-columns:1fr 1fr 0.7fr;gap:7px;}
+.ir-f label{display:block;font-size:10px;color:var(--faint);margin-bottom:3px;}
+.ir-f input{width:100%;background:var(--card);border:1px solid #38302660;border-radius:7px;color:var(--ink);font-size:13px;padding:6px 8px;}
+.ir-total{text-align:right;font-size:12px;color:var(--faint);margin-top:7px;}
+.ir-total b{color:var(--amber2);}
+
+/* ── SIMPLE ROW (name + amount) ── */
+.sr{display:flex;gap:8px;margin-bottom:8px;align-items:center;}
+.sr input.name{flex:1.4;background:var(--bg2);border:1px solid #38302660;border-radius:8px;color:var(--ink);font-size:14px;padding:8px 10px;}
+.sr input.amt{flex:1;background:var(--bg2);border:1px solid #38302660;border-radius:8px;color:var(--ink);font-size:14px;padding:8px 10px;}
+.sr .del{flex:0 0 30px;height:30px;border-radius:7px;border:1px solid #38302660;background:var(--card);color:var(--red);font-size:14px;}
+
+/* ── DENOM GRID ── */
+.denom-grid{border:1px solid #38302648;border-radius:9px;overflow:hidden;}
+.denom-row{display:grid;grid-template-columns:56px 1fr 72px;align-items:center;padding:8px 11px;border-bottom:1px solid #38302640;background:var(--bg2);}
+.denom-row:last-child{border-bottom:none;}
+.denom-lbl{font-size:14px;color:var(--dim);font-weight:600;}
+.denom-row input{background:var(--card);border:1px solid #38302660;border-radius:7px;color:var(--ink);font-size:14px;padding:6px 8px;text-align:center;width:100%;}
+.denom-sub{font-size:12px;color:var(--faint);text-align:right;font-variant-numeric:tabular-nums;}
+.denom-foot{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--card);}
+.denom-foot span{font-size:13px;color:var(--dim);}
+.denom-foot b{font-size:17px;color:var(--amber);}
+.net-row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;margin-top:6px;background:var(--bg2);border:1px solid #38302648;border-radius:8px;}
+.net-row span{font-size:12px;color:var(--faint);}
+.net-row b{font-size:16px;color:var(--green);}
+
+/* ── SUBTOTAL ROW ── */
+.sub-row{display:flex;justify-content:space-between;font-size:13px;color:var(--faint);margin-top:10px;padding-top:10px;border-top:1px solid #38302648;}
+.sub-row b{color:var(--dim);font-weight:600;}
+.total-row{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:11px;border-top:2px solid var(--amber2);}
+.total-row span{font-size:14px;color:var(--ink);font-weight:700;}
+.total-row b{font-size:19px;color:var(--amber);font-weight:800;}
+
+/* ── HERO ── */
+.hero{background:linear-gradient(145deg,#2a2015,#1e1810);border:1px solid #38302648;border-radius:var(--r);padding:20px 16px;margin-bottom:12px;text-align:center;}
+.hero-label{font-size:11px;color:var(--faint);letter-spacing:2px;text-transform:uppercase;}
+.hero-num{font-size:44px;font-weight:900;margin:4px 0 2px;font-variant-numeric:tabular-nums;}
+.hero-num.pos{color:var(--green);}
+.hero-num.neg{color:var(--red);}
+.hero-sub{font-size:13px;color:var(--dim);}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px;}
+.stat{background:var(--bg2);border-radius:9px;padding:10px;text-align:center;}
+.stat-v{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;}
+.stat-l{font-size:11px;color:var(--faint);margin-top:2px;}
+.calc-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:4px 0;border-bottom:1px solid #38302628;color:var(--dim);}
+.calc-row:last-child{border-bottom:none;}
+.calc-row.calc-sub span:first-child{padding-left:10px;color:var(--faint);}
+.calc-row.calc-sub span:last-child{color:var(--red);}
+.calc-row.calc-total{font-weight:700;color:var(--ink);border-top:1px solid #38302660;border-bottom:none;margin-top:2px;padding-top:6px;}
+.calc-row b.pos{color:var(--green);}
+.calc-row b{color:var(--amber);}
+
+/* ── BUTTONS ── */
+.btn-primary{width:100%;padding:14px;border-radius:11px;border:none;background:var(--amber);color:#18140f;font-size:16px;font-weight:800;margin-top:4px;}
+.btn-ghost{width:100%;padding:12px;border-radius:10px;border:1px solid #38302660;background:none;color:var(--dim);font-size:14px;margin-top:8px;}
+.btn-add{width:100%;padding:9px;border-radius:9px;border:1px dashed #38302660;background:none;color:var(--amber2);font-size:13px;margin-top:4px;}
+
+/* ── ADD-ITEM BTN ── */
+.add-btn{width:100%;padding:9px;border-radius:9px;border:1px dashed #38302660;background:none;color:var(--amber2);font-size:13px;margin-top:4px;}
+
+/* ── BACKUP CARD ── */
+.backup-hint{font-size:12.5px;color:var(--dim);line-height:1.6;margin:0 0 11px;}
+.backup-btns{display:flex;gap:8px;margin-bottom:10px;}
+.backup-btns button{flex:1;padding:9px;border-radius:9px;border:1px solid #38302660;background:var(--bg2);color:var(--dim);font-size:13px;}
+.backup-ta{width:100%;min-height:80px;margin-top:8px;background:var(--bg2);border:1px solid #38302660;border-radius:9px;color:var(--ink);font-size:12px;font-family:monospace;padding:9px;resize:vertical;}
+
+/* ── HISTORY CARDS ── */
+.filter-row{display:flex;gap:8px;margin-bottom:12px;}
+.filter-btn{flex:1;padding:8px 0;border-radius:9px;border:1px solid #38302660;background:var(--card);color:var(--faint);font-size:13px;font-weight:600;}
+.filter-btn.active{background:var(--amber);color:#18140f;border-color:var(--amber);}
+.sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px;}
+.sum-card{background:var(--card);border:1px solid #38302648;border-radius:var(--r);padding:12px;}
+.sum-v{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;}
+.sum-l{font-size:11px;color:var(--faint);margin-top:3px;}
+.chart-wrap{height:170px;margin-top:6px;}
+.rec{background:var(--card);border:1px solid #38302648;border-radius:11px;padding:12px 13px;margin-bottom:9px;}
+.rec-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.rec-date{font-size:14px;font-weight:700;}
+.rec-loc{font-size:12px;color:var(--faint);margin-left:5px;}
+.rec-net-wrap{text-align:right;}
+.rec-net-lbl{display:block;font-size:10px;color:var(--faint);margin-bottom:1px;}
+.rec-net{font-size:16px;font-weight:700;}
+.rec-net.pos{color:var(--green);}
+.rec-net.neg{color:var(--red);}
+.rec-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px;font-size:12px;color:var(--dim);}
+.rec-actions{display:flex;gap:7px;margin-top:9px;}
+.rec-actions button{flex:1;padding:7px;border-radius:8px;border:1px solid #38302660;background:var(--bg2);color:var(--dim);font-size:13px;}
+.rec-actions .danger{color:var(--red);}
+.empty{text-align:center;padding:40px 20px;color:var(--faint);font-size:14px;}
+
+/* ── ANALYSIS ── */
+.analysis-tab-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;}
+.atab{padding:7px 13px;border-radius:99px;border:1px solid #38302660;background:var(--card);color:var(--faint);font-size:12.5px;font-weight:600;}
+.atab.active{background:var(--amber);color:#18140f;border-color:var(--amber);}
+.analysis-panel{display:none;}
+.analysis-panel.active{display:block;}
+.compare-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #38302640;font-size:13px;}
+.compare-row:last-child{border-bottom:none;}
+.compare-bar{height:6px;border-radius:3px;margin-top:6px;}
+
+/* ── PURCHASE SECTION ── */
+.purchase-rec{background:var(--card);border:1px solid #38302648;border-radius:11px;padding:12px 13px;margin-bottom:9px;}
+.purchase-date{font-size:12px;color:var(--faint);}
+.purchase-title{font-size:14px;font-weight:700;margin:2px 0 6px;}
+.purchase-meta{font-size:12px;color:var(--dim);}
+.cost-highlight{background:var(--bg2);border:1px solid #38302648;border-radius:8px;padding:10px 12px;text-align:center;margin-top:10px;}
+.cost-highlight .v{font-size:22px;font-weight:800;color:var(--amber);}
+.cost-highlight .l{font-size:11px;color:var(--faint);margin-top:2px;}
+
+/* ── FIXED ITEMS ── */
+.fixed-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #38302640;font-size:13px;}
+.fixed-item:last-child{border-bottom:none;}
+.fixed-badge{background:var(--bg2);border-radius:6px;padding:2px 8px;font-size:11px;color:var(--amber2);}
+
+/* ── INVENTORY ── */
+.inv-item{background:var(--bg2);border:1px solid #38302648;border-radius:9px;padding:11px 12px;margin-bottom:8px;}
+.inv-item-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.inv-item-name{font-size:14px;font-weight:700;}
+.inv-item-qty{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;}
+.inv-item-qty.low{color:var(--red);}
+.inv-item-qty.ok{color:var(--green);}
+.inv-item-meta{font-size:11px;color:var(--faint);}
+.inv-item-actions{display:flex;gap:7px;margin-top:8px;}
+.inv-item-actions button{flex:1;padding:6px;border-radius:7px;border:1px solid #38302660;background:var(--card);color:var(--dim);font-size:12px;}
+.inv-item-actions .danger{color:var(--red);}
+.inv-alert-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #38302640;font-size:13px;}
+.inv-alert-row:last-child{border-bottom:none;}
+.inv-alert-row .name{color:var(--ink);}
+.inv-alert-row .qty{color:var(--red);font-weight:700;}
+.inv-threshold-row{display:flex;align-items:center;gap:8px;margin-top:6px;}
+.inv-threshold-row input{width:70px;background:var(--card);border:1px solid #38302660;border-radius:7px;color:var(--ink);font-size:13px;padding:5px 8px;}
+.inv-threshold-row label{font-size:12px;color:var(--faint);}
+.batch-card{background:var(--bg2);border:1px solid #38302648;border-radius:9px;padding:11px 12px;margin-bottom:8px;}
+.batch-date{font-size:11px;color:var(--faint);}
+.batch-name{font-size:14px;font-weight:700;margin:2px 0;}
+.batch-qty{font-size:22px;font-weight:800;color:var(--amber);}
+.batch-unit{font-size:12px;color:var(--faint);margin-left:3px;}
+.batch-actions{display:flex;gap:7px;margin-top:8px;}
+.batch-actions button{flex:1;padding:6px;border-radius:7px;border:1px solid #38302660;background:var(--card);color:var(--dim);font-size:12px;}
+.batch-actions .danger{color:var(--red);}
+
+/* ── INLINE EDIT MODAL ── */
+.inline-edit{background:var(--card);border:1px solid var(--amber2);border-radius:10px;padding:12px;margin-top:8px;}
+.inline-edit .field{margin-bottom:8px;}
+.inline-edit .two{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.inline-edit-btns{display:flex;gap:8px;margin-top:8px;}
+.inline-edit-btns button{flex:1;padding:8px;border-radius:8px;border:1px solid #38302660;font-size:13px;}
+.inline-edit-btns .confirm{background:var(--amber);color:#18140f;font-weight:700;border-color:var(--amber);}
+.inline-edit-btns .cancel{background:var(--bg2);color:var(--dim);}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--amber);color:#18140f;padding:9px 18px;border-radius:99px;font-size:13px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none;z-index:99;white-space:nowrap;}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-inner">
+    <h1>🍗 <span>喬鈺</span>酥香屋</h1>
+    <span class="hdr-sub">損益記帳系統</span>
+  </div>
+</header>
+
+<nav class="tabs">
+  <div class="tabs-inner">
+    <button class="tab active" id="t-daily">出攤日記</button>
+    <button class="tab" id="t-purchase">進貨記錄</button>
+    <button class="tab" id="t-monthly">月支出</button>
+    <button class="tab" id="t-inventory">庫存</button>
+    <button class="tab" id="t-analysis">分析</button>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- ════════════════════════════════
+     分頁①  出攤日記
+════════════════════════════════ -->
+<section id="s-daily" class="active">
+
+  <div class="card">
+    <div class="card-title">基本資訊</div>
+    <div class="two">
+      <div class="field"><label>日期</label><input type="date" id="d-date"></div>
+      <div class="field"><label>工作時數</label><input type="number" inputmode="decimal" id="d-hours" placeholder="例：7"></div>
+    </div>
+    <div class="field"><label>擺攤地點（選填）</label><input type="text" id="d-loc" placeholder="例：南田市場"></div>
+    <div class="field" style="margin-bottom:0;"><label>租金（場地費）</label><input type="number" inputmode="decimal" id="d-rent" placeholder="0"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">出攤備用金</div>
+    <div class="denom-grid" id="float-grid"></div>
+    <div class="denom-foot"><span>備用金合計</span><b id="float-total">$0</b></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">食材成本</div>
+
+    <div class="section-label">🛒 外購醃製品</div>
+    <div class="chips" id="chips-purchase">
+      <button class="chip meat-daily-chip" data-list="purchase-list" data-name="外購三節翅">外購三節翅</button>
+      <button class="chip meat-daily-chip" data-list="purchase-list" data-name="外購翅腿二節翅">外購翅腿二節翅</button>
+    </div>
+    <div id="purchase-list"></div>
+    <button class="add-btn meat-daily-add" data-list="purchase-list">＋ 新增外購項目</button>
+    <div class="sub-row"><span>外購小計</span><b id="purchase-sub">$0</b></div>
+
+    <hr class="divider">
+
+    <div class="section-label">🧂 自製醃製（今天用量）</div>
+    <div class="chips" id="chips-diy">
+      <button class="chip meat-daily-chip" data-list="diy-list" data-name="自製翅腿">自製翅腿</button>
+      <button class="chip meat-daily-chip" data-list="diy-list" data-name="自製二節翅">自製二節翅</button>
+      <button class="chip meat-daily-chip" data-list="diy-list" data-name="自製三節翅">自製三節翅</button>
+      <button class="chip" data-list="diy-list" data-name="醃料（攤算）">醃料攤算</button>
+    </div>
+    <div id="diy-list"></div>
+    <button class="add-btn meat-daily-add" data-list="diy-list">＋ 新增自製項目</button>
+    <div class="sub-row"><span>自製小計</span><b id="diy-sub">$0</b></div>
+
+    <div class="total-row"><span>食材成本合計</span><b id="cogs-total">$0</b></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">其他開銷</div>
+
+    <div class="section-label">燃料 ／ 油料</div>
+    <div class="chips" id="chips-op-fuel">
+      <button class="chip" data-list="op-list" data-name="瓦斯">瓦斯</button>
+      <button class="chip" data-list="op-list" data-name="沙拉油">沙拉油</button>
+      <button class="chip" data-list="op-list" data-name="發電機汽油">發電機汽油</button>
+    </div>
+
+    <div class="section-label">交通</div>
+    <div class="chips" id="chips-op-transport">
+      <button class="chip" data-list="op-list" data-name="交通費">交通費</button>
+    </div>
+
+    <div class="section-label">調味料</div>
+    <div class="chips" id="chips-op-season">
+      <button class="chip" data-list="op-list" data-name="胡椒鹽">胡椒鹽</button>
+      <button class="chip" data-list="op-list" data-name="辣椒粉">辣椒粉</button>
+    </div>
+
+    <div class="section-label">包材耗材</div>
+    <div class="chips" id="chips-op-pkg">
+      <button class="chip" data-list="op-list" data-name="60×90塑膠袋">60×90袋</button>
+    </div>
+
+    <div class="section-label">自動計算耗材（依銷售額）</div>
+    <div class="card" style="background:var(--bg2);margin-bottom:8px;padding:10px 12px;">
+      <div class="fixed-item">
+        <span>紙袋 <span style="font-size:11px;color:var(--faint)">每$100→1個</span></span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="auto-bag-qty" class="fixed-badge">0個</span>
+          <span id="auto-bag-cost" style="font-size:13px;color:var(--amber2);">$0</span>
+        </div>
+      </div>
+      <div class="fixed-item">
+        <span>塑膠袋（一斤袋）<span style="font-size:11px;color:var(--faint)">每$100→1個</span></span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="auto-plastic-qty" class="fixed-badge">0個</span>
+          <span id="auto-plastic-cost" style="font-size:13px;color:var(--amber2);">$0</span>
+        </div>
+      </div>
+      <div class="fixed-item">
+        <span>炸物盆塑膠袋 <span style="font-size:11px;color:var(--faint)">固定5個</span></span>
+        <div><span id="fixed-bag-cost" style="font-size:13px;color:var(--amber2);">$0</span></div>
+      </div>
+      <div class="fixed-item">
+        <span>炸物盆襯紙 <span style="font-size:11px;color:var(--faint)">固定2張</span></span>
+        <div><span id="fixed-paper-cost" style="font-size:13px;color:var(--amber2);">$0</span></div>
+      </div>
+      <div class="sub-row" style="margin-top:8px;"><span>包材小計</span><b id="pkg-sub">$0</b></div>
+      <div style="font-size:11px;color:var(--faint);margin-top:6px;">單價從「進貨記錄」或預設值帶入</div>
+    </div>
+
+    <div id="op-list"></div>
+    <button class="add-btn" data-list="op-list">＋ 新增其他開銷</button>
+    <div class="sub-row"><span>其他開銷小計</span><b id="op-sub">$0</b></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">銷售額</div>
+
+    <div class="section-label">現場收攤現金計數</div>
+    <div class="denom-grid" id="revenue-grid"></div>
+    <div class="denom-foot"><span>收攤現金合計</span><b id="revenue-total">$0</b></div>
+    <div class="net-row"><span>－出攤備用金，現場實際銷售額</span><b id="revenue-net">$0</b></div>
+
+    <div class="section-label" style="margin-top:14px;">外送平台 ／ 電子支付收入</div>
+    <div class="two" style="gap:10px;">
+      <div class="field">
+        <label>🟢 Uber Eats</label>
+        <input type="number" inputmode="decimal" id="d-uber" placeholder="0">
+      </div>
+      <div class="field">
+        <label>🐼 熊貓</label>
+        <input type="number" inputmode="decimal" id="d-panda" placeholder="0">
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label>💚 Line Pay</label>
+      <input type="number" inputmode="decimal" id="d-linepay" placeholder="0">
+    </div>
+    <div class="net-row" style="margin-top:10px;"><span>平台／電支小計</span><b id="platform-sub">$0</b></div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:2px solid var(--amber2);">
+      <span style="font-size:14px;color:var(--ink);font-weight:700;">今日總銷售額</span>
+      <b style="font-size:20px;color:var(--amber);" id="revenue-grand-total">$0</b>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="hero-label">今日淨利</div>
+    <div class="hero-num pos" id="hero-net">$0</div>
+    <div class="hero-sub" id="hero-sub">毛利 $0・淨利率 0%・時薪 $0</div>
+    <div class="stats">
+      <div class="stat"><div class="stat-v" id="stat-gross">$0</div><div class="stat-l">毛利</div></div>
+      <div class="stat"><div class="stat-v" id="stat-margin">0%</div><div class="stat-l">淨利率</div></div>
+      <div class="stat"><div class="stat-v" id="stat-hourly">$0</div><div class="stat-l">每小時淨利</div></div>
+      <div class="stat"><div class="stat-v" id="stat-cost">$0</div><div class="stat-l">總成本</div></div>
+    </div>
+
+    <!-- 毛利計算明細 -->
+    <div style="margin-top:14px;background:var(--bg2);border-radius:10px;padding:11px 13px;">
+      <div style="font-size:10.5px;color:var(--amber2);letter-spacing:1px;text-transform:uppercase;font-weight:700;margin-bottom:8px;">毛利計算</div>
+      <div class="calc-row calc-sub"><span>現場現金</span><span id="cd-cash" style="color:var(--dim)">$0</span></div>
+      <div class="calc-row calc-sub" id="cd-uber-row" style="display:none"><span>🟢 Uber Eats</span><span id="cd-uber-amt" style="color:var(--dim)">$0</span></div>
+      <div class="calc-row calc-sub" id="cd-panda-row" style="display:none"><span>🐼 熊貓</span><span id="cd-panda-amt" style="color:var(--dim)">$0</span></div>
+      <div class="calc-row calc-sub" id="cd-linepay-row" style="display:none"><span>💚 Line Pay</span><span id="cd-linepay-amt" style="color:var(--dim)">$0</span></div>
+      <div class="calc-row"><span>總銷售額</span><b id="cd-revenue" class="pos">$0</b></div>
+      <div class="calc-row calc-sub"><span>－ 外購食材</span><span id="cd-purchase">$0</span></div>
+      <div class="calc-row calc-sub"><span>－ 自製食材</span><span id="cd-diy">$0</span></div>
+      <div class="calc-row calc-total"><span>＝ 毛利</span><b id="cd-gross">$0</b></div>
+    </div>
+
+    <!-- 淨利計算明細 -->
+    <div style="margin-top:8px;background:var(--bg2);border-radius:10px;padding:11px 13px;">
+      <div style="font-size:10.5px;color:var(--amber2);letter-spacing:1px;text-transform:uppercase;font-weight:700;margin-bottom:8px;">淨利計算</div>
+      <div class="calc-row"><span>毛利</span><b id="cd-gross2" class="pos">$0</b></div>
+      <div class="calc-row calc-sub" id="cd-rent-row" style="display:none"><span>－ 租金</span><span id="cd-rent">$0</span></div>
+      <div class="calc-row calc-sub"><span>－ 包材耗材</span><span id="cd-pkg">$0</span></div>
+      <div class="calc-row calc-sub"><span>－ 其他開銷</span><span id="cd-op">$0</span></div>
+      <div class="calc-row calc-total"><span>＝ 淨利</span><b id="cd-net">$0</b></div>
+    </div>
+  </div>
+
+  <button class="btn-primary" id="save-daily">儲存今日記錄</button>
+  <button class="btn-ghost" id="reset-daily">清空表單</button>
+
+  <div class="card" style="margin-top:14px;">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>最近記錄</span>
+      <span style="font-size:11px;color:var(--faint);font-weight:400;">點「編輯」可重新修改</span>
+    </div>
+    <div id="recent-rec-list"><div class="empty" style="padding:16px 0;">尚無記錄</div></div>
+  </div>
+
+</section>
+
+<!-- ════════════════════════════════
+     分頁②  進貨記錄
+════════════════════════════════ -->
+<section id="s-purchase">
+
+  <div class="card">
+    <div class="card-title">新增進貨記錄</div>
+    <div class="two">
+      <div class="field"><label>進貨日期</label><input type="date" id="p-date"></div>
+      <div class="field"><label>進貨類型</label>
+        <select id="p-type" style="width:100%;background:var(--bg2);border:1px solid #38302660;border-radius:8px;color:var(--ink);font-size:15px;padding:10px 11px;">
+          <option value="chicken-purchased">外購醃製品（已醃製，直接批發）</option>
+          <option value="chicken-raw">自製生雞肉（買生料自己醃）</option>
+          <option value="marinade">醃料進貨</option>
+          <option value="supplies">耗材進貨</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 外購醃製品 -->
+    <div id="p-chicken-purchased">
+      <div class="section-label">🛒 外購醃製品品項</div>
+      <div class="chips">
+        <button class="chip p-meat-chip" data-name="外購三節翅">外購三節翅</button>
+        <button class="chip p-meat-chip" data-name="外購翅腿二節翅">外購翅腿二節翅</button>
+      </div>
+      <div id="p-meat-list"></div>
+      <button class="add-btn p-meat-add">＋ 新增品項</button>
+    </div>
+
+    <!-- 自製生雞肉 -->
+    <div id="p-chicken-raw" style="display:none;">
+      <div class="section-label">🐔 自製生雞肉品項</div>
+      <div class="chips">
+        <button class="chip p-raw-chip" data-name="翅腿二節翅">翅腿二節翅</button>
+        <button class="chip p-raw-chip" data-name="三節翅">三節翅</button>
+      </div>
+      <div id="p-raw-list"></div>
+      <button class="add-btn p-raw-add">＋ 新增品項</button>
+    </div>
+
+    <!-- 醃料 -->
+    <div id="p-marinade" style="display:none;">
+      <div class="section-label">醃料品項</div>
+      <div class="chips">
+        <button class="chip p-mar-chip" data-name="蒜粉">蒜粉</button>
+        <button class="chip p-mar-chip" data-name="白胡椒粉">白胡椒粉</button>
+        <button class="chip p-mar-chip" data-name="白砂糖">白砂糖</button>
+        <button class="chip p-mar-chip" data-name="紅麴粉">紅麴粉</button>
+        <button class="chip p-mar-chip" data-name="米酒">米酒</button>
+        <button class="chip p-mar-chip" data-name="紅麴豆腐乳">紅麴豆腐乳</button>
+        <button class="chip p-mar-chip" data-name="地瓜粉">地瓜粉</button>
+        <button class="chip p-mar-chip" data-name="玉米粉">玉米粉</button>
+      </div>
+      <div id="p-mar-list"></div>
+      <button class="add-btn p-mar-add">＋ 新增醃料</button>
+    </div>
+
+    <!-- 耗材 -->
+    <div id="p-supplies" style="display:none;">
+      <div class="section-label">耗材品項</div>
+      <div class="chips">
+        <button class="chip p-sup-chip" data-name="紙袋" data-unit="封" data-per="200" data-hint="每2封150元，每封200個，每個$0.375">紙袋</button>
+        <button class="chip p-sup-chip" data-name="半斤塑膠袋" data-unit="封" data-per="41" data-hint="每封27元，41個，每個$0.659">半斤袋</button>
+        <button class="chip p-sup-chip" data-name="一斤塑膠袋" data-unit="封" data-per="35" data-hint="每封27元，35個，每個$0.771">一斤袋</button>
+        <button class="chip p-sup-chip" data-name="60×90塑膠袋">60×90袋</button>
+        <button class="chip p-sup-chip" data-name="炸物盆塑膠袋">炸物盆塑膠袋</button>
+        <button class="chip p-sup-chip" data-name="炸物盆襯紙">炸物盆襯紙</button>
+        <button class="chip p-sup-chip" data-name="瓦斯">瓦斯</button>
+        <button class="chip p-sup-chip" data-name="沙拉油">沙拉油</button>
+        <button class="chip p-sup-chip" data-name="胡椒鹽">胡椒鹽</button>
+        <button class="chip p-sup-chip" data-name="辣椒粉">辣椒粉</button>
+      </div>
+      <div id="p-sup-list"></div>
+      <button class="add-btn p-sup-add">＋ 新增耗材</button>
+    </div>
+
+    <div class="field" style="margin-top:12px;"><label>備註（選填）</label><input type="text" id="p-note" placeholder="例：這批翅腿比較小隻"></div>
+    <button class="btn-primary" id="save-purchase">儲存進貨記錄</button>
+    <button class="btn-ghost" id="cancel-purchase-edit" style="display:none;">取消編輯</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">進貨歷史</div>
+    <div id="p-history-list"><div class="empty">尚未有進貨記錄</div></div>
+  </div>
+
+</section>
+
+<!-- ════════════════════════════════
+     分頁③  月固定支出
+════════════════════════════════ -->
+<section id="s-monthly">
+
+  <div class="card">
+    <div class="card-title">新增支出記錄</div>
+    <div class="two">
+      <div class="field"><label>日期</label><input type="date" id="m-date"></div>
+      <div class="field"><label>月份</label><input type="month" id="m-month"></div>
+    </div>
+    <div class="section-label">類別</div>
+    <div class="chips" id="m-category-chips">
+      <button class="chip m-cat-chip" data-name="汽車加油">汽車加油</button>
+      <button class="chip m-cat-chip" data-name="瓦斯">瓦斯</button>
+      <button class="chip m-cat-chip" data-name="沙拉油">沙拉油</button>
+      <button class="chip m-cat-chip" data-name="胡椒鹽">胡椒鹽</button>
+      <button class="chip m-cat-chip" data-name="辣椒粉">辣椒粉</button>
+    </div>
+    <div class="field"><label>項目名稱</label><input type="text" id="m-name" placeholder="例：瓦斯 2罐"></div>
+    <div class="field"><label>金額</label><input type="number" inputmode="decimal" id="m-amount" placeholder="0"></div>
+    <div class="field" style="margin-bottom:0;"><label>備註（選填）</label><input type="text" id="m-note" placeholder="例：中油加油站"></div>
+    <button class="btn-primary" id="m-save-btn" style="margin-top:12px;">儲存支出記錄</button>
+    <button class="btn-ghost" id="m-cancel-btn" style="display:none;">取消編輯</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">月份統計</div>
+    <div class="filter-row">
+      <button class="filter-btn active m-range-btn" data-month="">本月</button>
+      <button class="filter-btn m-range-btn" data-month="prev">上月</button>
+      <button class="filter-btn m-range-btn" data-month="all">全部</button>
+    </div>
+    <div class="sum-grid" id="m-summary-grid">
+      <div class="sum-card"><div class="sum-v" id="m-total">$0</div><div class="sum-l">總支出</div></div>
+      <div class="sum-card"><div class="sum-v" id="m-count">0筆</div><div class="sum-l">記錄筆數</div></div>
+    </div>
+    <div id="m-category-summary" style="margin-top:8px;"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">支出記錄</div>
+    <div id="m-rec-list"><div class="empty">尚無支出記錄</div></div>
+  </div>
+
+</section>
+
+<!-- ════════════════════════════════
+     分頁④  庫存記錄
+════════════════════════════════ -->
+<section id="s-inventory">
+
+  <!-- 庫存概覽 -->
+  <div class="card" id="inv-alerts-card" style="display:none;">
+    <div class="card-title" style="color:var(--red);">⚠️ 低庫存警示</div>
+    <div id="inv-alerts"></div>
+  </div>
+
+  <!-- 醃製雞肉庫存 -->
+  <div class="card">
+    <div class="card-title">🍗 醃製雞肉庫存</div>
+    <div class="section-label">自製批次</div>
+    <div id="inv-diy-batches">
+      <div class="empty" id="inv-diy-empty">尚未有自製批次記錄</div>
+    </div>
+    <button class="add-btn" id="inv-add-diy-batch">＋ 新增自製批次</button>
+
+    <hr class="divider">
+
+    <div class="section-label">外購醃製品</div>
+    <div id="inv-purchased-stock">
+      <div class="empty" id="inv-purchased-empty">尚未有外購庫存記錄</div>
+    </div>
+    <button class="add-btn" id="inv-add-purchased">＋ 新增外購庫存</button>
+  </div>
+
+  <!-- 生雞肉原料 -->
+  <div class="card">
+    <div class="card-title">🐔 生雞肉原料庫存</div>
+    <div class="chips">
+      <button class="chip inv-raw-chip" data-name="翅腿二節翅">翅腿二節翅</button>
+      <button class="chip inv-raw-chip" data-name="三節翅">三節翅</button>
+    </div>
+    <div id="inv-raw-list"></div>
+    <button class="add-btn inv-raw-add">＋ 新增生肉品項</button>
+  </div>
+
+  <!-- 醃料庫存 -->
+  <div class="card">
+    <div class="card-title">🧂 醃料庫存</div>
+    <div class="chips">
+      <button class="chip inv-mar-chip" data-name="蒜粉">蒜粉</button>
+      <button class="chip inv-mar-chip" data-name="白胡椒粉">白胡椒粉</button>
+      <button class="chip inv-mar-chip" data-name="白砂糖">白砂糖</button>
+      <button class="chip inv-mar-chip" data-name="紅麴粉">紅麴粉</button>
+      <button class="chip inv-mar-chip" data-name="米酒">米酒</button>
+      <button class="chip inv-mar-chip" data-name="紅麴豆腐乳">紅麴豆腐乳</button>
+      <button class="chip inv-mar-chip" data-name="地瓜粉">地瓜粉</button>
+      <button class="chip inv-mar-chip" data-name="玉米粉">玉米粉</button>
+    </div>
+    <div id="inv-marinade-list"></div>
+    <button class="add-btn inv-mar-add">＋ 新增醃料品項</button>
+  </div>
+
+  <!-- 耗材庫存 -->
+  <div class="card">
+    <div class="card-title">📦 耗材庫存</div>
+    <div class="chips">
+      <button class="chip inv-sup-chip" data-name="紙袋" data-unit="個">紙袋</button>
+      <button class="chip inv-sup-chip" data-name="半斤塑膠袋" data-unit="個">半斤袋</button>
+      <button class="chip inv-sup-chip" data-name="一斤塑膠袋" data-unit="個">一斤袋</button>
+      <button class="chip inv-sup-chip" data-name="60×90塑膠袋" data-unit="個">60×90塑膠袋</button>
+      <button class="chip inv-sup-chip" data-name="炸物盆塑膠袋" data-unit="個">炸物盆塑膠袋</button>
+      <button class="chip inv-sup-chip" data-name="炸物盆襯紙" data-unit="張">炸物盆襯紙</button>
+      <button class="chip inv-sup-chip" data-name="瓦斯" data-unit="罐">瓦斯</button>
+      <button class="chip inv-sup-chip" data-name="沙拉油" data-unit="桶">沙拉油</button>
+      <button class="chip inv-sup-chip" data-name="胡椒鹽" data-unit="包">胡椒鹽</button>
+      <button class="chip inv-sup-chip" data-name="辣椒粉" data-unit="包">辣椒粉</button>
+    </div>
+    <div id="inv-supplies-list"></div>
+    <button class="add-btn inv-sup-add">＋ 新增耗材品項</button>
+  </div>
+
+  <!-- 手動出攤扣庫存 -->
+  <div class="card">
+    <div class="card-title">✂️ 出攤後手動扣庫存</div>
+    <p class="backup-hint">每次出攤後，手動輸入今天用掉的量，系統自動從庫存扣除。炸物盆塑膠袋（固定5個）、炸物盆襯紙（固定2張）自動扣。</p>
+    <div class="field"><label>醃製雞肉使用量（公斤）</label><input type="number" inputmode="decimal" id="inv-use-chicken" placeholder="例：5"></div>
+    <div class="field"><label>紙袋使用量（個）</label><input type="number" inputmode="numeric" id="inv-use-bag" placeholder="例：80"></div>
+    <div class="two">
+      <div class="field"><label>半斤塑膠袋（個）</label><input type="number" inputmode="numeric" id="inv-use-plastic-half" placeholder="例：20"></div>
+      <div class="field"><label>一斤塑膠袋（個）</label><input type="number" inputmode="numeric" id="inv-use-plastic-full" placeholder="例：10"></div>
+    </div>
+    <div class="field" style="margin-bottom:0;"><label>備註（選填）</label><input type="text" id="inv-use-note" placeholder="例：今天生意好，用量偏多"></div>
+    <button class="btn-primary" id="inv-deduct-btn" style="margin-top:12px;">確認扣除庫存</button>
+  </div>
+
+</section>
+
+<!-- ════════════════════════════════
+     分頁④  分析總覽
+════════════════════════════════ -->
+<section id="s-analysis">
+
+  <div class="analysis-tab-row">
+    <button class="atab active" data-panel="a-profit">📈 淨利趨勢</button>
+    <button class="atab" data-panel="a-compare">⚖️ 外購vs自製</button>
+    <button class="atab" data-panel="a-supplies">📦 耗材支出</button>
+    <button class="atab" data-panel="a-efficiency">⏱ 效益分析</button>
+  </div>
+
+  <!-- 淨利趨勢 -->
+  <div class="analysis-panel active" id="a-profit">
+    <div class="filter-row">
+      <button class="filter-btn active" data-range="week">本週</button>
+      <button class="filter-btn" data-range="month">本月</button>
+      <button class="filter-btn" data-range="all">全部</button>
+    </div>
+    <div class="sum-grid">
+      <div class="sum-card"><div class="sum-v" id="a-total-revenue">$0</div><div class="sum-l">總營業額</div></div>
+      <div class="sum-card"><div class="sum-v" id="a-total-net">$0</div><div class="sum-l">出攤淨利合計</div></div>
+      <div class="sum-card"><div class="sum-v" id="a-monthly-expense" style="color:var(--red)">$0</div><div class="sum-l">月固定支出</div></div>
+      <div class="sum-card"><div class="sum-v" id="a-net-after-monthly">$0</div><div class="sum-l">月結淨利</div></div>
+      <div class="sum-card"><div class="sum-v" id="a-avg-day">$0</div><div class="sum-l">平均日淨利</div></div>
+      <div class="sum-card"><div class="sum-v" id="a-avg-hour">$0</div><div class="sum-l">平均時薪</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">淨利趨勢</div>
+      <div class="chart-wrap"><canvas id="chart-profit"></canvas></div>
+    </div>
+    <div id="a-rec-list"></div>
+  </div>
+
+  <!-- 外購vs自製 -->
+  <div class="analysis-panel" id="a-compare">
+    <div class="card">
+      <div class="card-title">外購 vs 自製 成本比較</div>
+      <div class="sum-grid">
+        <div class="sum-card"><div class="sum-v" id="a-purchase-total">$0</div><div class="sum-l">外購總成本</div></div>
+        <div class="sum-card"><div class="sum-v" id="a-diy-total">$0</div><div class="sum-l">自製總成本</div></div>
+      </div>
+      <div class="chart-wrap"><canvas id="chart-compare"></canvas></div>
+    </div>
+  </div>
+
+  <!-- 耗材支出 -->
+  <div class="analysis-panel" id="a-supplies">
+    <div class="card">
+      <div class="card-title">耗材月支出</div>
+      <div class="chart-wrap"><canvas id="chart-supplies"></canvas></div>
+      <div id="a-supply-list" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <!-- 效益分析 -->
+  <div class="analysis-panel" id="a-efficiency">
+    <div class="card">
+      <div class="card-title">效益分析</div>
+      <div class="sum-grid">
+        <div class="sum-card"><div class="sum-v" id="a-best-day">—</div><div class="sum-l">最高單日淨利</div></div>
+        <div class="sum-card"><div class="sum-v" id="a-best-hour">$0</div><div class="sum-l">最高時薪</div></div>
+        <div class="sum-card"><div class="sum-v" id="a-avg-margin">0%</div><div class="sum-l">平均淨利率</div></div>
+        <div class="sum-card"><div class="sum-v" id="a-total-hours">0h</div><div class="sum-l">累計工作時數</div></div>
+      </div>
+      <div class="chart-wrap"><canvas id="chart-hourly"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">地點效益</div>
+      <div id="a-location-list"><div class="empty">記錄地點後會顯示各地點分析</div></div>
+    </div>
+  </div>
+
+  <!-- 備份還原 -->
+  <div class="card" style="margin-top:4px;">
+    <div class="card-title">備份與還原</div>
+    <p class="backup-hint">記完帳按「產生備份」，複製後貼到 LINE 存起來。另一支手機貼上後按「還原」即可同步。</p>
+    <div class="backup-btns">
+      <button id="btn-export">📤 產生備份</button>
+      <button id="btn-import-toggle">📥 貼上還原</button>
+    </div>
+    <div id="export-area" style="display:none;">
+      <textarea class="backup-ta" id="export-text" readonly></textarea>
+      <button class="btn-primary" id="btn-copy" style="margin-top:8px;">複製備份文字</button>
+    </div>
+    <div id="import-area" style="display:none;">
+      <textarea class="backup-ta" id="import-text" placeholder="把備份文字貼在這裡"></textarea>
+      <button class="btn-primary" id="btn-restore" style="margin-top:8px;">還原這份備份</button>
+    </div>
+  </div>
+
+</section>
+
+</div><!-- /wrap -->
+
+<div class="toast" id="toast"></div>
+<div id="err-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:999;background:#c0392b;color:#fff;padding:10px 14px;font-size:12px;font-family:monospace;word-break:break-all;white-space:pre-wrap;max-height:50vh;overflow-y:auto;"></div>
+
+<script>
+// Global error handler - shows real error on screen for debugging
+window.onerror = function(msg, src, line, col, err){
+  var b = document.getElementById('err-banner');
+  if(b){
+    b.style.display='block';
+    b.textContent = '⚠️ JS Error: ' + msg + '\nLine: ' + line + ', Col: ' + col + '\nStack: ' + (err&&err.stack?err.stack:'n/a');
+  }
+  return false;
+};
+window.onunhandledrejection = function(e){
+  var b = document.getElementById('err-banner');
+  if(b){ b.style.display='block'; b.textContent += '\nPromise: ' + e.reason; }
+};
+</script>
+<script>
+(function(){
+'use strict';
+
+// ── STORAGE ──
+const KEYS = { daily:'qy_daily_v2', purchase:'qy_purchase_v2', prices:'qy_prices_v2' };
+let dailyRecs = [], purchaseRecs = [], unitPrices = {};
+
+function load(){
+  try{ dailyRecs = JSON.parse(localStorage.getItem(KEYS.daily)||'[]'); }catch(e){ dailyRecs=[]; }
+  try{ purchaseRecs = JSON.parse(localStorage.getItem(KEYS.purchase)||'[]'); }catch(e){ purchaseRecs=[]; }
+  try{ unitPrices = JSON.parse(localStorage.getItem(KEYS.prices)||'{}'); }catch(e){ unitPrices={}; }
+  // 預設單價（每公斤），若使用者已有進貨記錄則沿用，不覆蓋
+  const DEFAULT_KG_PRICES = {
+    '外購三節翅':      Math.round(1500/18*100)/100,
+    '外購翅腿二節翅':   Math.round(1650/18*100)/100,
+    '外購翅小腿/二節翅':Math.round(1650/18*100)/100,
+    '外購翅腿':        Math.round(1650/18*100)/100,
+    '自製翅腿':        Math.round(1200/18*100)/100,
+    // 耗材每個單價（強制更新確保正確）
+    '紙袋':            0.375,  // 2封150元 ÷ 400個 = $0.375/個
+    '半斤塑膠袋':      Math.round(27/41*1000)/1000,   // 27元/封 ÷ 41個 ≈ $0.659/個
+    '一斤塑膠袋':      Math.round(27/35*1000)/1000,   // 27元/封 ÷ 35個 ≈ $0.771/個
+    '炸物盆塑膠袋':    Math.round(284/150*100)/100,
+    '炸物盆襯紙':      1,
+  };
+  Object.entries(DEFAULT_KG_PRICES).forEach(([name,price])=>{
+    // 強制更新耗材單價
+    if(['紙袋','一斤塑膠袋','炸物盆塑膠袋','炸物盆襯紙'].includes(name)) unitPrices[name]=price;
+    else if(!unitPrices[name]) unitPrices[name]=price;
+  });
+}
+function saveDaily(){ localStorage.setItem(KEYS.daily, JSON.stringify(dailyRecs)); }
+function savePurchase(){ localStorage.setItem(KEYS.purchase, JSON.stringify(purchaseRecs)); localStorage.setItem(KEYS.prices, JSON.stringify(unitPrices)); }
+
+// ── UTILS ──
+function fmt(n){ n=Math.round(n||0); return (n<0?'-$':'$')+Math.abs(n).toLocaleString(); }
+function pct(n){ return isFinite(n)?Math.round(n*100)+'%':'0%'; }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function todayStr(){ const d=new Date(); return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); }
+function escH(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+// ── DENOM GRID ──
+const DENOMS = [1,5,10,50,100,500,1000];
+function buildDenomGrid(id){
+  const el=document.getElementById(id); if(!el) return; el.innerHTML='';
+  DENOMS.forEach(d=>{
+    const row=document.createElement('div'); row.className='denom-row';
+    row.innerHTML=`<span class="denom-lbl">$${d}</span><input type="number" inputmode="numeric" min="0" class="dc" data-d="${d}" placeholder="0"><span class="denom-sub dc-sub">$0</span>`;
+    const inp=row.querySelector('.dc'); if(inp) inp.addEventListener('input',()=>{ recalcDenoms(); });
+    el.appendChild(row);
+  });
+}
+function readDenomGrid(id){
+  const el=document.getElementById(id); let total=0; const items=[];
+  el.querySelectorAll('.denom-row').forEach(r=>{
+    const d=parseFloat(r.querySelector('.dc').dataset.d);
+    const c=parseFloat(r.querySelector('.dc').value)||0;
+    const sub=d*c; r.querySelector('.dc-sub').textContent=fmt(sub);
+    if(c) items.push({denom:d,count:c,amount:sub}); total+=sub;
+  });
+  return {total,items};
+}
+function fillDenomGrid(id,items){
+  const map={}; (items||[]).forEach(it=>map[it.denom]=it.count);
+  document.getElementById(id).querySelectorAll('.dc').forEach(inp=>{ inp.value=map[parseFloat(inp.dataset.d)]||''; });
+}
+function clearDenomGrid(id){ document.getElementById(id).querySelectorAll('.dc').forEach(i=>i.value=''); }
+
+// ── INGREDIENT ROW (price × qty × unit) ──
+function makeIR(container, name, price, qty, unit){
+  const r=document.createElement('div'); r.className='ir';
+  r.innerHTML=`<div class="ir-head"><input class="name" type="text" placeholder="項目名稱" value="${name?escH(name):''}"><button class="ir-del">×</button></div><div class="ir-calc"><div class="ir-f"><label>單價</label><input class="price" type="number" inputmode="decimal" placeholder="0" value="${price||''}"></div><div class="ir-f"><label>數量</label><input class="qty" type="number" inputmode="decimal" placeholder="0" value="${qty||''}"></div><div class="ir-f"><label>單位</label><input class="unit" type="text" placeholder="台斤" value="${unit?escH(unit):''}"></div></div><div class="ir-total">小計 <b class="lt">$0</b></div>`;
+  function upd(){ const p=parseFloat(r.querySelector('.price').value)||0,q=parseFloat(r.querySelector('.qty').value)||0; r.querySelector('.lt').textContent=fmt(p*q); recalcDaily(); }
+  r.querySelector('.ir-del').onclick=()=>{ r.remove(); recalcDaily(); };
+  r.querySelector('.price').oninput=upd; r.querySelector('.qty').oninput=upd; r.querySelector('.name').oninput=recalcDaily; r.querySelector('.unit').oninput=recalcDaily;
+  container.appendChild(r); upd(); return r;
+}
+function readIR(container){ const items=[]; container.querySelectorAll('.ir').forEach(r=>{ const name=r.querySelector('.name').value.trim(),price=parseFloat(r.querySelector('.price').value)||0,qty=parseFloat(r.querySelector('.qty').value)||0,unit=r.querySelector('.unit').value.trim(); if(name||price||qty) items.push({name:name||'未命名',price,qty,unit,amount:price*qty}); }); return items; }
+
+// ── SIMPLE ROW (name + amount) ──
+function makeSR(container, name, amount){
+  const r=document.createElement('div'); r.className='sr';
+  r.innerHTML=`<input class="name" type="text" placeholder="項目名稱" value="${name?escH(name):''}"><input class="amt" type="number" inputmode="decimal" placeholder="金額" value="${amount||''}"><button class="del">×</button>`;
+  r.querySelector('.del').onclick=()=>{ r.remove(); recalcDaily(); };
+  r.querySelector('.amt').oninput=recalcDaily; r.querySelector('.name').oninput=recalcDaily;
+  container.appendChild(r); return r;
+}
+function readSR(container){ const items=[]; container.querySelectorAll('.sr').forEach(r=>{ const name=r.querySelector('.name').value.trim(),amt=parseFloat(r.querySelector('.amt').value)||0; if(name||amt) items.push({name:name||'未命名',amount:amt}); }); return items; }
+function sumItems(items){ return items.reduce((s,i)=>s+(i.amount||0),0); }
+
+// ── PURCHASE ROW (name + qty + unit + total price → unit price) ──
+function makePR(container, name, qty, unit, total){
+  const r=document.createElement('div'); r.className='ir';
+  r.innerHTML=`<div class="ir-head"><input class="name" type="text" placeholder="品項名稱" value="${name?escH(name):''}"><button class="ir-del">×</button></div><div class="ir-calc"><div class="ir-f"><label>數量</label><input class="qty" type="number" inputmode="decimal" placeholder="0" value="${qty||''}"></div><div class="ir-f"><label>單位</label><input class="unit" type="text" placeholder="公斤/個/桶" value="${unit?escH(unit):''}"></div><div class="ir-f"><label>總金額</label><input class="total" type="number" inputmode="decimal" placeholder="0" value="${total||''}"></div></div><div class="ir-total">單位成本 <b class="lt">—</b></div>`;
+  function upd(){ const q=parseFloat(r.querySelector('.qty').value)||0,t=parseFloat(r.querySelector('.total').value)||0,u=r.querySelector('.unit').value.trim(); r.querySelector('.lt').textContent=q>0?'$'+(t/q).toFixed(2)+'/'+( u||'單位'):'—'; }
+  r.querySelector('.ir-del').onclick=()=>r.remove();
+  r.querySelector('.qty').oninput=upd; r.querySelector('.total').oninput=upd; r.querySelector('.unit').oninput=upd;
+  container.appendChild(r); upd(); return r;
+}
+
+const KG_PER_BASKET = 18;
+
+// ── MEAT DAILY ROW ──
+function makeMeatDailyRow(container, name, baskets, kg, price){
+  const r=document.createElement('div'); r.className='ir';
+  const initKg = kg || (baskets ? baskets*KG_PER_BASKET : '');
+  r.innerHTML=`
+    <div class="ir-head">
+      <input class="name" type="text" placeholder="品項名稱" value="${name?escH(name):''}">
+      <button class="ir-del">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px;">
+      <div class="ir-f"><label>藍數</label><input class="baskets" type="number" inputmode="decimal" placeholder="0" value="${baskets||''}"></div>
+      <div class="ir-f"><label>公斤數</label><input class="kgs" type="number" inputmode="decimal" placeholder="自動換算" value="${initKg||''}"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+      <div class="ir-f"><label>單價／公斤</label><input class="unit-price" type="number" inputmode="decimal" placeholder="—" value="${price||''}"></div>
+      <div class="ir-f"><label>合計</label><div style="background:var(--card);border:1px solid #38302660;border-radius:7px;padding:7px 8px;font-size:14px;font-weight:700;color:var(--amber);min-height:36px;display:flex;align-items:center;"><b class="lt">$0</b></div></div>
+    </div>
+  `;
+  function updKg(){
+    const b=parseFloat(r.querySelector('.baskets').value)||0;
+    if(b) r.querySelector('.kgs').value=(b*KG_PER_BASKET);
+    updCost();
+  }
+  function updCost(){
+    const kg=parseFloat(r.querySelector('.kgs').value)||0;
+    const n=r.querySelector('.name').value.trim();
+    const upEl=r.querySelector('.unit-price');
+    if(upEl && !upEl.value && unitPrices[n]) upEl.value=(unitPrices[n]*1).toFixed(2);
+    const up=parseFloat(upEl?upEl.value:0)||(unitPrices[n]||0);
+    const cost=Math.round(kg*up);
+    const b=parseFloat(r.querySelector('.baskets').value)||0;
+    r.querySelector('.lt').textContent=fmt(cost);
+    r._amount=cost; r._kg=kg; r._baskets=b;
+    recalcDaily();
+  }
+  r.querySelector('.ir-del').onclick=()=>{ r.remove(); recalcDaily(); };
+  r.querySelector('.baskets').oninput=updKg;
+  r.querySelector('.kgs').oninput=updCost;
+  r.querySelector('.unit-price').oninput=updCost;
+  r.querySelector('.name').oninput=()=>{
+    const n=r.querySelector('.name').value.trim();
+    const up=unitPrices[n];
+    const el=r.querySelector('.unit-price');
+    if(up && el && !el.value) el.value=(up*1).toFixed(2);
+    updCost();
+  };
+  container.appendChild(r);
+  // fill price now that unitPrices is loaded
+  const resolvedName = name||'';
+  if(!price && resolvedName){
+    const up=unitPrices[resolvedName];
+    const el=r.querySelector('.unit-price');
+    if(up && el && !el.value) el.value=(up*1).toFixed(2);
+  }
+  updCost();
+  return r;
+}
+
+function readMeatDailyRows(container){
+  const items=[];
+  container.querySelectorAll('.ir').forEach(r=>{
+    const nameEl=r.querySelector('.name');
+    const basketsEl=r.querySelector('.baskets');
+    const kgsEl=r.querySelector('.kgs');
+    const upEl=r.querySelector('.unit-price');
+    if(!basketsEl||!kgsEl) return; // skip old-format rows
+    const name=nameEl?nameEl.value.trim():'';
+    const baskets=parseFloat(basketsEl.value)||0;
+    const kg=parseFloat(kgsEl.value)||0;
+    const unitPrice=parseFloat(upEl?upEl.value:0)||0;
+    const amount=Math.round(kg*unitPrice);
+    if(name||kg) items.push({name:name||'未命名',baskets,qty:kg,unit:'公斤',unitPrice,amount});
+  });
+  return items;
+}
+
+// ── CHICKEN PURCHASE ROW (進貨用: 藍 + 公斤換算 + 總金額 → 單位成本) ──
+function makeChickenPR(container, name, baskets, total){
+  const r=document.createElement('div'); r.className='ir';
+  const initKg=baskets?(baskets*KG_PER_BASKET):'';
+  r.innerHTML=`
+    <div class="ir-head">
+      <input class="name" type="text" placeholder="品項名稱" value="${name?escH(name):''}">
+      <button class="ir-del">×</button>
+    </div>
+    <div class="ir-calc">
+      <div class="ir-f"><label>幾藍</label><input class="baskets" type="number" inputmode="decimal" placeholder="0" value="${baskets||''}"></div>
+      <div class="ir-f"><label>公斤數</label><input class="kgs" type="number" inputmode="decimal" placeholder="自動換算" value="${initKg||''}"></div>
+      <div class="ir-f"><label>總金額</label><input class="total" type="number" inputmode="decimal" placeholder="0" value="${total||''}"></div>
+    </div>
+    <div class="ir-total">每藍 18公斤・<span class="kg-display">${initKg||0} 公斤</span>・單位成本 <b class="lt">—</b></div>
+  `;
+  function upd(){
+    const b=parseFloat(r.querySelector('.baskets').value)||0;
+    const t=parseFloat(r.querySelector('.total').value)||0;
+    const kg=parseFloat(r.querySelector('.kgs').value)||(b*KG_PER_BASKET);
+    r.querySelector('.kg-display').textContent=kg+' 公斤';
+    r.querySelector('.lt').textContent=kg>0?'$'+(t/kg).toFixed(2)+'/公斤':'—';
+  }
+  function basketChanged(){
+    const b=parseFloat(r.querySelector('.baskets').value)||0;
+    r.querySelector('.kgs').value=b?b*KG_PER_BASKET:'';
+    upd();
+  }
+  r.querySelector('.ir-del').onclick=()=>r.remove();
+  r.querySelector('.baskets').oninput=basketChanged;
+  r.querySelector('.kgs').oninput=upd;
+  r.querySelector('.total').oninput=upd;
+  container.appendChild(r); upd(); return r;
+}
+
+function readChickenPR(container){
+  const items=[];
+  container.querySelectorAll('.ir').forEach(r=>{
+    const name=r.querySelector('.name').value.trim();
+    const baskets=parseFloat(r.querySelector('.baskets').value)||0;
+    const kgsInput=r.querySelector('.kgs');
+    const kg=parseFloat(kgsInput.value)||(baskets*KG_PER_BASKET);
+    const total=parseFloat(r.querySelector('.total').value)||0;
+    if(name||baskets||total) items.push({name:name||'未命名',baskets,qty:kg,unit:'公斤',total,unitCost:kg>0?total/kg:0});
+  });
+  return items;
+}
+
+function readPR(container){ const items=[]; container.querySelectorAll('.ir').forEach(r=>{ const name=r.querySelector('.name').value.trim(),qty=parseFloat(r.querySelector('.qty').value)||0,unit=r.querySelector('.unit').value.trim(),total=parseFloat(r.querySelector('.total').value)||0; if(name||qty||total) items.push({name:name||'未命名',qty,unit,total,unitCost:qty>0?total/qty:0}); }); return items; }
+
+// ── DAILY RECALC ──
+function recalcDaily(){
+  const rent=parseFloat(document.getElementById('d-rent').value)||0;
+  const hours=parseFloat(document.getElementById('d-hours').value)||0;
+  const floatG=readDenomGrid('float-grid');
+  const revG=readDenomGrid('revenue-grid');
+  document.getElementById('float-total').textContent=fmt(floatG.total);
+  document.getElementById('revenue-total').textContent=fmt(revG.total);
+  const cashRevenue=revG.total>0?revG.total-floatG.total:0;
+  document.getElementById('revenue-net').textContent=fmt(cashRevenue);
+
+  const uber=parseFloat(document.getElementById('d-uber').value)||0;
+  const panda=parseFloat(document.getElementById('d-panda').value)||0;
+  const linepay=parseFloat(document.getElementById('d-linepay').value)||0;
+  const platformRevenue=uber+panda+linepay;
+  document.getElementById('platform-sub').textContent=fmt(platformRevenue);
+  const revenue=cashRevenue+platformRevenue;
+  document.getElementById('revenue-grand-total').textContent=fmt(revenue);
+
+  const purchaseItems=readMeatDailyRows(document.getElementById('purchase-list'));
+  const diyItems=readMeatDailyRows(document.getElementById('diy-list'));
+  const opItems=readSR(document.getElementById('op-list'));
+  const purchaseCost=sumItems(purchaseItems);
+  const diyCost=sumItems(diyItems);
+
+  // fixed items from unit prices
+  // 炸物盆塑膠袋：每天5個，150個$284 → 每個$1.893
+  // 炸物盆襯紙：每天2張，每張$1
+  const bagPrice=Math.round((unitPrices['炸物盆塑膠袋']||0)*5);
+  const paperPrice=(unitPrices['炸物盆襯紙']||0)*2;
+  try{ document.getElementById('fixed-bag-cost').textContent=fmt(bagPrice); }catch(e){}
+  try{ document.getElementById('fixed-paper-cost').textContent=fmt(paperPrice); }catch(e){}
+  const fixedCost=bagPrice+paperPrice;
+
+  // auto-estimated packaging from revenue: every $100 → 1 紙袋 + 1 塑膠袋
+  const autoBagQty = revenue>0 ? Math.ceil(revenue/100) : 0;
+  const autoPlasticQty = autoBagQty;
+  // use lowest plastic bag price (半斤袋 preferred, else 一斤袋)
+  const plasticUnitPrice = unitPrices['一斤塑膠袋']||unitPrices['半斤塑膠袋']||unitPrices['塑膠袋']||0;
+  const autoBagCost = Math.round(autoBagQty*(unitPrices['紙袋']||0));
+  const autoPlasticCost = Math.round(autoPlasticQty*plasticUnitPrice);
+  const autoPkgCost = autoBagCost+autoPlasticCost;
+  try{ document.getElementById('auto-bag-qty').textContent=autoBagQty+'個'; }catch(e){}
+  try{ document.getElementById('auto-bag-cost').textContent=fmt(autoBagCost); }catch(e){}
+  try{ document.getElementById('auto-plastic-qty').textContent=autoPlasticQty+'個'; }catch(e){}
+  try{ document.getElementById('auto-plastic-cost').textContent=fmt(autoPlasticCost); }catch(e){}
+  try{ document.getElementById('pkg-sub').textContent=fmt(autoPkgCost+fixedCost); }catch(e){}
+
+  const totalCogs=purchaseCost+diyCost;
+  const opCost=sumItems(opItems)+fixedCost+autoPkgCost;
+  const totalCost=rent+totalCogs+opCost;
+  const gross=revenue-totalCogs;
+  const net=gross-rent-opCost;
+  const margin=revenue>0?net/revenue:0;
+  const hourly=hours>0?net/hours:0;
+
+  document.getElementById('purchase-sub').textContent=fmt(purchaseCost);
+  document.getElementById('diy-sub').textContent=fmt(diyCost);
+  document.getElementById('cogs-total').textContent=fmt(totalCogs);
+  document.getElementById('op-sub').textContent=fmt(opCost);
+  const heroEl=document.getElementById('hero-net');
+  heroEl.textContent=fmt(net); heroEl.className='hero-num '+(net>=0?'pos':'neg');
+  document.getElementById('hero-sub').textContent=`毛利 ${fmt(gross)}・淨利率 ${pct(margin)}・時薪 ${fmt(hourly)}`;
+  document.getElementById('stat-gross').textContent=fmt(gross);
+  document.getElementById('stat-margin').textContent=pct(margin);
+  document.getElementById('stat-hourly').textContent=fmt(hourly);
+  document.getElementById('stat-cost').textContent=fmt(totalCost);
+
+  // ── 計算明細更新 ──
+  const _s=(id,val)=>{ try{ document.getElementById(id).textContent=val; }catch(e){} };
+  const _d=(id,show)=>{ try{ document.getElementById(id).style.display=show?'':'none'; }catch(e){} };
+  _s('cd-cash', fmt(cashRevenue));
+  _s('cd-uber-amt', fmt(uber)); _d('cd-uber-row', uber>0);
+  _s('cd-panda-amt', fmt(panda)); _d('cd-panda-row', panda>0);
+  _s('cd-linepay-amt', fmt(linepay)); _d('cd-linepay-row', linepay>0);
+  _s('cd-revenue', fmt(revenue));
+  _s('cd-purchase', fmt(purchaseCost));
+  _s('cd-diy', fmt(diyCost));
+  _s('cd-gross', fmt(gross));
+  _s('cd-gross2', fmt(gross));
+  _s('cd-rent', fmt(rent)); _d('cd-rent-row', rent>0);
+  _s('cd-pkg', fmt(fixedCost+autoPkgCost));
+  _s('cd-op', fmt(sumItems(opItems)));
+  _s('cd-net', fmt(net));
+  try{ document.getElementById('cd-gross').className=gross>=0?'pos':'neg'; }catch(e){}
+  try{ document.getElementById('cd-gross2').className=gross>=0?'pos':'neg'; }catch(e){}
+  try{ document.getElementById('cd-net').className=net>=0?'pos':'neg'; }catch(e){}
+  return {rent,hours,revenue,cashRevenue,uber,panda,linepay,platformRevenue,revenueCash:revG.items,floatCash:floatG.items,floatTotal:floatG.total,closingCash:revG.total,purchaseItems,diyItems,opItems,purchaseCost,diyCost,totalCogs,opCost,fixedCost,autoPkgCost,autoBagQty,autoPlasticQty,totalCost,gross,net,margin,hourly};
+}
+
+function recalcDenoms(){ recalcDaily(); }
+
+// ── CHIP → LIST WIRING ──
+function wireChips(selector, listId, rowFn){
+  document.querySelectorAll(selector).forEach(chip=>{
+    chip.addEventListener('click',()=>{
+      const list=document.getElementById(listId);
+      const r=rowFn(list, chip.dataset.name||chip.textContent,'','','');
+      const price=r.querySelector&&r.querySelector('.price');
+      if(price) price.focus();
+      recalcDaily();
+    });
+  });
+}
+function wireAddBtn(selector, listId, rowFn){
+  document.querySelectorAll(selector).forEach(btn=>{
+    btn.addEventListener('click',()=>{ const list=document.getElementById(listId); rowFn(list); recalcDaily(); });
+  });
+}
+
+// ── DAILY SAVE ──
+let editingId=null;
+document.getElementById('save-daily').addEventListener('click',()=>{
+  const calc=recalcDaily();
+  const date=document.getElementById('d-date').value||todayStr();
+  const loc=document.getElementById('d-loc').value.trim();
+  if(!calc.closingCash&&!calc.purchaseCost&&!calc.diyCost&&!calc.rent&&!calc.opCost){ toast('請至少填入一項數據'); return; }
+  const rec={id:editingId||uid(),date,location:loc,hours:calc.hours,rent:calc.rent,purchaseItems:calc.purchaseItems,diyItems:calc.diyItems,opItems:calc.opItems,revenueCash:calc.revenueCash,floatCash:calc.floatCash,closingCash:calc.closingCash,floatTotal:calc.floatTotal,cashRevenue:calc.cashRevenue,uber:calc.uber,panda:calc.panda,linepay:calc.linepay,platformRevenue:calc.platformRevenue,revenue:calc.revenue,purchaseCost:calc.purchaseCost,diyCost:calc.diyCost,totalCogs:calc.totalCogs,opCost:calc.opCost,fixedCost:calc.fixedCost,gross:calc.gross,net:calc.net};
+  if(editingId){ const i=dailyRecs.findIndex(r=>r.id===editingId); if(i>-1) dailyRecs[i]=rec; editingId=null; } else { dailyRecs.push(rec); }
+  // ── AUTO DEDUCT MEAT FROM INVENTORY ──
+  // if editing, first reverse old deduction
+  if(editingId){
+    const oldRec=dailyRecs.find(r=>r.id===editingId);
+    if(oldRec) deductMeatFromInventory(oldRec, -1);
+  }
+  deductMeatFromInventory(rec, +1);
+  saveInventory();
+
+  saveDaily(); toast('已儲存今日記錄，庫存已自動扣除'); resetDaily(); renderAnalysis(); renderRecentRecs();
+});
+
+document.getElementById('reset-daily').addEventListener('click', resetDaily);
+
+function resetDaily(){
+  document.getElementById('d-date').value=todayStr();
+  document.getElementById('d-loc').value='';
+  document.getElementById('d-hours').value='';
+  document.getElementById('d-rent').value='';
+  clearDenomGrid('float-grid'); clearDenomGrid('revenue-grid');
+  document.getElementById('d-uber').value='';
+  document.getElementById('d-panda').value='';
+  document.getElementById('d-linepay').value='';
+  document.getElementById('purchase-list').innerHTML='';
+  document.getElementById('diy-list').innerHTML='';
+  document.getElementById('op-list').innerHTML='';
+  makeMeatDailyRow(document.getElementById('purchase-list'));
+  recalcDaily();
+}
+
+function renderRecentRecs(){
+  const el=document.getElementById('recent-rec-list');
+  if(!el) return;
+  const sorted=[...dailyRecs].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+  if(!sorted.length){ el.innerHTML='<div class="empty" style="padding:16px 0;">尚無記錄</div>'; return; }
+  el.innerHTML='';
+  sorted.forEach(r=>{
+    const h=r.hours>0?r.net/r.hours:0;
+    const card=document.createElement('div');
+    card.className='rec'; card.style.marginBottom='8px';
+    card.innerHTML=`<div class="rec-top"><div><span class="rec-date">${r.date}</span><span class="rec-loc">${r.location?escH(r.location):''}</span></div><div class="rec-net-wrap"><span class="rec-net-lbl">淨利</span><div class="rec-net ${r.net>=0?'pos':'neg'}">${fmt(r.net)}</div></div></div><div class="rec-meta"><span>銷售額 ${fmt(r.revenue)}</span><span>毛利 ${fmt(r.gross)}</span><span>時薪 ${fmt(h)}</span></div><div class="rec-actions"><button class="rec-edit-btn" data-id="${r.id}">✏️ 編輯</button><button class="rec-del-btn danger" data-id="${r.id}">刪除</button></div>`;
+    card.querySelector('.rec-edit-btn').onclick=()=>openEdit(r.id);
+    card.querySelector('.rec-del-btn').onclick=()=>{ if(confirm('確定刪除這筆記錄？')){ dailyRecs=dailyRecs.filter(x=>x.id!==r.id); saveDaily(); renderRecentRecs(); renderAnalysis(); toast('已刪除'); } };
+    el.appendChild(card);
+  });
+}
+
+function openEdit(id){
+  const r=dailyRecs.find(x=>x.id===id); if(!r) return;
+  editingId=id;
+  switchTab('daily');
+  document.getElementById('d-date').value=r.date;
+  document.getElementById('d-loc').value=r.location||'';
+  document.getElementById('d-hours').value=r.hours||'';
+  document.getElementById('d-rent').value=r.rent||'';
+  clearDenomGrid('float-grid'); if(r.floatCash) fillDenomGrid('float-grid',r.floatCash);
+  clearDenomGrid('revenue-grid'); if(r.revenueCash) fillDenomGrid('revenue-grid',r.revenueCash);
+  document.getElementById('d-uber').value=r.uber||'';
+  document.getElementById('d-panda').value=r.panda||'';
+  document.getElementById('d-linepay').value=r.linepay||'';
+  document.getElementById('purchase-list').innerHTML='';
+  document.getElementById('diy-list').innerHTML='';
+  document.getElementById('op-list').innerHTML='';
+  (r.purchaseItems||[]).forEach(it=>makeMeatDailyRow(document.getElementById('purchase-list'),it.name,it.baskets,it.qty,it.unitPrice));
+  (r.diyItems||[]).forEach(it=>{
+    if(it.name==='醃料（攤算）') makeIR(document.getElementById('diy-list'),it.name,it.unitPrice||it.price,it.qty,it.unit);
+    else makeMeatDailyRow(document.getElementById('diy-list'),it.name,it.baskets,it.qty,it.unitPrice);
+  });
+  (r.opItems||[]).forEach(it=>makeSR(document.getElementById('op-list'),it.name,it.amount));
+  recalcDaily(); window.scrollTo({top:0,behavior:'smooth'}); toast('編輯模式：修改後儲存');
+}
+
+// ── PURCHASE SAVE ──
+document.getElementById('p-type').addEventListener('change',()=>{
+  const v=document.getElementById('p-type').value;
+  document.getElementById('p-chicken-purchased').style.display=v==='chicken-purchased'?'':'none';
+  document.getElementById('p-chicken-raw').style.display=v==='chicken-raw'?'':'none';
+  document.getElementById('p-marinade').style.display=v==='marinade'?'':'none';
+  document.getElementById('p-supplies').style.display=v==='supplies'?'':'none';
+});
+
+function wirePurchaseChips(cls,listId){ document.querySelectorAll('.'+cls).forEach(c=>c.addEventListener('click',()=>makePR(document.getElementById(listId),c.dataset.name))); }
+function wirePurchaseAdd(cls,listId){ document.querySelectorAll('.'+cls).forEach(b=>b.addEventListener('click',()=>makePR(document.getElementById(listId)))); }
+// 雞肉專用：藍為單位
+function wireChickenChips(cls,listId){ document.querySelectorAll('.'+cls).forEach(c=>c.addEventListener('click',()=>makeChickenPR(document.getElementById(listId),c.dataset.name))); }
+function wireChickenAdd(cls,listId){ document.querySelectorAll('.'+cls).forEach(b=>b.addEventListener('click',()=>makeChickenPR(document.getElementById(listId)))); }
+wireChickenChips('p-meat-chip','p-meat-list'); wireChickenAdd('p-meat-add','p-meat-list');
+wireChickenChips('p-raw-chip','p-raw-list'); wireChickenAdd('p-raw-add','p-raw-list');
+wirePurchaseChips('p-mar-chip','p-mar-list'); wirePurchaseAdd('p-mar-add','p-mar-list');
+
+document.getElementById('cancel-purchase-edit').addEventListener('click', ()=>{ resetPurchaseForm(); toast('已取消編輯'); });
+// 耗材：有per屬性的chip自動換算個數
+document.querySelectorAll('.p-sup-chip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    const list=document.getElementById('p-sup-list');
+    const unit=c.dataset.unit||'個';
+    const per=c.dataset.per||'';
+    const hint=c.dataset.hint||'';
+    const r=makePR(list, c.dataset.name, '', unit, '');
+    if(hint){
+      const hintEl=document.createElement('div');
+      hintEl.style.cssText='font-size:11px;color:var(--faint);margin-top:4px;padding:0 2px;';
+      hintEl.textContent='💡 '+hint;
+      // insert after ir-total
+      const irTotal=r.querySelector('.ir-total');
+      irTotal.parentNode.insertBefore(hintEl, irTotal.nextSibling);
+    }
+    // pre-fill unit field
+    const unitInput=r.querySelector('.unit');
+    if(unitInput) unitInput.value=unit;
+  });
+});
+document.querySelectorAll('.p-sup-add').forEach(b=>b.addEventListener('click',()=>makePR(document.getElementById('p-sup-list'))));
+
+// ── PURCHASE EDIT STATE ──
+let editingPurchaseId = null;
+
+function applyPurchaseToInventory(rec, multiplier){
+  // multiplier: +1 = add, -1 = reverse
+  const {type, items, date} = rec;
+  if(type==='chicken-purchased'){
+    items.forEach(it=>{
+      if(!it.qty) return;
+      const exist=inventory.purchasedStock.find(s=>s.name===it.name);
+      if(exist){ exist.remaining+=it.qty*multiplier; exist.totalQty=(exist.totalQty||0)+it.qty*multiplier; exist.remaining=Math.max(0,exist.remaining); }
+      else if(multiplier>0) inventory.purchasedStock.push({id:uid(),name:it.name,unit:'公斤',totalQty:it.qty,remaining:it.qty,date});
+    });
+  } else if(type==='chicken-raw'){
+    items.forEach(it=>{
+      if(!it.qty) return;
+      const exist=inventory.rawMeat.find(s=>s.name===it.name);
+      if(exist){ exist.qty=Math.max(0,(exist.qty||0)+it.qty*multiplier); exist.lastUpdated=date; }
+      else if(multiplier>0) inventory.rawMeat.push({name:it.name,unit:'公斤',qty:it.qty,lastUpdated:date});
+    });
+  } else if(type==='supplies'){
+    items.forEach(it=>{
+      if(!it.qty) return;
+      const exist=inventory.supplies.find(s=>s.name===it.name);
+      if(exist){ exist.qty=Math.max(0,(exist.qty||0)+it.qty*multiplier); exist.lastUpdated=date; }
+      else if(multiplier>0) inventory.supplies.push({name:it.name,unit:it.unit||'個',qty:it.qty,lastUpdated:date});
+    });
+  } else if(type==='marinade'){
+    items.forEach(it=>{
+      if(!it.qty) return;
+      const exist=inventory.marinade.find(s=>s.name===it.name);
+      if(exist){ exist.qty=Math.max(0,(exist.qty||0)+it.qty*multiplier); exist.lastUpdated=date; }
+      else if(multiplier>0) inventory.marinade.push({name:it.name,unit:it.unit||'公斤',qty:it.qty,lastUpdated:date});
+    });
+  }
+  saveInventory();
+}
+
+function loadPurchaseIntoForm(rec){
+  editingPurchaseId = rec.id;
+  document.getElementById('p-date').value = rec.date;
+  document.getElementById('p-type').value = rec.type;
+  document.getElementById('p-note').value = rec.note||'';
+  // trigger type change to show correct panel
+  document.getElementById('p-type').dispatchEvent(new Event('change'));
+  // clear all lists
+  ['p-meat-list','p-raw-list','p-mar-list','p-sup-list'].forEach(id=>document.getElementById(id).innerHTML='');
+  // fill items
+  const isChicken = rec.type==='chicken-purchased'||rec.type==='chicken-raw';
+  const listId = rec.type==='chicken-purchased'?'p-meat-list': rec.type==='chicken-raw'?'p-raw-list': rec.type==='marinade'?'p-mar-list':'p-sup-list';
+  const list = document.getElementById(listId);
+  if(isChicken){
+    rec.items.forEach(it=>makeChickenPR(list, it.name, it.baskets||'', it.total||''));
+  } else {
+    rec.items.forEach(it=>makePR(list, it.name, it.qty||'', it.unit||'', it.total||''));
+  }
+  // update save button label
+  document.getElementById('save-purchase').textContent='儲存修改';
+  document.getElementById('cancel-purchase-edit').style.display='block';
+  // scroll to top of purchase tab
+  window.scrollTo({top:0, behavior:'smooth'});
+  toast('編輯模式：修改後按「儲存修改」');
+}
+
+function resetPurchaseForm(){
+  editingPurchaseId=null;
+  document.getElementById('p-date').value=todayStr();
+  document.getElementById('p-note').value='';
+  ['p-meat-list','p-raw-list','p-mar-list','p-sup-list'].forEach(id=>document.getElementById(id).innerHTML='');
+  document.getElementById('save-purchase').textContent='儲存進貨記錄';
+  document.getElementById('cancel-purchase-edit').style.display='none';
+}
+
+document.getElementById('save-purchase').addEventListener('click',()=>{
+  const type=document.getElementById('p-type').value;
+  const date=document.getElementById('p-date').value||todayStr();
+  const note=document.getElementById('p-note').value.trim();
+  let items=[];
+  if(type==='chicken-purchased') items=readChickenPR(document.getElementById('p-meat-list'));
+  else if(type==='chicken-raw') items=readChickenPR(document.getElementById('p-raw-list'));
+  else if(type==='marinade') items=readPR(document.getElementById('p-mar-list'));
+  else items=readPR(document.getElementById('p-sup-list'));
+  if(!items.length){ toast('請新增至少一項品項'); return; }
+
+  // update unit prices
+  items.forEach(it=>{ if(it.unitCost>0) unitPrices[it.name]=it.unitCost; });
+
+  // 耗材/醃料進貨自動加入月支出；肉品類（外購醃製品／自製生雞肉）只計入庫存，不計入月固定支出
+  function addToMonthly(rec){
+    const mid='p-'+rec.id;
+    monthlyRecs=monthlyRecs.filter(r=>r.id!==mid); // 先移除舊的（若為重新編輯或類型已變更）
+    const isMeat = rec.type==='chicken-purchased'||rec.type==='chicken-raw';
+    if(isMeat){ saveMonthly(); return; }
+    const total=rec.items.reduce((s,i)=>s+(i.total||0),0);
+    if(!total) return;
+    const typeLabel={'supplies':'耗材進貨','marinade':'醃料進貨'};
+    const mRec={
+      id:mid, date:rec.date, month:rec.date.slice(0,7),
+      name: rec.items.map(i=>i.name).join('、')+(rec.note?`（${rec.note}）`:''),
+      category: typeLabel[rec.type]||'進貨',
+      amount: total, note:'自進貨記錄自動新增'
+    };
+    monthlyRecs.push(mRec);
+    saveMonthly();
+  }
+
+  if(editingPurchaseId){
+    const oldRec=purchaseRecs.find(r=>r.id===editingPurchaseId);
+    if(oldRec) applyPurchaseToInventory(oldRec, -1);
+    const newRec={id:editingPurchaseId, date, type, items, note};
+    applyPurchaseToInventory(newRec, +1);
+    addToMonthly(newRec);
+    const idx=purchaseRecs.findIndex(r=>r.id===editingPurchaseId);
+    if(idx>-1) purchaseRecs[idx]=newRec;
+    toast('已更新進貨記錄，庫存及月支出已同步');
+  } else {
+    const rec={id:uid(), date, type, items, note};
+    applyPurchaseToInventory(rec, +1);
+    addToMonthly(rec);
+    purchaseRecs.push(rec);
+    toast('已儲存進貨記錄，庫存及月支出已自動更新');
+  }
+
+  savePurchase();
+  resetPurchaseForm();
+  renderPurchaseHistory(); recalcDaily();
+});
+
+function renderPurchaseHistory(){
+  const el=document.getElementById('p-history-list');
+  const sorted=[...purchaseRecs].sort((a,b)=>b.date.localeCompare(a.date));
+  if(!sorted.length){ el.innerHTML='<div class="empty">尚未有進貨記錄</div>'; return; }
+  const typeNames={'chicken-purchased':'外購醃製品','chicken-raw':'自製生雞肉','marinade':'醃料進貨','supplies':'耗材進貨'};
+  el.innerHTML='';
+  sorted.slice(0,30).forEach(r=>{
+    const card=document.createElement('div'); card.className='purchase-rec';
+    const total=r.items.reduce((s,i)=>s+(i.total||0),0);
+    const isChicken=r.type==='chicken-purchased'||r.type==='chicken-raw';
+    card.innerHTML=`
+      <div class="purchase-date">${r.date}</div>
+      <div class="purchase-title">${typeNames[r.type]||r.type}</div>
+      <div class="purchase-meta">${r.items.map(i=>isChicken&&i.baskets?`${i.name} ${i.baskets}藍(${i.qty}公斤) $${i.total}`:`${i.name} ${i.qty}${i.unit||''} $${i.total||0}`).join('・')}</div>
+      ${r.note?`<div style="font-size:12px;color:var(--faint);margin-top:4px;">備註：${escH(r.note)}</div>`:''}
+      ${total?`<div class="cost-highlight"><div class="v">${fmt(total)}</div><div class="l">本次進貨總金額</div></div>`:''}
+      <div class="rec-actions" style="margin-top:8px;">
+        <button class="p-edit-btn" data-id="${r.id}">✏️ 編輯</button>
+        <button class="p-del-btn danger" data-id="${r.id}">刪除</button>
+      </div>`;
+    card.querySelector('.p-edit-btn').onclick=()=>{ loadPurchaseIntoForm(r); switchTab('purchase'); window.scrollTo({top:0,behavior:'smooth'}); };
+    card.querySelector('.p-del-btn').onclick=()=>{
+      if(!confirm('確定刪除這筆進貨記錄？\n⚠️ 庫存數量也會同步扣回')) return;
+      applyPurchaseToInventory(r, -1);
+      purchaseRecs=purchaseRecs.filter(x=>x.id!==r.id);
+      savePurchase(); renderPurchaseHistory(); toast('已刪除，庫存已扣回');
+    };
+    el.appendChild(card);
+  });
+}
+
+// ── TABS ──
+function switchTab(id){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('t-'+id).classList.add('active');
+  document.getElementById('s-'+id).classList.add('active');
+  if(id==='analysis') renderAnalysis();
+  if(id==='inventory'){ loadInventory(); renderInventory(); }
+  if(id==='monthly') renderMonthlyRecs();
+}
+document.getElementById('t-daily').onclick=()=>switchTab('daily');
+document.getElementById('t-purchase').onclick=()=>switchTab('purchase');
+document.getElementById('t-monthly').onclick=()=>switchTab('monthly');
+document.getElementById('t-inventory').onclick=()=>switchTab('inventory');
+document.getElementById('t-analysis').onclick=()=>switchTab('analysis');
+
+// ── ANALYSIS PANELS ──
+document.querySelectorAll('.atab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.atab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.analysis-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.panel).classList.add('active');
+    renderAnalysis();
+  });
+});
+
+// filter range
+let currentRange='week';
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active'); currentRange=btn.dataset.range; renderAnalysis();
+  });
+});
+
+function inRange(dateStr){
+  if(currentRange==='all') return true;
+  const d=new Date(dateStr+'T00:00:00'),now=new Date();
+  if(currentRange==='week'){ const s=new Date(now); s.setDate(now.getDate()-now.getDay()); s.setHours(0,0,0,0); return d>=s; }
+  return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();
+}
+
+let charts={};
+function destroyChart(id){ try{ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }catch(e){} }
+
+function safeChart(id, config){
+  try{
+    destroyChart(id);
+    const el=document.getElementById(id);
+    if(!el) return;
+    charts[id]=new Chart(el, config);
+  }catch(e){ console.warn('Chart error:',id,e.message); }
+}
+
+function renderAnalysis(){
+  loadMonthly(); // ensure latest monthly data
+  const filtered=dailyRecs.filter(r=>inRange(r.date)).sort((a,b)=>a.date.localeCompare(b.date));
+  const sorted=[...filtered].sort((a,b)=>b.date.localeCompare(a.date));
+
+  // summary
+  const totalRev=filtered.reduce((s,r)=>s+(r.revenue||0),0);
+  const totalNet=filtered.reduce((s,r)=>s+(r.net||0),0);
+  const totalHours=filtered.reduce((s,r)=>s+(r.hours||0),0);
+
+  // monthly expenses for the same period
+  const monthlyExp=monthlyRecs.filter(r=>inRange(r.date||r.month+'-01')).reduce((s,r)=>s+(r.amount||0),0);
+  const netAfterMonthly=totalNet-monthlyExp;
+
+  try{ document.getElementById('a-total-revenue').textContent=fmt(totalRev); }catch(e){}
+  try{ document.getElementById('a-total-net').textContent=fmt(totalNet); }catch(e){}
+  try{ document.getElementById('a-monthly-expense').textContent=fmt(monthlyExp); }catch(e){}
+  try{
+    const el=document.getElementById('a-net-after-monthly');
+    el.textContent=fmt(netAfterMonthly);
+    el.style.color=netAfterMonthly>=0?'var(--green)':'var(--red)';
+  }catch(e){}
+  try{ document.getElementById('a-avg-day').textContent=fmt(filtered.length?totalNet/filtered.length:0); }catch(e){}
+  try{ document.getElementById('a-avg-hour').textContent=fmt(totalHours?totalNet/totalHours:0); }catch(e){}
+
+  // profit chart
+  safeChart('chart-profit',{type:'bar',data:{labels:filtered.map(r=>r.date.slice(5)),datasets:[{data:filtered.map(r=>r.net||0),backgroundColor:filtered.map(r=>(r.net||0)>=0?'#6db56d':'#d96b4a'),borderRadius:4,maxBarThickness:28}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},scales:{x:{ticks:{color:'#6a5c4a',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#6a5c4a',font:{size:10},callback:v=>fmt(v)},grid:{color:'#38302640'}}}}});
+
+  // rec list
+  try{
+    const recList=document.getElementById('a-rec-list'); recList.innerHTML='';
+    if(!sorted.length){ recList.innerHTML='<div class="empty">這段期間沒有記錄</div>'; }
+    sorted.forEach(r=>{
+      const card=document.createElement('div'); card.className='rec';
+      const h=r.hours&&r.hours>0?r.net/r.hours:0;
+      card.innerHTML=`<div class="rec-top"><div><span class="rec-date">${r.date}</span><span class="rec-loc">${r.location?escH(r.location):''}</span></div><div class="rec-net-wrap"><span class="rec-net-lbl">當日淨利</span><div class="rec-net ${(r.net||0)>=0?'pos':'neg'}">${fmt(r.net)}</div></div></div><div class="rec-meta"><span>銷售額 ${fmt(r.revenue)}</span><span>毛利 ${fmt(r.gross)}</span><span>時薪 ${fmt(h)}</span></div><div class="rec-actions"><button class="edit-btn" data-id="${r.id}">編輯</button><button class="del-btn danger" data-id="${r.id}">刪除</button></div>`;
+      card.querySelector('.edit-btn').onclick=()=>{ openEdit(r.id); switchTab('daily'); };
+      card.querySelector('.del-btn').onclick=()=>{ if(confirm('確定刪除這筆記錄？')){ dailyRecs=dailyRecs.filter(x=>x.id!==r.id); saveDaily(); renderAnalysis(); toast('已刪除'); } };
+      recList.appendChild(card);
+    });
+  }catch(e){ console.warn('recList error:',e.message); }
+
+  // compare chart
+  const allFiltered=dailyRecs.filter(r=>inRange(r.date));
+  const totalPurchase=allFiltered.reduce((s,r)=>s+(r.purchaseCost||0),0);
+  const totalDiy=allFiltered.reduce((s,r)=>s+(r.diyCost||0),0);
+  try{ document.getElementById('a-purchase-total').textContent=fmt(totalPurchase); }catch(e){}
+  try{ document.getElementById('a-diy-total').textContent=fmt(totalDiy); }catch(e){}
+  safeChart('chart-compare',{type:'doughnut',data:{labels:['外購醃製','自製醃製'],datasets:[{data:[totalPurchase||0,totalDiy||0],backgroundColor:['#5b9bd5','#e8960c'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#a89880',font:{size:12}}}}}});
+
+  // supplies
+  try{
+    const supMap={};
+    allFiltered.forEach(r=>{ (r.opItems||[]).forEach(it=>{ supMap[it.name]=(supMap[it.name]||0)+(it.amount||0); }); });
+    const supList=document.getElementById('a-supply-list'); supList.innerHTML='';
+    Object.entries(supMap).sort((a,b)=>b[1]-a[1]).forEach(([name,amt])=>{
+      const row=document.createElement('div'); row.className='compare-row';
+      row.innerHTML=`<span>${escH(name)}</span><b>${fmt(amt)}</b>`;
+      supList.appendChild(row);
+    });
+    if(!Object.keys(supMap).length) supList.innerHTML='<div class="empty">尚無耗材記錄</div>';
+  }catch(e){ console.warn('supplies error:',e.message); }
+
+  // efficiency
+  try{
+    const bestDay=sorted[0];
+    document.getElementById('a-best-day').textContent=bestDay?`${fmt(bestDay.net)} (${bestDay.date.slice(5)})`:'—';
+    const bestHour=sorted.reduce((best,r)=>{ const h=r.hours>0?r.net/r.hours:0; return h>best?h:best; },0);
+    document.getElementById('a-best-hour').textContent=fmt(bestHour);
+    const avgMargin=filtered.length?filtered.reduce((s,r)=>s+(r.revenue>0?r.net/r.revenue:0),0)/filtered.length:0;
+    document.getElementById('a-avg-margin').textContent=pct(avgMargin);
+    document.getElementById('a-total-hours').textContent=(totalHours||0).toFixed(1)+'h';
+  }catch(e){ console.warn('efficiency error:',e.message); }
+
+  // hourly chart
+  safeChart('chart-hourly',{type:'line',data:{labels:filtered.map(r=>r.date.slice(5)),datasets:[{data:filtered.map(r=>r.hours>0?Math.round(r.net/r.hours):0),borderColor:'#e8960c',backgroundColor:'#e8960c22',tension:.3,pointRadius:3,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)+'/hr'}}},scales:{x:{ticks:{color:'#6a5c4a',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#6a5c4a',font:{size:10},callback:v=>fmt(v)},grid:{color:'#38302640'}}}}});
+
+  // location
+  try{
+    const locMap={};
+    allFiltered.forEach(r=>{ if(r.location){ if(!locMap[r.location]) locMap[r.location]={net:0,count:0}; locMap[r.location].net+=(r.net||0); locMap[r.location].count++; } });
+    const locList=document.getElementById('a-location-list'); locList.innerHTML='';
+    if(!Object.keys(locMap).length){ locList.innerHTML='<div class="empty">記錄地點後顯示各地點分析</div>'; }
+    Object.entries(locMap).sort((a,b)=>b[1].net-a[1].net).forEach(([loc,v])=>{
+      const row=document.createElement('div'); row.className='compare-row';
+      row.innerHTML=`<div><b>${escH(loc)}</b><div style="font-size:11px;color:var(--faint)">${v.count}天</div></div><div style="text-align:right"><b style="color:var(--green)">${fmt(v.net)}</b><div style="font-size:11px;color:var(--faint)">平均 ${fmt(v.count?v.net/v.count:0)}/天</div></div>`;
+      locList.appendChild(row);
+    });
+  }catch(e){ console.warn('location error:',e.message); }
+}
+
+// ── BACKUP ──
+document.getElementById('btn-export').onclick=()=>{
+  const data={app:'qy_v2',exportedAt:new Date().toISOString(),dailyRecs,purchaseRecs,unitPrices,inventory,monthlyRecs};
+  document.getElementById('export-text').value=JSON.stringify(data);
+  document.getElementById('export-area').style.display='block';
+  document.getElementById('import-area').style.display='none';
+};
+document.getElementById('btn-import-toggle').onclick=()=>{
+  document.getElementById('import-area').style.display='block';
+  document.getElementById('export-area').style.display='none';
+};
+document.getElementById('btn-copy').onclick=async()=>{
+  const text=document.getElementById('export-text').value;
+  try{ await navigator.clipboard.writeText(text); toast('已複製，貼到 LINE 儲存'); }
+  catch(e){ document.getElementById('export-text').select(); toast('請手動選取後複製'); }
+};
+document.getElementById('btn-restore').onclick=()=>{
+  const raw=document.getElementById('import-text').value.trim();
+  if(!raw){ toast('請先貼上備份文字'); return; }
+  let parsed; try{ parsed=JSON.parse(raw); }catch(e){ toast('⚠️ 格式錯誤，請完整複製貼上'); return; }
+  if(parsed.dailyRecs){ const map={}; dailyRecs.forEach(r=>map[r.id]=r); parsed.dailyRecs.forEach(r=>map[r.id]=r); dailyRecs=Object.values(map); saveDaily(); }
+  if(parsed.purchaseRecs){ const map={}; purchaseRecs.forEach(r=>map[r.id]=r); parsed.purchaseRecs.forEach(r=>map[r.id]=r); purchaseRecs=Object.values(map); }
+  if(parsed.unitPrices) Object.assign(unitPrices,parsed.unitPrices);
+  if(parsed.inventory) Object.assign(inventory,parsed.inventory);
+  savePurchase(); saveInventory();
+  if(parsed.monthlyRecs){ const map={}; monthlyRecs.forEach(r=>map[r.id]=r); parsed.monthlyRecs.forEach(r=>map[r.id]=r); monthlyRecs=Object.values(map); saveMonthly(); }
+  toast('還原成功！');
+  document.getElementById('import-text').value=''; document.getElementById('import-area').style.display='none';
+  renderPurchaseHistory(); renderAnalysis(); recalcDaily(); renderRecentRecs();
+};
+
+// ── WIRE DAILY CHIPS ──
+// 肉品chip（藍/公斤）
+document.querySelectorAll('.meat-daily-chip').forEach(chip=>{
+  chip.addEventListener('click',()=>{
+    const list=document.getElementById(chip.dataset.list);
+    const r=makeMeatDailyRow(list, chip.dataset.name);
+    r.querySelector('.baskets').focus();
+  });
+});
+document.querySelectorAll('.meat-daily-add').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const list=document.getElementById(btn.dataset.list);
+    makeMeatDailyRow(list);
+    recalcDaily();
+  });
+});
+// 醃料攤算仍用舊格式
+document.querySelectorAll('#chips-diy .chip:not(.meat-daily-chip)').forEach(chip=>{
+  chip.addEventListener('click',()=>{
+    const list=document.getElementById(chip.dataset.list);
+    makeIR(list, chip.dataset.name,'','','');
+    recalcDaily();
+  });
+});
+document.getElementById('d-uber').oninput=recalcDaily;
+document.getElementById('d-panda').oninput=recalcDaily;
+document.getElementById('d-linepay').oninput=recalcDaily;
+document.querySelectorAll('#chips-op-fuel .chip,#chips-op-transport .chip,#chips-op-season .chip,#chips-op-pkg .chip').forEach(chip=>{
+  chip.addEventListener('click',()=>{
+    const list=document.getElementById('op-list');
+    makeSR(list,chip.dataset.name||chip.textContent,'');
+    const last=list.querySelector('.sr:last-child .amt'); if(last) last.focus();
+    recalcDaily();
+  });
+});
+document.querySelectorAll('.add-btn[data-list]:not(.meat-daily-add)').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const list=document.getElementById(btn.dataset.list);
+    if(btn.dataset.list==='op-list') makeSR(list); else makeIR(list);
+    recalcDaily();
+  });
+});
+
+// ── MONTHLY EXPENSES ──
+const M_KEY = 'qy_monthly_v1';
+let monthlyRecs = [];
+let editingMonthlyId = null;
+let currentMonthFilter = '';
+
+function loadMonthly(){
+  try{ monthlyRecs=JSON.parse(localStorage.getItem(M_KEY)||'[]'); }catch(e){ monthlyRecs=[]; }
+}
+function saveMonthly(){ localStorage.setItem(M_KEY, JSON.stringify(monthlyRecs)); }
+
+function thisMonth(){ return new Date().toISOString().slice(0,7); }
+function prevMonth(){
+  const d=new Date(); d.setMonth(d.getMonth()-1);
+  return d.toISOString().slice(0,7);
+}
+
+function inMonthFilter(rec){
+  if(currentMonthFilter==='all') return true;
+  if(currentMonthFilter==='prev') return (rec.month||rec.date.slice(0,7))===prevMonth();
+  return (rec.month||rec.date.slice(0,7))===thisMonth();
+}
+
+function renderMonthlyRecs(){
+  loadMonthly();
+  const filtered=monthlyRecs.filter(r=>inMonthFilter(r)).sort((a,b)=>b.date.localeCompare(a.date));
+  const total=filtered.reduce((s,r)=>s+(r.amount||0),0);
+  try{ document.getElementById('m-total').textContent=fmt(total); }catch(e){}
+  try{ document.getElementById('m-count').textContent=filtered.length+'筆'; }catch(e){}
+
+  // category summary
+  const catMap={};
+  filtered.forEach(r=>{ catMap[r.category]=(catMap[r.category]||0)+(r.amount||0); });
+  try{
+    const el=document.getElementById('m-category-summary'); el.innerHTML='';
+    Object.entries(catMap).sort((a,b)=>b[1]-a[1]).forEach(([cat,amt])=>{
+      const row=document.createElement('div'); row.className='compare-row';
+      row.innerHTML=`<span>${escH(cat)}</span><b>${fmt(amt)}</b>`;
+      el.appendChild(row);
+    });
+  }catch(e){}
+
+  // rec list
+  try{
+    const el=document.getElementById('m-rec-list'); el.innerHTML='';
+    if(!filtered.length){ el.innerHTML='<div class="empty">這段期間沒有支出記錄</div>'; return; }
+    filtered.forEach(r=>{
+      const card=document.createElement('div'); card.className='rec';
+      card.innerHTML=`
+        <div class="rec-top">
+          <div><span class="rec-date">${r.date}</span><span class="rec-loc" style="margin-left:6px;color:var(--amber2);">${escH(r.category)}</span></div>
+          <div class="rec-net-wrap"><span class="rec-net-lbl">支出</span><div class="rec-net neg">${fmt(r.amount)}</div></div>
+        </div>
+        <div style="font-size:13px;color:var(--dim);margin-top:4px;">${escH(r.name)}${r.note?` <span style="color:var(--faint)">・${escH(r.note)}</span>`:''}</div>
+        <div class="rec-actions" style="margin-top:8px;">
+          <button class="m-edit-btn" data-id="${r.id}">✏️ 編輯</button>
+          <button class="m-del-btn danger" data-id="${r.id}">刪除</button>
+        </div>`;
+      card.querySelector('.m-edit-btn').onclick=()=>loadMonthlyIntoForm(r);
+      card.querySelector('.m-del-btn').onclick=()=>{
+        if(!confirm('確定刪除？')) return;
+        monthlyRecs=monthlyRecs.filter(x=>x.id!==r.id);
+        saveMonthly(); renderMonthlyRecs(); toast('已刪除');
+      };
+      el.appendChild(card);
+    });
+  }catch(e){}
+}
+
+function loadMonthlyIntoForm(r){
+  editingMonthlyId=r.id;
+  document.getElementById('m-date').value=r.date;
+  document.getElementById('m-month').value=r.month||r.date.slice(0,7);
+  document.getElementById('m-name').value=r.name;
+  document.getElementById('m-amount').value=r.amount;
+  document.getElementById('m-note').value=r.note||'';
+  // highlight category
+  document.querySelectorAll('.m-cat-chip').forEach(c=>c.style.background=c.dataset.name===r.category?'var(--amber)':'');
+  document.getElementById('m-save-btn').textContent='儲存修改';
+  document.getElementById('m-cancel-btn').style.display='block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function resetMonthlyForm(){
+  editingMonthlyId=null;
+  document.getElementById('m-date').value=todayStr();
+  document.getElementById('m-month').value=thisMonth();
+  document.getElementById('m-name').value='';
+  document.getElementById('m-amount').value='';
+  document.getElementById('m-note').value='';
+  document.querySelectorAll('.m-cat-chip').forEach(c=>c.style.background='');
+  document.getElementById('m-save-btn').textContent='儲存支出記錄';
+  document.getElementById('m-cancel-btn').style.display='none';
+}
+
+let selectedMonthCat='';
+document.querySelectorAll('.m-cat-chip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    selectedMonthCat=c.dataset.name;
+    document.getElementById('m-name').value=c.dataset.name;
+    document.querySelectorAll('.m-cat-chip').forEach(x=>x.style.background='');
+    c.style.background='var(--amber)'; c.style.color='#18140f';
+  });
+});
+
+document.getElementById('m-save-btn').addEventListener('click',()=>{
+  const date=document.getElementById('m-date').value||todayStr();
+  const month=document.getElementById('m-month').value||thisMonth();
+  const name=document.getElementById('m-name').value.trim();
+  const amount=parseFloat(document.getElementById('m-amount').value)||0;
+  const note=document.getElementById('m-note').value.trim();
+  const category=selectedMonthCat||name.split(' ')[0]||'其他';
+  if(!name||!amount){ toast('請填入項目名稱和金額'); return; }
+  const rec={id:editingMonthlyId||uid(), date, month, name, category, amount, note};
+  if(editingMonthlyId){
+    const i=monthlyRecs.findIndex(r=>r.id===editingMonthlyId);
+    if(i>-1) monthlyRecs[i]=rec;
+  } else {
+    monthlyRecs.push(rec);
+  }
+  saveMonthly(); resetMonthlyForm(); renderMonthlyRecs(); toast('已儲存');
+});
+
+document.getElementById('m-cancel-btn').addEventListener('click',()=>{ resetMonthlyForm(); toast('已取消'); });
+
+document.querySelectorAll('.m-range-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.m-range-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMonthFilter=btn.dataset.month;
+    renderMonthlyRecs();
+  });
+});
+
+// ── INVENTORY STORAGE ──
+const INV_KEY = 'qy_inventory_v2';
+let inventory = { diyBatches:[], purchasedStock:[], rawMeat:[], marinade:[], supplies:[], thresholds:{} };
+
+function loadInventory(){
+  try{ const d=JSON.parse(localStorage.getItem(INV_KEY)||'{}'); if(d.diyBatches) Object.assign(inventory,d); }catch(e){}
+  migrateMeatCategories();
+}
+
+// 一次性資料轉移：把舊的「翅腿」「二節翅」分開品項合併成「翅腿二節翅」，
+// 對應現在進貨／今日使用共用的名稱，讓庫存扣除能正確配對
+function migrateMeatCategories(){
+  let changed = false;
+  changed = mergeBatchEntries(inventory.purchasedStock, ['外購翅腿','外購二節翅'], '外購翅腿二節翅') || changed;
+  changed = mergeInvEntries(inventory.rawMeat, ['翅腿','二節翅'], '翅腿二節翅') || changed;
+  if(changed) saveInventory();
+}
+function mergeBatchEntries(arr, oldNames, newName){
+  if(!arr) return false;
+  const matches = arr.filter(s=>oldNames.includes(s.name));
+  if(!matches.length) return false;
+  const totalRemaining = matches.reduce((s,m)=>s+(m.remaining||0),0);
+  const totalQty = matches.reduce((s,m)=>s+(m.totalQty||m.remaining||0),0);
+  const earliestDate = matches.map(m=>m.date).filter(Boolean).sort()[0];
+  matches.forEach(m=>{ const idx=arr.indexOf(m); if(idx>-1) arr.splice(idx,1); });
+  const target = arr.find(s=>s.name===newName);
+  if(target){ target.remaining=Math.round(((target.remaining||0)+totalRemaining)*100)/100; target.totalQty=Math.round(((target.totalQty||0)+totalQty)*100)/100; }
+  else arr.push({id:uid(), name:newName, unit:'公斤', totalQty, remaining:totalRemaining, date:earliestDate||todayStr()});
+  return true;
+}
+function mergeInvEntries(arr, oldNames, newName){
+  if(!arr) return false;
+  const matches = arr.filter(s=>oldNames.includes(s.name));
+  if(!matches.length) return false;
+  const totalQty = matches.reduce((s,m)=>s+(m.qty||0),0);
+  const lastUpdated = matches.map(m=>m.lastUpdated).filter(Boolean).sort().pop();
+  matches.forEach(m=>{ const idx=arr.indexOf(m); if(idx>-1) arr.splice(idx,1); });
+  const target = arr.find(s=>s.name===newName);
+  if(target){ target.qty=Math.round(((target.qty||0)+totalQty)*100)/100; if(lastUpdated) target.lastUpdated=lastUpdated; }
+  else arr.push({name:newName, unit:'公斤', qty:totalQty, lastUpdated:lastUpdated||todayStr()});
+  const th1=inventory.thresholds[oldNames[0]]||0, th2=inventory.thresholds[oldNames[1]]||0;
+  if(th1||th2) inventory.thresholds[newName]=Math.max(th1,th2,inventory.thresholds[newName]||0);
+  oldNames.forEach(n=>delete inventory.thresholds[n]);
+  return true;
+}
+
+// deduct (or reverse) meat usage from inventory; multiplier +1=deduct, -1=restore
+function deductMeatFromInventory(rec, multiplier){
+  const today=rec.date||todayStr();
+  // purchased items → deduct from purchasedStock
+  (rec.purchaseItems||[]).forEach(it=>{
+    if(!it.qty) return;
+    const qty=it.qty*multiplier;
+    // find matching stock (by name)
+    let remaining=qty;
+    inventory.purchasedStock.filter(s=>s.name===it.name||s.name.includes(it.name.replace('外購',''))).forEach(s=>{
+      if(remaining<=0) return;
+      const use=multiplier>0?Math.min(s.remaining,remaining):Math.abs(remaining);
+      s.remaining=Math.max(0,s.remaining-use*Math.sign(multiplier));
+      s.totalQty=(s.totalQty||s.remaining);
+      remaining-=use;
+    });
+    // 同步依每日銷售公斤數扣除「生肉品項」庫存，計算剩餘公斤數
+    deductRawMeatByName(it.name, it.qty*multiplier, today);
+  });
+  // diy items → deduct from diyBatches (自製醃製好的批次，先進先出)
+  (rec.diyItems||[]).forEach(it=>{
+    if(!it.qty||!it.name||it.name==='醃料（攤算）') return;
+    let remaining=it.qty*multiplier;
+    if(multiplier>0){
+      // deduct from batches oldest first
+      inventory.diyBatches.filter(b=>b.remaining>0).sort((a,b)=>a.date.localeCompare(b.date)).forEach(b=>{
+        if(remaining<=0) return;
+        const use=Math.min(b.remaining,remaining);
+        b.remaining=Math.max(0,b.remaining-use); remaining-=use;
+      });
+    } else {
+      // restore: add back to most recent batch
+      const latest=inventory.diyBatches.sort((a,b)=>b.date.localeCompare(a.date))[0];
+      if(latest) latest.remaining=Math.round((latest.remaining+Math.abs(remaining))*100)/100;
+    }
+    // 同步依每日銷售公斤數扣除「生肉品項」庫存，計算剩餘公斤數
+    deductRawMeatByName(it.name, it.qty*multiplier, today);
+  });
+}
+
+// 依品項名稱找到對應的「生肉品項」庫存並扣除公斤數
+// kgDelta 為正值＝扣除（今日售出／使用），為負值＝退回（編輯記錄時先還原舊值）
+function deductRawMeatByName(name, kgDelta, date){
+  if(!kgDelta || !name) return;
+  const stripped = name.replace('外購','').replace('自製','');
+  const matches = inventory.rawMeat.filter(s=>s.name===name || s.name===stripped || s.name.includes(stripped) || stripped.includes(s.name));
+  if(!matches.length) return;
+  const share = kgDelta/matches.length; // 通常只會有一筆同名品項
+  matches.forEach(s=>{
+    s.qty = Math.round(Math.max(0,(s.qty||0)-share)*100)/100;
+    s.lastUpdated = date;
+  });
+}
+function saveInventory(){ localStorage.setItem(INV_KEY, JSON.stringify(inventory)); }
+
+// ── INVENTORY RENDER ──
+function renderInventory(){
+  renderDiyBatches();
+  renderPurchasedStock();
+  renderInvList('inv-raw-list', inventory.rawMeat, 'kg', 'raw');
+  renderInvList('inv-marinade-list', inventory.marinade, 'kg', 'marinade');
+  renderInvList('inv-supplies-list', inventory.supplies, '個', 'supplies');
+  renderAlerts();
+}
+
+function renderDiyBatches(){
+  const el=document.getElementById('inv-diy-batches');
+  const empty=document.getElementById('inv-diy-empty');
+  const batches=inventory.diyBatches.filter(b=>b.remaining>0);
+  if(!batches.length){ el.innerHTML=''; el.appendChild(empty); empty.style.display='block'; return; }
+  empty.style.display='none';
+  el.innerHTML='';
+  batches.forEach((b,i)=>{
+    const card=document.createElement('div'); card.className='batch-card';
+    card.innerHTML=`<div class="batch-date">${b.date} 自製</div><div class="batch-name">${escH(b.name||'自製批次')}</div><div><span class="batch-qty">${b.remaining}</span><span class="batch-unit">公斤 剩餘</span> <span style="font-size:12px;color:var(--amber2);">（約 ${(b.remaining/KG_PER_BASKET).toFixed(1)} 藍）</span><br><span style="font-size:11px;color:var(--faint)">原始 ${b.totalKg} 公斤 / ${(b.totalKg/KG_PER_BASKET).toFixed(1)} 藍</span></div><div id="diy-edit-${i}" class="inline-edit" style="display:none;"></div><div class="batch-actions"><button class="diy-edit-btn" data-i="${i}">調整數量</button><button class="diy-del-btn danger" data-i="${i}">刪除批次</button></div>`;
+    card.querySelector('.diy-edit-btn').onclick=()=>openInvEdit('diy', i, card.querySelector(`#diy-edit-${i}`));
+    card.querySelector('.diy-del-btn').onclick=()=>{ if(confirm('確定刪除這批次？')){ inventory.diyBatches.splice(i,1); saveInventory(); renderInventory(); } };
+    el.appendChild(card);
+  });
+}
+
+function renderPurchasedStock(){
+  const el=document.getElementById('inv-purchased-stock');
+  const empty=document.getElementById('inv-purchased-empty');
+  const items=inventory.purchasedStock.filter(b=>b.remaining>0);
+  if(!items.length){ el.innerHTML=''; el.appendChild(empty); empty.style.display='block'; return; }
+  empty.style.display='none';
+  el.innerHTML='';
+  items.forEach((b,i)=>{
+    const card=document.createElement('div'); card.className='batch-card';
+    card.innerHTML=`<div class="batch-date">${b.date}</div><div class="batch-name">${escH(b.name)}</div><div><span class="batch-qty">${b.remaining}</span><span class="batch-unit">公斤 剩餘</span> <span style="font-size:12px;color:var(--amber2);">（約 ${(b.remaining/KG_PER_BASKET).toFixed(1)} 藍）</span></div><div id="pur-edit-${i}" class="inline-edit" style="display:none;"></div><div class="batch-actions"><button class="pur-edit-btn" data-i="${i}">調整數量</button><button class="pur-del-btn danger" data-i="${i}">刪除</button></div>`;
+    card.querySelector('.pur-edit-btn').onclick=()=>openInvEdit('purchased', i, card.querySelector(`#pur-edit-${i}`));
+    card.querySelector('.pur-del-btn').onclick=()=>{ if(confirm('確定刪除？')){ inventory.purchasedStock.splice(i,1); saveInventory(); renderInventory(); } };
+    el.appendChild(card);
+  });
+}
+
+function renderInvList(elId, arr, defaultUnit, cat){
+  const el=document.getElementById(elId); el.innerHTML='';
+  if(!arr.length){ el.innerHTML='<div class="empty" style="padding:16px 0;">尚無庫存紀錄</div>'; return; }
+  arr.forEach((item,i)=>{
+    const thresh=inventory.thresholds[item.name]||0;
+    const low=thresh>0&&item.qty<=thresh;
+    const basketNote = cat==='raw' ? ` <span style="font-size:12px;color:var(--amber2);">（約 ${(item.qty/KG_PER_BASKET).toFixed(1)} 藍）</span>` : '';
+    const card=document.createElement('div'); card.className='inv-item';
+    card.innerHTML=`<div class="inv-item-head"><span class="inv-item-name">${escH(item.name)}</span><span class="inv-item-qty ${low?'low':'ok'}">${item.qty} <span style="font-size:12px;font-weight:400;color:var(--faint)">${escH(item.unit||defaultUnit)}</span>${basketNote}</span></div><div style="display:flex;justify-content:space-between;align-items:center;"><div class="inv-item-meta">更新：${item.lastUpdated||'—'}</div></div><div class="inv-threshold-row"><label>警示門檻：</label><input type="number" inputmode="decimal" value="${thresh||''}" placeholder="不設定" data-cat="${cat}" data-i="${i}"><span style="font-size:11px;color:var(--faint)">${item.unit||defaultUnit}</span></div><div id="${cat}-edit-${i}" class="inline-edit" style="display:none;"></div><div class="inv-item-actions"><button class="inv-adj-btn" data-cat="${cat}" data-i="${i}">調整數量</button><button class="inv-del-btn danger" data-cat="${cat}" data-i="${i}">刪除</button></div>`;
+    card.querySelector('.inv-adj-btn').onclick=()=>openInvEdit(cat, i, card.querySelector(`#${cat}-edit-${i}`));
+    card.querySelector('.inv-del-btn').onclick=()=>{ if(confirm('確定刪除這項庫存？')){ arr.splice(i,1); saveInventory(); renderInventory(); } };
+    card.querySelector('.inv-threshold-row input').onchange=(e)=>{ inventory.thresholds[item.name]=parseFloat(e.target.value)||0; saveInventory(); renderAlerts(); };
+    el.appendChild(card);
+  });
+}
+
+function openInvEdit(cat, i, el){
+  if(el.style.display==='block'){ el.style.display='none'; return; }
+  let item, label='調整數量', unit='';
+  if(cat==='diy'){ item=inventory.diyBatches[i]; label='剩餘公斤數'; unit='公斤'; }
+  else if(cat==='purchased'){ item=inventory.purchasedStock[i]; label='剩餘數量'; unit=item.unit||'公斤'; }
+  else if(cat==='raw'){ item=inventory.rawMeat[i]; label='剩餘數量'; unit=item.unit||'公斤'; }
+  else if(cat==='marinade'){ item=inventory.marinade[i]; label='剩餘數量'; unit=item.unit||'公斤'; }
+  else if(cat==='supplies'){ item=inventory.supplies[i]; label='剩餘數量'; unit=item.unit||'個'; }
+  const qty=cat==='diy'||cat==='purchased'?item.remaining:item.qty;
+  el.innerHTML=`<div class="field"><label>${label}</label><input type="number" inputmode="decimal" class="adj-qty" value="${qty}" style="width:100%;background:var(--bg);border:1px solid #38302660;border-radius:8px;color:var(--ink);font-size:15px;padding:9px 10px;"></div><div class="inline-edit-btns"><button class="cancel">取消</button><button class="confirm">確認</button></div>`;
+  el.style.display='block';
+  el.querySelector('.cancel').onclick=()=>el.style.display='none';
+  el.querySelector('.confirm').onclick=()=>{
+    const val=parseFloat(el.querySelector('.adj-qty').value)||0;
+    const today=todayStr();
+    if(cat==='diy') inventory.diyBatches[i].remaining=val;
+    else if(cat==='purchased') inventory.purchasedStock[i].remaining=val;
+    else if(cat==='raw'){ inventory.rawMeat[i].qty=val; inventory.rawMeat[i].lastUpdated=today; }
+    else if(cat==='marinade'){ inventory.marinade[i].qty=val; inventory.marinade[i].lastUpdated=today; }
+    else if(cat==='supplies'){ inventory.supplies[i].qty=val; inventory.supplies[i].lastUpdated=today; }
+    saveInventory(); renderInventory(); toast('已更新庫存');
+  };
+}
+
+function renderAlerts(){
+  const alerts=[];
+  inventory.rawMeat.forEach(it=>{ const t=inventory.thresholds[it.name]||0; if(t>0&&it.qty<=t) alerts.push({name:it.name,qty:it.qty,unit:it.unit||'公斤'}); });
+  inventory.marinade.forEach(it=>{ const t=inventory.thresholds[it.name]||0; if(t>0&&it.qty<=t) alerts.push({name:it.name,qty:it.qty,unit:it.unit||'公斤'}); });
+  inventory.supplies.forEach(it=>{ const t=inventory.thresholds[it.name]||0; if(t>0&&it.qty<=t) alerts.push({name:it.name,qty:it.qty,unit:it.unit||'個'}); });
+  const card=document.getElementById('inv-alerts-card');
+  const el=document.getElementById('inv-alerts');
+  card.style.display=alerts.length?'block':'none';
+  el.innerHTML='';
+  alerts.forEach(a=>{ const row=document.createElement('div'); row.className='inv-alert-row'; row.innerHTML=`<span class="name">⚠️ ${escH(a.name)}</span><span class="qty">剩 ${a.qty} ${escH(a.unit)}</span>`; el.appendChild(row); });
+}
+
+// ── ADD DIY BATCH ──
+document.getElementById('inv-add-diy-batch').onclick=()=>{
+  const name=prompt('批次名稱（例：6/29自製三節翅）','');
+  if(!name) return;
+  const kg=parseFloat(prompt('總公斤數',''));
+  if(!kg||isNaN(kg)){ toast('請輸入有效公斤數'); return; }
+  inventory.diyBatches.push({id:uid(),name,totalKg:kg,remaining:kg,date:todayStr()});
+  saveInventory(); renderInventory(); toast('已新增自製批次');
+};
+
+// ── ADD PURCHASED STOCK ──
+document.getElementById('inv-add-purchased').onclick=()=>{
+  const name=prompt('品項名稱（例：外購三節翅）','');
+  if(!name) return;
+  const qty=parseFloat(prompt('數量（公斤）',''));
+  if(!qty||isNaN(qty)){ toast('請輸入有效數量'); return; }
+  inventory.purchasedStock.push({id:uid(),name,unit:'公斤',totalQty:qty,remaining:qty,date:todayStr()});
+  saveInventory(); renderInventory(); toast('已新增外購庫存');
+};
+
+// ── ADD INVENTORY ITEM ──
+function addInvItem(arr, name, unit){
+  const exist=arr.find(i=>i.name===name);
+  if(exist){ toast(`${name} 已存在，請直接調整數量`); return; }
+  const qty=parseFloat(prompt(`${name} 目前庫存數量（${unit}）`,''))||0;
+  arr.push({name,unit,qty,lastUpdated:todayStr(),alertThreshold:0});
+  saveInventory(); renderInventory(); toast(`已新增 ${name}`);
+}
+
+document.querySelectorAll('.inv-raw-chip').forEach(c=>c.onclick=()=>addInvItem(inventory.rawMeat,c.dataset.name,'公斤'));
+document.querySelectorAll('.inv-mar-chip').forEach(c=>c.onclick=()=>addInvItem(inventory.marinade,c.dataset.name,'公斤'));
+document.querySelectorAll('.inv-sup-chip').forEach(c=>c.onclick=()=>addInvItem(inventory.supplies,c.dataset.name,c.dataset.unit||'個'));
+document.querySelectorAll('.inv-raw-add').forEach(b=>b.onclick=()=>{ const n=prompt('品項名稱',''); if(n) addInvItem(inventory.rawMeat,n,'公斤'); });
+document.querySelectorAll('.inv-mar-add').forEach(b=>b.onclick=()=>{ const n=prompt('品項名稱',''); if(n) addInvItem(inventory.marinade,n,'公斤'); });
+document.querySelectorAll('.inv-sup-add').forEach(b=>b.onclick=()=>{ const n=prompt('品項名稱',''); if(n) addInvItem(inventory.supplies,n,'個'); });
+
+// ── DEDUCT FROM DAILY USE ──
+document.getElementById('inv-deduct-btn').onclick=()=>{
+  const chicken=parseFloat(document.getElementById('inv-use-chicken').value)||0;
+  const bags=parseFloat(document.getElementById('inv-use-bag').value)||0;
+  const plasticHalf=parseFloat(document.getElementById('inv-use-plastic-half').value)||0;
+  const plasticFull=parseFloat(document.getElementById('inv-use-plastic-full').value)||0;
+  const today=todayStr();
+  let msgs=[];
+
+  // deduct chicken from batches (mix diy + purchased)
+  if(chicken>0){
+    let remaining=chicken;
+    // deduct diy first, then purchased (mixed)
+    for(let b of inventory.diyBatches){ if(remaining<=0) break; const use=Math.min(b.remaining,remaining); b.remaining=Math.round((b.remaining-use)*100)/100; remaining=Math.round((remaining-use)*100)/100; }
+    for(let b of inventory.purchasedStock){ if(remaining<=0) break; const use=Math.min(b.remaining,remaining); b.remaining=Math.round((b.remaining-use)*100)/100; remaining=Math.round((remaining-use)*100)/100; }
+    msgs.push(`醃製雞肉 -${chicken}公斤`);
+    if(remaining>0) msgs.push(`⚠️ 庫存不足，差 ${remaining} 公斤`);
+  }
+
+  // deduct supplies
+  function deductSupply(name, qty){
+    if(!qty) return;
+    const it=inventory.supplies.find(i=>i.name===name);
+    if(it){ it.qty=Math.max(0,it.qty-qty); it.lastUpdated=today; msgs.push(`${name} -${qty}`); }
+  }
+  deductSupply('紙袋', bags);
+  deductSupply('半斤塑膠袋', plasticHalf);
+  deductSupply('一斤塑膠袋', plasticFull);
+  // fixed items: auto deduct 2 each
+  deductSupply('炸物盆塑膠袋', 5);
+  deductSupply('炸物盆襯紙', 2);
+
+  if(!msgs.length){ toast('請輸入使用量'); return; }
+  saveInventory(); renderInventory();
+  document.getElementById('inv-use-chicken').value='';
+  document.getElementById('inv-use-bag').value='';
+  document.getElementById('inv-use-plastic-half').value='';
+  document.getElementById('inv-use-plastic-full').value='';
+  document.getElementById('inv-use-note').value='';
+  toast('庫存已扣除');
+};
+
+// ── UPDATE TABS (add inventory) ──
+document.getElementById('t-inventory').onclick=()=>switchTab('inventory');
+
+
+load();
+loadInventory();
+loadMonthly();
+buildDenomGrid('float-grid');
+buildDenomGrid('revenue-grid');
+document.getElementById('d-date').value=todayStr();
+document.getElementById('p-date').value=todayStr();
+try{ document.getElementById('m-date').value=todayStr(); }catch(e){}
+try{ document.getElementById('m-month').value=thisMonth(); }catch(e){}
+makeIR(document.getElementById('purchase-list'));
+// ensure first purchase row is meat format
+document.getElementById('purchase-list').innerHTML='';
+makeMeatDailyRow(document.getElementById('purchase-list'));
+recalcDaily();
+renderPurchaseHistory();
+renderRecentRecs();
+
+})();
+</script>
+</body>
+</html>
