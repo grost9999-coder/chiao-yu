@@ -362,7 +362,22 @@ section.active{display:block;}
       <div class="field"><label>工作時數</label><input type="number" inputmode="decimal" id="d-hours" placeholder="例：7"></div>
     </div>
     <div class="field"><label>擺攤地點（選填）</label><input type="text" id="d-loc" placeholder="例：南田市場"></div>
+    <div class="field">
+      <label>單程車程時間（分鐘，第一次填該地點會自動記住）</label>
+      <input type="number" inputmode="numeric" id="d-drive-min" placeholder="例：20">
+      <div class="muted" id="d-fuel-est" style="font-size:12px;margin-top:4px;"></div>
+    </div>
     <div class="field" style="margin-bottom:0;"><label>租金（場地費）</label><input type="number" inputmode="decimal" id="d-rent" placeholder="0"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⛽ 油錢估算設定</div>
+    <p class="backup-hint">起點固定為嘉義市友忠路827巷45弄37號。油錢＝單程車程時間換算成公里（用平均時速）× 2（來回）÷ 油耗 × 油價，數字都可自行調整。</p>
+    <div class="two">
+      <div class="field"><label>平均時速（km/h）</label><input type="number" inputmode="decimal" id="fuel-speed" placeholder="35"></div>
+      <div class="field"><label>油耗（km/公升）</label><input type="number" inputmode="decimal" id="fuel-efficiency" placeholder="10"></div>
+    </div>
+    <div class="field" style="margin-bottom:0;"><label>油價（元/公升）</label><input type="number" inputmode="decimal" id="fuel-price" placeholder="30"></div>
   </div>
 
   <div class="card">
@@ -973,6 +988,43 @@ function fmt(n){ n=Math.round(n||0); return (n<0?'-$':'$')+Math.abs(n).toLocaleS
 function pct(n){ return isFinite(n)?Math.round(n*100)+'%':'0%'; }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function todayStr(){ const d=new Date(); return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
+
+// ── 油錢估算 ──
+// 起點固定：嘉義市友忠路827巷45弄37號。若地點沒有明確地址，直接用市場名稱當目的地估算。
+const FUEL_ORIGIN = '嘉義市友忠路827巷45弄37號';
+const FUEL_KEY = 'qy_fuel_settings_v1';
+const TRAVEL_KEY = 'qy_travel_times_v1';
+let fuelSettings = { speed:35, efficiency:10, price:30 }; // 小卡車/餐車預設值，可自行調整
+let travelTimes = {}; // { 地點名稱: 單程分鐘數 }
+function loadFuelSettings(){
+  try{ const d=JSON.parse(localStorage.getItem(FUEL_KEY)||'{}'); Object.assign(fuelSettings,d); }catch(e){}
+  try{ travelTimes=JSON.parse(localStorage.getItem(TRAVEL_KEY)||'{}'); }catch(e){}
+}
+function saveFuelSettings(){ localStorage.setItem(FUEL_KEY, JSON.stringify(fuelSettings)); }
+function saveTravelTimes(){ localStorage.setItem(TRAVEL_KEY, JSON.stringify(travelTimes)); }
+// 依單程分鐘數計算來回油錢：分鐘→公里(用平均時速)，來回×2，除以油耗，乘以油價
+function calcFuelCost(minutes){
+  const m=parseFloat(minutes)||0;
+  if(!m) return 0;
+  const oneWayKm = (m/60)*fuelSettings.speed;
+  const roundTripKm = oneWayKm*2;
+  const liters = roundTripKm/(fuelSettings.efficiency||1);
+  return Math.round(liters*fuelSettings.price);
+}
+loadFuelSettings();
+const FUEL_OP_NAME = '交通費（估算油錢）';
+// 把自動估算的油錢同步成「其他開銷」裡的一筆交通費，用名稱比對避免重複新增
+function syncFuelToOpList(fuelCost){
+  const list=document.getElementById('op-list');
+  if(!list) return;
+  let row=[...list.querySelectorAll('.sr')].find(r=>r.querySelector('.name').value.trim()===FUEL_OP_NAME);
+  if(fuelCost>0){
+    if(!row) row=makeSR(list, FUEL_OP_NAME, fuelCost);
+    else row.querySelector('.amt').value=fuelCost;
+  } else if(row){
+    row.remove();
+  }
+}
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); }
 function escH(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
@@ -1189,6 +1241,17 @@ function readPR(container){ const items=[]; container.querySelectorAll('.ir').fo
 function recalcDaily(){
   const rent=parseFloat(document.getElementById('d-rent').value)||0;
   const hours=parseFloat(document.getElementById('d-hours').value)||0;
+  const driveMin=parseFloat(document.getElementById('d-drive-min').value)||0;
+  const fuelCost=calcFuelCost(driveMin);
+  syncFuelToOpList(fuelCost);
+  try{
+    if(driveMin>0){
+      const oneWayKm=Math.round((driveMin/60)*fuelSettings.speed*10)/10;
+      document.getElementById('d-fuel-est').textContent=`來回約 ${Math.round(oneWayKm*2*10)/10} 公里，估算油錢 ${fmt(fuelCost)}（已自動加入下方「其他開銷」的交通費）`;
+    } else {
+      document.getElementById('d-fuel-est').textContent='';
+    }
+  }catch(e){}
   const floatG=readDenomGrid('float-grid');
   const revG=readDenomGrid('revenue-grid');
   document.getElementById('float-total').textContent=fmt(floatG.total);
@@ -1272,7 +1335,7 @@ function recalcDaily(){
   try{ document.getElementById('cd-gross').className=gross>=0?'pos':'neg'; }catch(e){}
   try{ document.getElementById('cd-gross2').className=gross>=0?'pos':'neg'; }catch(e){}
   try{ document.getElementById('cd-net').className=net>=0?'pos':'neg'; }catch(e){}
-  return {rent,hours,revenue,cashRevenue,uber,panda,linepay,platformRevenue,revenueCash:revG.items,floatCash:floatG.items,floatTotal:floatG.total,closingCash:revG.total,purchaseItems,diyItems,opItems,purchaseCost,diyCost,totalCogs,opCost,fixedCost,autoPkgCost,autoBagQty,autoPlasticQty,totalCost,gross,net,margin,hourly};
+  return {rent,fuelCost,driveMin,hours,revenue,cashRevenue,uber,panda,linepay,platformRevenue,revenueCash:revG.items,floatCash:floatG.items,floatTotal:floatG.total,closingCash:revG.total,purchaseItems,diyItems,opItems,purchaseCost,diyCost,totalCogs,opCost,fixedCost,autoPkgCost,autoBagQty,autoPlasticQty,totalCost,gross,net,margin,hourly};
 }
 
 function recalcDenoms(){ recalcDaily(); }
@@ -1302,7 +1365,7 @@ document.getElementById('save-daily').addEventListener('click',()=>{
   const date=document.getElementById('d-date').value||todayStr();
   const loc=document.getElementById('d-loc').value.trim();
   if(!calc.closingCash&&!calc.purchaseCost&&!calc.diyCost&&!calc.rent&&!calc.opCost){ toast('請至少填入一項數據'); return; }
-  const rec={id:editingId||uid(),date,location:loc,hours:calc.hours,rent:calc.rent,purchaseItems:calc.purchaseItems,diyItems:calc.diyItems,opItems:calc.opItems,revenueCash:calc.revenueCash,floatCash:calc.floatCash,closingCash:calc.closingCash,floatTotal:calc.floatTotal,cashRevenue:calc.cashRevenue,uber:calc.uber,panda:calc.panda,linepay:calc.linepay,platformRevenue:calc.platformRevenue,revenue:calc.revenue,purchaseCost:calc.purchaseCost,diyCost:calc.diyCost,totalCogs:calc.totalCogs,opCost:calc.opCost,fixedCost:calc.fixedCost,gross:calc.gross,net:calc.net};
+  const rec={id:editingId||uid(),date,location:loc,hours:calc.hours,rent:calc.rent,driveMin:calc.driveMin,fuelCost:calc.fuelCost,purchaseItems:calc.purchaseItems,diyItems:calc.diyItems,opItems:calc.opItems,revenueCash:calc.revenueCash,floatCash:calc.floatCash,closingCash:calc.closingCash,floatTotal:calc.floatTotal,cashRevenue:calc.cashRevenue,uber:calc.uber,panda:calc.panda,linepay:calc.linepay,platformRevenue:calc.platformRevenue,revenue:calc.revenue,purchaseCost:calc.purchaseCost,diyCost:calc.diyCost,totalCogs:calc.totalCogs,opCost:calc.opCost,fixedCost:calc.fixedCost,gross:calc.gross,net:calc.net};
   if(editingId){ const i=dailyRecs.findIndex(r=>r.id===editingId); if(i>-1) dailyRecs[i]=rec; editingId=null; } else { dailyRecs.push(rec); }
   // ── AUTO DEDUCT MEAT FROM INVENTORY ──
   // if editing, first reverse old deduction
@@ -1323,6 +1386,7 @@ function resetDaily(){
   document.getElementById('d-loc').value='';
   document.getElementById('d-hours').value='';
   document.getElementById('d-rent').value='';
+  document.getElementById('d-drive-min').value='';
   clearDenomGrid('float-grid'); clearDenomGrid('revenue-grid');
   document.getElementById('d-uber').value='';
   document.getElementById('d-panda').value='';
@@ -1359,6 +1423,7 @@ function openEdit(id){
   document.getElementById('d-loc').value=r.location||'';
   document.getElementById('d-hours').value=r.hours||'';
   document.getElementById('d-rent').value=r.rent||'';
+  document.getElementById('d-drive-min').value=r.driveMin||'';
   clearDenomGrid('float-grid'); if(r.floatCash) fillDenomGrid('float-grid',r.floatCash);
   clearDenomGrid('revenue-grid'); if(r.revenueCash) fillDenomGrid('revenue-grid',r.revenueCash);
   document.getElementById('d-uber').value=r.uber||'';
@@ -1794,6 +1859,29 @@ document.querySelectorAll('#chips-diy .chip:not(.meat-daily-chip)').forEach(chip
 document.getElementById('d-uber').oninput=recalcDaily;
 document.getElementById('d-panda').oninput=recalcDaily;
 document.getElementById('d-linepay').oninput=recalcDaily;
+document.getElementById('d-loc').addEventListener('change',()=>{
+  const loc=document.getElementById('d-loc').value.trim();
+  const driveMinEl=document.getElementById('d-drive-min');
+  if(loc && travelTimes[loc]!==undefined && !driveMinEl.value){ driveMinEl.value=travelTimes[loc]; }
+  recalcDaily();
+});
+document.getElementById('d-drive-min').oninput=()=>{
+  const loc=document.getElementById('d-loc').value.trim();
+  const min=document.getElementById('d-drive-min').value;
+  if(loc && min){ travelTimes[loc]=parseFloat(min); saveTravelTimes(); }
+  recalcDaily();
+};
+['fuel-speed','fuel-efficiency','fuel-price'].forEach(id=>{
+  const el=document.getElementById(id);
+  el.value = fuelSettings[id==='fuel-speed'?'speed':id==='fuel-efficiency'?'efficiency':'price'];
+  el.oninput=()=>{
+    fuelSettings.speed=parseFloat(document.getElementById('fuel-speed').value)||fuelSettings.speed;
+    fuelSettings.efficiency=parseFloat(document.getElementById('fuel-efficiency').value)||fuelSettings.efficiency;
+    fuelSettings.price=parseFloat(document.getElementById('fuel-price').value)||fuelSettings.price;
+    saveFuelSettings();
+    recalcDaily();
+  };
+});
 document.querySelectorAll('#chips-op-fuel .chip,#chips-op-transport .chip,#chips-op-season .chip,#chips-op-pkg .chip').forEach(chip=>{
   chip.addEventListener('click',()=>{
     const list=document.getElementById('op-list');
