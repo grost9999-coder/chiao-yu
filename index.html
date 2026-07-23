@@ -854,10 +854,13 @@ section.active{display:block;}
       <div class="sum-card"><div class="sum-v" id="a-total-revenue">$0</div><div class="sum-l">總營業額</div></div>
       <div class="sum-card"><div class="sum-v" id="a-total-net">$0</div><div class="sum-l">出攤淨利合計</div></div>
       <div class="sum-card"><div class="sum-v" id="a-monthly-expense" style="color:var(--red)">$0</div><div class="sum-l">月固定支出</div></div>
-      <div class="sum-card"><div class="sum-v" id="a-net-after-monthly">$0</div><div class="sum-l">月結淨利</div></div>
+      <div class="sum-card"><div class="sum-v" id="a-meat-cost" style="color:var(--red)">$0</div><div class="sum-l">外購肉／自製生肉成本</div></div>
+      <div class="sum-card"><div class="sum-v" id="a-net-before-meat">$0</div><div class="sum-l">月結淨利（未扣肉本）</div></div>
+      <div class="sum-card"><div class="sum-v" id="a-net-after-monthly">$0</div><div class="sum-l">月結淨利（已扣肉本）</div></div>
       <div class="sum-card"><div class="sum-v" id="a-avg-day">$0</div><div class="sum-l">平均日淨利</div></div>
       <div class="sum-card"><div class="sum-v" id="a-avg-hour">$0</div><div class="sum-l">平均時薪</div></div>
     </div>
+    <p class="muted" style="font-size:12px;margin-top:4px;">「未扣肉本」是還沒扣外購醃製品／自製生雞肉／自製翅腿二節翅三節翅成本的淨利；「已扣肉本」是實際扣除後的淨利，也就是最終數字。</p>
     <div class="card">
       <div class="card-title">淨利趨勢</div>
       <div class="chart-wrap"><canvas id="chart-profit"></canvas></div>
@@ -1722,11 +1725,20 @@ function renderAnalysis(){
 
   // monthly expenses for the same period
   const monthlyExp=monthlyRecs.filter(r=>inRange(r.date||r.month+'-01')).reduce((s,r)=>s+(r.amount||0),0);
+  // 外購肉／自製生肉成本：daily record 的 totalCogs（外購+自製雞肉使用成本）已經算進每日淨利裡，這裡加回來對比「未扣肉本」的差異
+  const totalMeatCost=filtered.reduce((s,r)=>s+(r.totalCogs||0),0);
+  const netBeforeMeat=totalNet+totalMeatCost-monthlyExp;
   const netAfterMonthly=totalNet-monthlyExp;
 
   try{ document.getElementById('a-total-revenue').textContent=fmt(totalRev); }catch(e){}
   try{ document.getElementById('a-total-net').textContent=fmt(totalNet); }catch(e){}
   try{ document.getElementById('a-monthly-expense').textContent=fmt(monthlyExp); }catch(e){}
+  try{ document.getElementById('a-meat-cost').textContent=fmt(totalMeatCost); }catch(e){}
+  try{
+    const el=document.getElementById('a-net-before-meat');
+    el.textContent=fmt(netBeforeMeat);
+    el.style.color=netBeforeMeat>=0?'var(--green)':'var(--red)';
+  }catch(e){}
   try{
     const el=document.getElementById('a-net-after-monthly');
     el.textContent=fmt(netAfterMonthly);
