@@ -863,6 +863,11 @@ section.active{display:block;}
       <div id="a-formula" style="font-size:13px;line-height:1.7;color:var(--faint2,#c9bfae);"></div>
     </div>
     <div class="card">
+      <div class="card-title" style="font-size:14px;">🔍 肉本明細（每天外購＋自製雞肉用量成本）</div>
+      <p class="muted" style="font-size:12px;">只會列出「有記錄出攤」的日子；沒出攤、沒填今日記錄的日子不會被算進去。可以用這份明細對照，看看是不是哪天填錯數量或價格。</p>
+      <div id="a-meat-breakdown"></div>
+    </div>
+    <div class="card">
       <div class="card-title">淨利趨勢</div>
       <div class="chart-wrap"><canvas id="chart-profit"></canvas></div>
     </div>
@@ -1377,14 +1382,24 @@ document.getElementById('save-daily').addEventListener('click',()=>{
   const date=document.getElementById('d-date').value||todayStr();
   const loc=document.getElementById('d-loc').value.trim();
   if(!calc.closingCash&&!calc.purchaseCost&&!calc.diyCost&&!calc.rent&&!calc.opCost){ toast('請至少填入一項數據'); return; }
-  const rec={id:editingId||uid(),date,location:loc,hours:calc.hours,rent:calc.rent,driveKm:calc.driveKm,fuelCost:calc.fuelCost,purchaseItems:calc.purchaseItems,diyItems:calc.diyItems,opItems:calc.opItems,revenueCash:calc.revenueCash,floatCash:calc.floatCash,closingCash:calc.closingCash,floatTotal:calc.floatTotal,cashRevenue:calc.cashRevenue,uber:calc.uber,panda:calc.panda,linepay:calc.linepay,platformRevenue:calc.platformRevenue,revenue:calc.revenue,purchaseCost:calc.purchaseCost,diyCost:calc.diyCost,totalCogs:calc.totalCogs,opCost:calc.opCost,fixedCost:calc.fixedCost,gross:calc.gross,net:calc.net};
-  if(editingId){ const i=dailyRecs.findIndex(r=>r.id===editingId); if(i>-1) dailyRecs[i]=rec; editingId=null; } else { dailyRecs.push(rec); }
-  // ── AUTO DEDUCT MEAT FROM INVENTORY ──
-  // if editing, first reverse old deduction
-  if(editingId){
-    const oldRec=dailyRecs.find(r=>r.id===editingId);
-    if(oldRec) deductMeatFromInventory(oldRec, -1);
+
+  // 以每日銷售為基礎：同一天只能有一筆記錄，避免重複存檔造成月結淨利被重複計算
+  if(!editingId){
+    const dup=dailyRecs.find(r=>r.date===date);
+    if(dup){
+      if(!confirm(`${date} 已經有一筆記錄了。要覆蓋更新這筆嗎？（如果存成兩筆，月結淨利會被重複算兩次）`)) return;
+      editingId=dup.id;
+    }
   }
+
+  const rec={id:editingId||uid(),date,location:loc,hours:calc.hours,rent:calc.rent,driveKm:calc.driveKm,fuelCost:calc.fuelCost,purchaseItems:calc.purchaseItems,diyItems:calc.diyItems,opItems:calc.opItems,revenueCash:calc.revenueCash,floatCash:calc.floatCash,closingCash:calc.closingCash,floatTotal:calc.floatTotal,cashRevenue:calc.cashRevenue,uber:calc.uber,panda:calc.panda,linepay:calc.linepay,platformRevenue:calc.platformRevenue,revenue:calc.revenue,purchaseCost:calc.purchaseCost,diyCost:calc.diyCost,totalCogs:calc.totalCogs,opCost:calc.opCost,fixedCost:calc.fixedCost,gross:calc.gross,net:calc.net};
+
+  // ── AUTO DEDUCT MEAT FROM INVENTORY ──
+  // 先在 editingId 被清空之前，把舊記錄找出來準備還原扣庫存
+  const wasEditing=!!editingId;
+  const oldRec=wasEditing ? dailyRecs.find(r=>r.id===editingId) : null;
+  if(wasEditing){ const i=dailyRecs.findIndex(r=>r.id===editingId); if(i>-1) dailyRecs[i]=rec; editingId=null; } else { dailyRecs.push(rec); }
+  if(wasEditing && oldRec) deductMeatFromInventory(oldRec, -1);
   deductMeatFromInventory(rec, +1);
   saveInventory();
 
@@ -1744,6 +1759,19 @@ function renderAnalysis(){
   try{ document.getElementById('a-total-net').textContent=fmt(totalNet); }catch(e){}
   try{ document.getElementById('a-monthly-expense').textContent=fmt(monthlyExp); }catch(e){}
   try{ document.getElementById('a-meat-cost').textContent=fmt(totalMeatCost); }catch(e){}
+  try{
+    const el=document.getElementById('a-meat-breakdown');
+    const withCost=sorted.filter(r=>(r.totalCogs||0)>0);
+    if(!withCost.length){
+      el.innerHTML='<div class="empty" style="padding:10px 0;">這段期間沒有肉本紀錄</div>';
+    } else {
+      el.innerHTML=withCost.map(r=>`
+        <div class="menu-item" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #38302650;">
+          <span>${r.date}${r.location?'　'+escH(r.location):''}</span>
+          <span style="font-weight:700;">${fmt(r.totalCogs)}</span>
+        </div>`).join('');
+    }
+  }catch(e){}
   try{
     const el=document.getElementById('a-net-before-meat');
     el.textContent=fmt(netBeforeMeat);
@@ -2128,16 +2156,21 @@ function deductMeatFromInventory(rec, multiplier){
   // purchased items → deduct from purchasedStock
   (rec.purchaseItems||[]).forEach(it=>{
     if(!it.qty) return;
-    const qty=it.qty*multiplier;
-    // find matching stock (by name)
-    let remaining=qty;
-    inventory.purchasedStock.filter(s=>s.name===it.name||s.name.includes(it.name.replace('外購',''))).forEach(s=>{
-      if(remaining<=0) return;
-      const use=multiplier>0?Math.min(s.remaining,remaining):Math.abs(remaining);
-      s.remaining=Math.max(0,s.remaining-use*Math.sign(multiplier));
-      s.totalQty=(s.totalQty||s.remaining);
-      remaining-=use;
-    });
+    const matches=inventory.purchasedStock.filter(s=>s.name===it.name||s.name.includes(it.name.replace('外購','')));
+    if(multiplier>0){
+      // 扣除：依序從符合的庫存扣，扣到用完為止
+      let remaining=it.qty;
+      matches.forEach(s=>{
+        if(remaining<=0) return;
+        const use=Math.min(s.remaining,remaining);
+        s.remaining=Math.max(0,s.remaining-use);
+        s.totalQty=(s.totalQty||s.remaining);
+        remaining-=use;
+      });
+    } else if(matches.length){
+      // 還原（編輯/刪除舊記錄）：加回第一筆符合的品項
+      matches[0].remaining=Math.round((matches[0].remaining+it.qty)*100)/100;
+    }
     // 同步依每日銷售公斤數扣除「生肉品項」庫存，計算剩餘公斤數
     deductRawMeatByName(it.name, it.qty*multiplier, today);
     trackMonthlyUsage(it.name, it.qty*multiplier, today);
