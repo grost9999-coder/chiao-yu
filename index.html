@@ -363,8 +363,9 @@ section.active{display:block;}
     </div>
     <div class="field"><label>擺攤地點（選填）</label><input type="text" id="d-loc" placeholder="例：南田市場"></div>
     <div class="field">
-      <label>單程車程時間（分鐘，第一次填該地點會自動記住）</label>
-      <input type="number" inputmode="numeric" id="d-drive-min" placeholder="例：20">
+      <label>單程距離（公里，第一次填該地點會自動記住）</label>
+      <input type="number" inputmode="decimal" id="d-drive-km" placeholder="例：12">
+      <a id="d-map-link" href="#" target="_blank" style="display:none;font-size:12px;color:var(--amber2);text-decoration:underline;">在 Google 地圖查看到「<span id="d-map-link-loc"></span>」的距離 ›</a>
       <div class="muted" id="d-fuel-est" style="font-size:12px;margin-top:4px;"></div>
     </div>
     <div class="field" style="margin-bottom:0;"><label>租金（場地費）</label><input type="number" inputmode="decimal" id="d-rent" placeholder="0"></div>
@@ -372,11 +373,8 @@ section.active{display:block;}
 
   <div class="card">
     <div class="card-title">⛽ 油錢估算設定</div>
-    <p class="backup-hint">起點固定為嘉義市友忠路827巷45弄37號。油錢＝單程車程時間換算成公里（用平均時速）× 2（來回）÷ 油耗 × 油價，數字都可自行調整。</p>
-    <div class="two">
-      <div class="field"><label>平均時速（km/h）</label><input type="number" inputmode="decimal" id="fuel-speed" placeholder="35"></div>
-      <div class="field"><label>油耗（km/公升）</label><input type="number" inputmode="decimal" id="fuel-efficiency" placeholder="10"></div>
-    </div>
+    <p class="backup-hint">起點固定為嘉義市友忠路827巷45弄37號。這是純網頁小工具，沒辦法自動幫你查真實地圖距離——點上面「在 Google 地圖查看距離」連結，用 Google 地圖看一次實際來回公里數，填進「單程距離」，之後同樣地點會自動記住、自動算油錢。油錢＝單程公里 × 2（來回）÷ 油耗 × 油價，數字都可自行調整。</p>
+    <div class="field"><label>油耗（km/公升）</label><input type="number" inputmode="decimal" id="fuel-efficiency" placeholder="10"></div>
     <div class="field" style="margin-bottom:0;"><label>油價（元/公升）</label><input type="number" inputmode="decimal" id="fuel-price" placeholder="30"></div>
   </div>
 
@@ -860,7 +858,10 @@ section.active{display:block;}
       <div class="sum-card"><div class="sum-v" id="a-avg-day">$0</div><div class="sum-l">平均日淨利</div></div>
       <div class="sum-card"><div class="sum-v" id="a-avg-hour">$0</div><div class="sum-l">平均時薪</div></div>
     </div>
-    <p class="muted" style="font-size:12px;margin-top:4px;">「未扣肉本」是還沒扣外購醃製品／自製生雞肉／自製翅腿二節翅三節翅成本的淨利；「已扣肉本」是實際扣除後的淨利，也就是最終數字。</p>
+    <div class="card" style="margin-top:10px;padding:12px 14px;">
+      <div class="card-title" style="font-size:14px;">🧮 計算公式（帶入本期實際數字）</div>
+      <div id="a-formula" style="font-size:13px;line-height:1.7;color:var(--faint2,#c9bfae);"></div>
+    </div>
     <div class="card">
       <div class="card-title">淨利趨勢</div>
       <div class="chart-wrap"><canvas id="chart-profit"></canvas></div>
@@ -994,25 +995,34 @@ function todayStr(){ const d=new Date(); return new Date(d-d.getTimezoneOffset()
 
 // ── 油錢估算 ──
 // 起點固定：嘉義市友忠路827巷45弄37號。若地點沒有明確地址，直接用市場名稱當目的地估算。
+// 這是純靜態網頁，沒有地圖API可以自動查真實距離，所以改成：提供「查看Google地圖」連結，
+// 讓使用者自己確認一次實際公里數填進去，之後同樣地點會自動記住、自動算油錢。
 const FUEL_ORIGIN = '嘉義市友忠路827巷45弄37號';
 const FUEL_KEY = 'qy_fuel_settings_v1';
 const TRAVEL_KEY = 'qy_travel_times_v1';
-let fuelSettings = { speed:35, efficiency:10, price:30 }; // 小卡車/餐車預設值，可自行調整
-let travelTimes = {}; // { 地點名稱: 單程分鐘數 }
+let fuelSettings = { efficiency:10, price:30 }; // 小卡車/餐車預設值，可自行調整
+let travelTimes = {}; // { 地點名稱: 單程公里數 }
 function loadFuelSettings(){
   try{ const d=JSON.parse(localStorage.getItem(FUEL_KEY)||'{}'); Object.assign(fuelSettings,d); }catch(e){}
   try{ travelTimes=JSON.parse(localStorage.getItem(TRAVEL_KEY)||'{}'); }catch(e){}
 }
 function saveFuelSettings(){ localStorage.setItem(FUEL_KEY, JSON.stringify(fuelSettings)); }
 function saveTravelTimes(){ localStorage.setItem(TRAVEL_KEY, JSON.stringify(travelTimes)); }
-// 依單程分鐘數計算來回油錢：分鐘→公里(用平均時速)，來回×2，除以油耗，乘以油價
-function calcFuelCost(minutes){
-  const m=parseFloat(minutes)||0;
-  if(!m) return 0;
-  const oneWayKm = (m/60)*fuelSettings.speed;
-  const roundTripKm = oneWayKm*2;
+// 依單程公里數計算來回油錢：來回×2，除以油耗，乘以油價
+function calcFuelCost(oneWayKm){
+  const km=parseFloat(oneWayKm)||0;
+  if(!km) return 0;
+  const roundTripKm = km*2;
   const liters = roundTripKm/(fuelSettings.efficiency||1);
   return Math.round(liters*fuelSettings.price);
+}
+function mapsDirectionsUrl(destination){
+  const dest = destination && destination.trim() ? destination.trim() : '';
+  if(!dest) return '';
+  // 目的地沒有明確地址時，直接用地點名稱＋嘉義縣（幫助 Google 地圖辨識是嘉義當地的地點）
+  const looksLikeAddress = /[路街巷弄號市區鄉鎮]/.test(dest);
+  const destQuery = looksLikeAddress ? dest : `嘉義縣${dest}`;
+  return `https://www.google.com/maps/dir/${encodeURIComponent(FUEL_ORIGIN)}/${encodeURIComponent(destQuery)}`;
 }
 loadFuelSettings();
 const FUEL_OP_NAME = '交通費（估算油錢）';
@@ -1244,13 +1254,12 @@ function readPR(container){ const items=[]; container.querySelectorAll('.ir').fo
 function recalcDaily(){
   const rent=parseFloat(document.getElementById('d-rent').value)||0;
   const hours=parseFloat(document.getElementById('d-hours').value)||0;
-  const driveMin=parseFloat(document.getElementById('d-drive-min').value)||0;
-  const fuelCost=calcFuelCost(driveMin);
+  const driveKm=parseFloat(document.getElementById('d-drive-km').value)||0;
+  const fuelCost=calcFuelCost(driveKm);
   syncFuelToOpList(fuelCost);
   try{
-    if(driveMin>0){
-      const oneWayKm=Math.round((driveMin/60)*fuelSettings.speed*10)/10;
-      document.getElementById('d-fuel-est').textContent=`來回約 ${Math.round(oneWayKm*2*10)/10} 公里，估算油錢 ${fmt(fuelCost)}（已自動加入下方「其他開銷」的交通費）`;
+    if(driveKm>0){
+      document.getElementById('d-fuel-est').textContent=`來回 ${Math.round(driveKm*2*10)/10} 公里，估算油錢 ${fmt(fuelCost)}（已自動加入下方「其他開銷」的交通費）`;
     } else {
       document.getElementById('d-fuel-est').textContent='';
     }
@@ -1338,7 +1347,7 @@ function recalcDaily(){
   try{ document.getElementById('cd-gross').className=gross>=0?'pos':'neg'; }catch(e){}
   try{ document.getElementById('cd-gross2').className=gross>=0?'pos':'neg'; }catch(e){}
   try{ document.getElementById('cd-net').className=net>=0?'pos':'neg'; }catch(e){}
-  return {rent,fuelCost,driveMin,hours,revenue,cashRevenue,uber,panda,linepay,platformRevenue,revenueCash:revG.items,floatCash:floatG.items,floatTotal:floatG.total,closingCash:revG.total,purchaseItems,diyItems,opItems,purchaseCost,diyCost,totalCogs,opCost,fixedCost,autoPkgCost,autoBagQty,autoPlasticQty,totalCost,gross,net,margin,hourly};
+  return {rent,fuelCost,driveKm,hours,revenue,cashRevenue,uber,panda,linepay,platformRevenue,revenueCash:revG.items,floatCash:floatG.items,floatTotal:floatG.total,closingCash:revG.total,purchaseItems,diyItems,opItems,purchaseCost,diyCost,totalCogs,opCost,fixedCost,autoPkgCost,autoBagQty,autoPlasticQty,totalCost,gross,net,margin,hourly};
 }
 
 function recalcDenoms(){ recalcDaily(); }
@@ -1368,7 +1377,7 @@ document.getElementById('save-daily').addEventListener('click',()=>{
   const date=document.getElementById('d-date').value||todayStr();
   const loc=document.getElementById('d-loc').value.trim();
   if(!calc.closingCash&&!calc.purchaseCost&&!calc.diyCost&&!calc.rent&&!calc.opCost){ toast('請至少填入一項數據'); return; }
-  const rec={id:editingId||uid(),date,location:loc,hours:calc.hours,rent:calc.rent,driveMin:calc.driveMin,fuelCost:calc.fuelCost,purchaseItems:calc.purchaseItems,diyItems:calc.diyItems,opItems:calc.opItems,revenueCash:calc.revenueCash,floatCash:calc.floatCash,closingCash:calc.closingCash,floatTotal:calc.floatTotal,cashRevenue:calc.cashRevenue,uber:calc.uber,panda:calc.panda,linepay:calc.linepay,platformRevenue:calc.platformRevenue,revenue:calc.revenue,purchaseCost:calc.purchaseCost,diyCost:calc.diyCost,totalCogs:calc.totalCogs,opCost:calc.opCost,fixedCost:calc.fixedCost,gross:calc.gross,net:calc.net};
+  const rec={id:editingId||uid(),date,location:loc,hours:calc.hours,rent:calc.rent,driveKm:calc.driveKm,fuelCost:calc.fuelCost,purchaseItems:calc.purchaseItems,diyItems:calc.diyItems,opItems:calc.opItems,revenueCash:calc.revenueCash,floatCash:calc.floatCash,closingCash:calc.closingCash,floatTotal:calc.floatTotal,cashRevenue:calc.cashRevenue,uber:calc.uber,panda:calc.panda,linepay:calc.linepay,platformRevenue:calc.platformRevenue,revenue:calc.revenue,purchaseCost:calc.purchaseCost,diyCost:calc.diyCost,totalCogs:calc.totalCogs,opCost:calc.opCost,fixedCost:calc.fixedCost,gross:calc.gross,net:calc.net};
   if(editingId){ const i=dailyRecs.findIndex(r=>r.id===editingId); if(i>-1) dailyRecs[i]=rec; editingId=null; } else { dailyRecs.push(rec); }
   // ── AUTO DEDUCT MEAT FROM INVENTORY ──
   // if editing, first reverse old deduction
@@ -1389,7 +1398,7 @@ function resetDaily(){
   document.getElementById('d-loc').value='';
   document.getElementById('d-hours').value='';
   document.getElementById('d-rent').value='';
-  document.getElementById('d-drive-min').value='';
+  document.getElementById('d-drive-km').value='';
   clearDenomGrid('float-grid'); clearDenomGrid('revenue-grid');
   document.getElementById('d-uber').value='';
   document.getElementById('d-panda').value='';
@@ -1424,9 +1433,10 @@ function openEdit(id){
   switchTab('daily');
   document.getElementById('d-date').value=r.date;
   document.getElementById('d-loc').value=r.location||'';
+  updateMapsLink(r.location||'');
   document.getElementById('d-hours').value=r.hours||'';
   document.getElementById('d-rent').value=r.rent||'';
-  document.getElementById('d-drive-min').value=r.driveMin||'';
+  document.getElementById('d-drive-km').value=r.driveKm||'';
   clearDenomGrid('float-grid'); if(r.floatCash) fillDenomGrid('float-grid',r.floatCash);
   clearDenomGrid('revenue-grid'); if(r.revenueCash) fillDenomGrid('revenue-grid',r.revenueCash);
   document.getElementById('d-uber').value=r.uber||'';
@@ -1744,6 +1754,16 @@ function renderAnalysis(){
     el.textContent=fmt(netAfterMonthly);
     el.style.color=netAfterMonthly>=0?'var(--green)':'var(--red)';
   }catch(e){}
+  try{
+    const f=document.getElementById('a-formula');
+    f.innerHTML =
+      `出攤淨利合計 ${fmt(totalNet)}　+　外購肉／自製生肉成本 ${fmt(totalMeatCost)}　－　月固定支出 ${fmt(monthlyExp)}<br>`+
+      `＝ 月結淨利（未扣肉本） <b style="color:${netBeforeMeat>=0?'var(--green)':'var(--red)'}">${fmt(netBeforeMeat)}</b>`+
+      `<hr class="divider" style="margin:8px 0;">`+
+      `出攤淨利合計 ${fmt(totalNet)}　－　月固定支出 ${fmt(monthlyExp)}<br>`+
+      `＝ 月結淨利（已扣肉本） <b style="color:${netAfterMonthly>=0?'var(--green)':'var(--red)'}">${fmt(netAfterMonthly)}</b>`+
+      `<div class="muted" style="font-size:11px;margin-top:8px;">說明：「出攤淨利合計」是每天記錄裡「營收－肉本－耗材－其他開銷」加總後的結果，已經包含肉本；上面公式把肉本加回來，就能看出「還沒扣肉本」的版本。</div>`;
+  }catch(e){}
   try{ document.getElementById('a-avg-day').textContent=fmt(filtered.length?totalNet/filtered.length:0); }catch(e){}
   try{ document.getElementById('a-avg-hour').textContent=fmt(totalHours?totalNet/totalHours:0); }catch(e){}
 
@@ -1873,21 +1893,32 @@ document.getElementById('d-panda').oninput=recalcDaily;
 document.getElementById('d-linepay').oninput=recalcDaily;
 document.getElementById('d-loc').addEventListener('change',()=>{
   const loc=document.getElementById('d-loc').value.trim();
-  const driveMinEl=document.getElementById('d-drive-min');
-  if(loc && travelTimes[loc]!==undefined && !driveMinEl.value){ driveMinEl.value=travelTimes[loc]; }
+  const driveKmEl=document.getElementById('d-drive-km');
+  if(loc && travelTimes[loc]!==undefined && !driveKmEl.value){ driveKmEl.value=travelTimes[loc]; }
+  updateMapsLink(loc);
   recalcDaily();
 });
-document.getElementById('d-drive-min').oninput=()=>{
+document.getElementById('d-drive-km').oninput=()=>{
   const loc=document.getElementById('d-loc').value.trim();
-  const min=document.getElementById('d-drive-min').value;
-  if(loc && min){ travelTimes[loc]=parseFloat(min); saveTravelTimes(); }
+  const km=document.getElementById('d-drive-km').value;
+  if(loc && km){ travelTimes[loc]=parseFloat(km); saveTravelTimes(); }
   recalcDaily();
 };
-['fuel-speed','fuel-efficiency','fuel-price'].forEach(id=>{
+function updateMapsLink(loc){
+  const a=document.getElementById('d-map-link');
+  if(!a) return;
+  if(loc){
+    a.href=mapsDirectionsUrl(loc);
+    document.getElementById('d-map-link-loc').textContent=loc;
+    a.style.display='inline-block';
+  } else {
+    a.style.display='none';
+  }
+}
+['fuel-efficiency','fuel-price'].forEach(id=>{
   const el=document.getElementById(id);
-  el.value = fuelSettings[id==='fuel-speed'?'speed':id==='fuel-efficiency'?'efficiency':'price'];
+  el.value = fuelSettings[id==='fuel-efficiency'?'efficiency':'price'];
   el.oninput=()=>{
-    fuelSettings.speed=parseFloat(document.getElementById('fuel-speed').value)||fuelSettings.speed;
     fuelSettings.efficiency=parseFloat(document.getElementById('fuel-efficiency').value)||fuelSettings.efficiency;
     fuelSettings.price=parseFloat(document.getElementById('fuel-price').value)||fuelSettings.price;
     saveFuelSettings();
