@@ -690,6 +690,19 @@ section.active{display:block;}
   </div>
 
   <div class="card">
+    <div class="card-title">📋 支出總覽（含租金與各項雜費）</div>
+    <p class="muted" style="font-size:12px;">整合三個來源：出攤日記填的租金、出攤日記「其他開銷」逐筆填的雜費（瓦斯／交通費／市場電費…），以及這裡登記的進貨／耗材類支出，同一份統計裡每一項都看得到合計。</p>
+    <div class="sum-grid">
+      <div class="sum-card"><div class="sum-v" id="ov-rent">$0</div><div class="sum-l">租金合計</div></div>
+      <div class="sum-card"><div class="sum-v" id="ov-misc">$0</div><div class="sum-l">其他開銷合計</div></div>
+      <div class="sum-card"><div class="sum-v" id="ov-monthly">$0</div><div class="sum-l">進貨／耗材類支出</div></div>
+      <div class="sum-card"><div class="sum-v" id="ov-grand" style="color:var(--red)">$0</div><div class="sum-l">支出總計</div></div>
+    </div>
+    <div class="section-label">各項雜費明細（依項目名稱合計）</div>
+    <div id="ov-misc-list"></div>
+  </div>
+
+  <div class="card">
     <div class="card-title">支出記錄</div>
     <div id="m-rec-list"><div class="empty">尚無支出記錄</div></div>
   </div>
@@ -705,6 +718,25 @@ section.active{display:block;}
   <div class="card" id="inv-alerts-card" style="display:none;">
     <div class="card-title" style="color:var(--red);">⚠️ 低庫存警示</div>
     <div id="inv-alerts"></div>
+  </div>
+
+  <!-- 進貨與庫存彙整表 -->
+  <div class="card">
+    <div class="card-title">📊 進貨與庫存彙整表</div>
+    <p class="muted" style="font-size:12px;">每個品項：歷史累計進貨量、目前庫存剩餘量，以及兩者相減算出的「已使用量」，方便一眼核對進貨、庫存、用量是否合理。</p>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap;">
+        <thead>
+          <tr style="border-bottom:1px solid #38302680;">
+            <th style="text-align:left;padding:6px 4px;color:var(--faint);">品項</th>
+            <th style="text-align:right;padding:6px 4px;color:var(--faint);">累計進貨</th>
+            <th style="text-align:right;padding:6px 4px;color:var(--faint);">目前庫存</th>
+            <th style="text-align:right;padding:6px 4px;color:var(--faint);">已使用</th>
+          </tr>
+        </thead>
+        <tbody id="inv-summary-table"></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- 醃製雞肉庫存 -->
@@ -2011,6 +2043,25 @@ function renderMonthlyRecs(){
     });
   }catch(e){}
 
+  // ── 支出總覽：整合租金（出攤日記）＋ 其他開銷（出攤日記逐筆）＋ 這裡的進貨/耗材類支出 ──
+  try{
+    const dailyFiltered=dailyRecs.filter(r=>inMonthFilter(r));
+    const rentTotal=dailyFiltered.reduce((s,r)=>s+(r.rent||0),0);
+    const miscMap={};
+    dailyFiltered.forEach(r=>{ (r.opItems||[]).forEach(it=>{ miscMap[it.name]=(miscMap[it.name]||0)+(it.amount||0); }); });
+    const miscTotal=Object.values(miscMap).reduce((s,v)=>s+v,0);
+    const grand=rentTotal+miscTotal+total;
+    document.getElementById('ov-rent').textContent=fmt(rentTotal);
+    document.getElementById('ov-misc').textContent=fmt(miscTotal);
+    document.getElementById('ov-monthly').textContent=fmt(total);
+    document.getElementById('ov-grand').textContent=fmt(grand);
+    const listEl=document.getElementById('ov-misc-list');
+    const entries=Object.entries(miscMap).sort((a,b)=>b[1]-a[1]);
+    listEl.innerHTML = entries.length
+      ? entries.map(([name,amt])=>`<div class="compare-row"><span>${escH(name)}</span><b>${fmt(amt)}</b></div>`).join('')
+      : '<div class="empty" style="padding:8px 0;">這段期間沒有其他開銷紀錄</div>';
+  }catch(e){}
+
   // rec list
   try{
     const el=document.getElementById('m-rec-list'); el.innerHTML='';
@@ -2258,6 +2309,55 @@ function deductMarinadeByBOM(kg, date){
 }
 
 // ── INVENTORY RENDER ──
+// 計算每個品項歷史累計進貨量（處理「外購翅腿二節翅」拆一半的狀況，跟 applyPurchaseToInventory 邏輯一致）
+function computeCumulativePurchases(){
+  const map={};
+  const add=(name,qty)=>{ map[name]=Math.round(((map[name]||0)+qty)*1000)/1000; };
+  purchaseRecs.forEach(rec=>{
+    (rec.items||[]).forEach(it=>{
+      if(!it.qty) return;
+      if(it.name==='外購翅腿二節翅'){
+        add('外購翅腿', it.qty/2);
+        add('外購二節翅', it.qty/2);
+      } else {
+        add(it.name, it.qty);
+      }
+    });
+  });
+  return map;
+}
+
+function renderInventorySummaryTable(){
+  const el=document.getElementById('inv-summary-table');
+  if(!el) return;
+  const purchased=computeCumulativePurchases();
+  const stockRows=[
+    ...inventory.purchasedStock.map(s=>({name:s.name, stock:s.remaining, unit:s.unit||'公斤'})),
+    ...inventory.rawMeat.map(s=>({name:s.name, stock:s.qty, unit:s.unit||'公斤'})),
+    ...inventory.marinade.map(s=>({name:s.name, stock:s.qty, unit:s.unit||'公斤'})),
+    ...inventory.supplies.map(s=>({name:s.name, stock:s.qty, unit:s.unit||'個'})),
+  ];
+  const stockMap={};
+  stockRows.forEach(r=>{ stockMap[r.name]={stock:r.stock, unit:r.unit}; });
+
+  const names=new Set([...Object.keys(purchased), ...Object.keys(stockMap)]);
+  if(!names.size){ el.innerHTML='<tr><td colspan="4" class="empty" style="padding:10px 0;">尚無進貨或庫存資料</td></tr>'; return; }
+
+  el.innerHTML=[...names].sort().map(name=>{
+    const bought=purchased[name]||0;
+    const stockInfo=stockMap[name];
+    const stock=stockInfo?stockInfo.stock:0;
+    const unit=stockInfo?stockInfo.unit:'公斤';
+    const used=Math.max(0,Math.round((bought-stock)*1000)/1000);
+    return `<tr style="border-bottom:1px solid #38302640;">
+      <td style="padding:6px 4px;">${escH(name)}</td>
+      <td style="text-align:right;padding:6px 4px;">${bought||'—'}${bought?' '+unit:''}</td>
+      <td style="text-align:right;padding:6px 4px;font-weight:700;">${stock} ${unit}</td>
+      <td style="text-align:right;padding:6px 4px;color:var(--faint);">${used||'—'}${used?' '+unit:''}</td>
+    </tr>`;
+  }).join('');
+}
+
 function renderInventory(){
   renderDiyBatches();
   renderPurchasedStock();
@@ -2265,6 +2365,7 @@ function renderInventory(){
   renderInvList('inv-marinade-list', inventory.marinade, 'kg', 'marinade');
   renderInvList('inv-supplies-list', inventory.supplies, '個', 'supplies');
   renderMonthlyUsage();
+  renderInventorySummaryTable();
   renderAlerts();
 }
 
