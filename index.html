@@ -2096,6 +2096,11 @@ let currentMonthFilter = '';
 
 function loadMonthly(){
   try{ monthlyRecs=JSON.parse(localStorage.getItem(M_KEY)||'[]'); }catch(e){ monthlyRecs=[]; }
+  // 清除舊版遺留的肉品類月支出記錄：外購醃製品／自製生雞肉只該計入庫存＋逐日肉本，不該算進月固定支出
+  // (現在的 addToMonthly() 已經會擋掉這兩類，但舊資料若是在修正前存進去的，仍會殘留在 localStorage 裡)
+  const beforeLen=monthlyRecs.length;
+  monthlyRecs=monthlyRecs.filter(r=>r.category!=='外購醃製品' && r.category!=='自製生雞肉');
+  if(monthlyRecs.length!==beforeLen) saveMonthly();
 }
 function saveMonthly(){ localStorage.setItem(M_KEY, JSON.stringify(monthlyRecs)); }
 
