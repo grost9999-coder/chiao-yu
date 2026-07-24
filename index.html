@@ -643,6 +643,15 @@ section.active{display:block;}
   </div>
 
   <div class="card">
+    <div class="card-title">📅 本月進貨統計</div>
+    <div class="sum-grid">
+      <div class="sum-card"><div class="sum-v" id="p-month-amount">$0</div><div class="sum-l">本月累計進貨金額</div></div>
+      <div class="sum-card"><div class="sum-v" id="p-month-kg">0 公斤</div><div class="sum-l">本月累計雞肉重量</div></div>
+    </div>
+    <div id="p-month-breakdown" style="margin-top:8px;"></div>
+  </div>
+
+  <div class="card">
     <div class="card-title">進貨歷史</div>
     <div id="p-history-list"><div class="empty">尚未有進貨記錄</div></div>
   </div>
@@ -1687,8 +1696,30 @@ document.getElementById('save-purchase').addEventListener('click',()=>{
 function renderPurchaseHistory(){
   const el=document.getElementById('p-history-list');
   const sorted=[...purchaseRecs].sort((a,b)=>b.date.localeCompare(a.date));
-  if(!sorted.length){ el.innerHTML='<div class="empty">尚未有進貨記錄</div>'; return; }
   const typeNames={'chicken-purchased':'外購醃製品','chicken-raw':'自製生雞肉','marinade':'醃料進貨','supplies':'耗材進貨'};
+
+  // 本月進貨統計
+  try{
+    const month=thisMonth();
+    const monthRecs=purchaseRecs.filter(r=>(r.date||'').slice(0,7)===month);
+    const monthAmount=monthRecs.reduce((s,r)=>s+r.items.reduce((s2,i)=>s2+(i.total||0),0),0);
+    const monthKg=monthRecs.filter(r=>r.type==='chicken-purchased'||r.type==='chicken-raw')
+      .reduce((s,r)=>s+r.items.reduce((s2,i)=>s2+(parseFloat(i.qty)||0),0),0);
+    document.getElementById('p-month-amount').textContent=fmt(monthAmount);
+    document.getElementById('p-month-kg').textContent=(Math.round(monthKg*100)/100)+' 公斤';
+    const catMap={};
+    monthRecs.forEach(r=>{
+      const cat=typeNames[r.type]||r.type;
+      catMap[cat]=(catMap[cat]||0)+r.items.reduce((s2,i)=>s2+(i.total||0),0);
+    });
+    const bEl=document.getElementById('p-month-breakdown');
+    const entries=Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
+    bEl.innerHTML=entries.length
+      ? entries.map(([cat,amt])=>`<div class="compare-row"><span>${escH(cat)}</span><b>${fmt(amt)}</b></div>`).join('')
+      : '<div class="empty" style="padding:8px 0;">本月尚無進貨記錄</div>';
+  }catch(e){}
+
+  if(!sorted.length){ el.innerHTML='<div class="empty">尚未有進貨記錄</div>'; return; }
   el.innerHTML='';
   sorted.slice(0,30).forEach(r=>{
     const card=document.createElement('div'); card.className='purchase-rec';
