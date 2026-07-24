@@ -572,6 +572,7 @@ section.active{display:block;}
           <option value="chicken-raw">自製生雞肉（買生料自己醃）</option>
           <option value="marinade">醃料進貨</option>
           <option value="supplies">耗材進貨</option>
+          <option value="carryover">上月結餘庫存（無成本，僅記錄庫存）</option>
         </select>
       </div>
     </div>
@@ -640,6 +641,26 @@ section.active{display:block;}
     <div class="field" style="margin-top:12px;"><label>備註（選填）</label><input type="text" id="p-note" placeholder="例：這批翅腿比較小隻"></div>
     <button class="btn-primary" id="save-purchase">儲存進貨記錄</button>
     <button class="btn-ghost" id="cancel-purchase-edit" style="display:none;">取消編輯</button>
+  </div>
+
+  <!-- 上月結餘庫存（獨立卡片，不算成本，只記錄庫存） -->
+  <div class="card" id="p-carryover" style="display:none;">
+    <div class="card-title">📦 上月結餘庫存</div>
+    <p class="muted" style="font-size:12px;">用來把上個月盤點剩下的庫存記錄進來，不會算進進貨金額或月支出，只會加進對應品項的庫存數量。</p>
+    <div class="field"><label>結餘日期</label><input type="date" id="co-date"></div>
+    <div class="section-label">品項（可多筆，單位公斤/個依品項而定）</div>
+    <div class="chips">
+      <button class="chip co-chip" data-name="外購翅腿">外購翅腿</button>
+      <button class="chip co-chip" data-name="外購二節翅">外購二節翅</button>
+      <button class="chip co-chip" data-name="外購三節翅">外購三節翅</button>
+      <button class="chip co-chip" data-name="翅腿">翅腿（生肉）</button>
+      <button class="chip co-chip" data-name="二節翅">二節翅（生肉）</button>
+      <button class="chip co-chip" data-name="三節翅">三節翅（生肉）</button>
+    </div>
+    <div id="co-list"></div>
+    <button class="add-btn" id="co-add">＋ 新增品項</button>
+    <div class="field" style="margin-top:12px;"><label>備註（選填）</label><input type="text" id="co-note" placeholder="例：上月盤點結餘"></div>
+    <button class="btn-primary" id="save-carryover">儲存結餘庫存</button>
   </div>
 
   <div class="card">
@@ -1517,10 +1538,31 @@ document.getElementById('p-type').addEventListener('change',()=>{
   document.getElementById('p-chicken-raw').style.display=v==='chicken-raw'?'':'none';
   document.getElementById('p-marinade').style.display=v==='marinade'?'':'none';
   document.getElementById('p-supplies').style.display=v==='supplies'?'':'none';
+  document.getElementById('p-carryover').style.display=v==='carryover'?'':'none';
+  document.getElementById('save-purchase').style.display=v==='carryover'?'none':'';
+  document.getElementById('p-note').closest('.field').style.display=v==='carryover'?'none':'';
 });
 
 function wirePurchaseChips(cls,listId){ document.querySelectorAll('.'+cls).forEach(c=>c.addEventListener('click',()=>makePR(document.getElementById(listId),c.dataset.name))); }
 function wirePurchaseAdd(cls,listId){ document.querySelectorAll('.'+cls).forEach(b=>b.addEventListener('click',()=>makePR(document.getElementById(listId)))); }
+
+// ── 上月結餘庫存：只加庫存數量，不算成本、不記月支出 ──
+document.querySelectorAll('.co-chip').forEach(c=>c.addEventListener('click',()=>makePR(document.getElementById('co-list'),c.dataset.name)));
+document.getElementById('co-add').addEventListener('click',()=>makePR(document.getElementById('co-list')));
+document.getElementById('save-carryover').addEventListener('click',()=>{
+  const date=document.getElementById('co-date').value||todayStr();
+  const note=document.getElementById('co-note').value.trim();
+  const items=readPR(document.getElementById('co-list')).map(it=>({...it, total:0})); // 結餘庫存無成本
+  if(!items.length || !items.some(it=>it.qty)){ toast('請至少填一筆品項與數量'); return; }
+  const rec={id:uid(), date, type:'carryover', items, note};
+  applyPurchaseToInventory(rec, +1);
+  purchaseRecs.push(rec);
+  savePurchase();
+  document.getElementById('co-list').innerHTML='';
+  document.getElementById('co-note').value='';
+  toast('已記錄上月結餘庫存');
+  renderPurchaseHistory(); renderInventory();
+});
 // 雞肉專用：藍為單位
 function wireChickenChips(cls,listId){ document.querySelectorAll('.'+cls).forEach(c=>c.addEventListener('click',()=>makeChickenPR(document.getElementById(listId),c.dataset.name))); }
 function wireChickenAdd(cls,listId){ document.querySelectorAll('.'+cls).forEach(b=>b.addEventListener('click',()=>makeChickenPR(document.getElementById(listId)))); }
@@ -1598,6 +1640,17 @@ function applyPurchaseToInventory(rec, multiplier){
       const exist=inventory.marinade.find(s=>s.name===it.name);
       if(exist){ exist.qty=Math.max(0,(exist.qty||0)+it.qty*multiplier); exist.lastUpdated=date; }
       else if(multiplier>0) inventory.marinade.push({name:it.name,unit:it.unit||'公斤',qty:it.qty,lastUpdated:date});
+    });
+  } else if(type==='carryover'){
+    items.forEach(it=>{
+      if(!it.qty) return;
+      if(it.name==='外購翅腿'||it.name==='外購二節翅'||it.name==='外購三節翅'){
+        addToPurchasedStock(it.name, it.qty*multiplier, date);
+      } else {
+        const exist=inventory.rawMeat.find(s=>s.name===it.name);
+        if(exist){ exist.qty=Math.max(0,Math.round(((exist.qty||0)+it.qty*multiplier)*1000)/1000); exist.lastUpdated=date; }
+        else if(multiplier>0) inventory.rawMeat.push({name:it.name,unit:'公斤',qty:it.qty,lastUpdated:date});
+      }
     });
   }
   saveInventory();
@@ -1696,7 +1749,7 @@ document.getElementById('save-purchase').addEventListener('click',()=>{
 function renderPurchaseHistory(){
   const el=document.getElementById('p-history-list');
   const sorted=[...purchaseRecs].sort((a,b)=>b.date.localeCompare(a.date));
-  const typeNames={'chicken-purchased':'外購醃製品','chicken-raw':'自製生雞肉','marinade':'醃料進貨','supplies':'耗材進貨'};
+  const typeNames={'chicken-purchased':'外購醃製品','chicken-raw':'自製生雞肉','marinade':'醃料進貨','supplies':'耗材進貨','carryover':'上月結餘庫存'};
 
   // 本月進貨統計
   try{
@@ -1735,7 +1788,10 @@ function renderPurchaseHistory(){
         <button class="p-edit-btn" data-id="${r.id}">✏️ 編輯</button>
         <button class="p-del-btn danger" data-id="${r.id}">刪除</button>
       </div>`;
-    card.querySelector('.p-edit-btn').onclick=()=>{ loadPurchaseIntoForm(r); switchTab('purchase'); window.scrollTo({top:0,behavior:'smooth'}); };
+    card.querySelector('.p-edit-btn').onclick=()=>{
+      if(r.type==='carryover'){ toast('結餘庫存記錄請直接刪除後重新輸入'); return; }
+      loadPurchaseIntoForm(r); switchTab('purchase'); window.scrollTo({top:0,behavior:'smooth'});
+    };
     card.querySelector('.p-del-btn').onclick=()=>{
       if(!confirm('確定刪除這筆進貨記錄？\n⚠️ 庫存數量也會同步扣回')) return;
       applyPurchaseToInventory(r, -1);
@@ -2581,6 +2637,7 @@ document.getElementById('p-date').value=todayStr();
 try{ document.getElementById('m-date').value=todayStr(); }catch(e){}
 try{ document.getElementById('m-month').value=thisMonth(); }catch(e){}
 try{ document.getElementById('diy-add-date').value=todayStr(); }catch(e){}
+try{ document.getElementById('co-date').value=todayStr(); }catch(e){}
 makeIR(document.getElementById('purchase-list'));
 // ensure first purchase row is meat format
 document.getElementById('purchase-list').innerHTML='';
