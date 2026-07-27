@@ -1759,7 +1759,7 @@ function renderPurchaseHistory(){
     const monthKg=monthRecs.filter(r=>r.type==='chicken-purchased'||r.type==='chicken-raw')
       .reduce((s,r)=>s+r.items.reduce((s2,i)=>s2+(parseFloat(i.qty)||0),0),0);
     document.getElementById('p-month-amount').textContent=fmt(monthAmount);
-    document.getElementById('p-month-kg').textContent=(Math.round(monthKg*100)/100)+' 公斤';
+    document.getElementById('p-month-kg').textContent=(Math.round(monthKg*100)/100)+' 公斤（約 '+(Math.round(monthKg/KG_PER_BASKET*10)/10)+' 藍）';
     const catMap={};
     monthRecs.forEach(r=>{
       const cat=typeNames[r.type]||r.type;
@@ -2072,7 +2072,7 @@ function updateMapsLink(loc){
     recalcDaily();
   };
 });
-document.querySelectorAll('#chips-op-fuel .chip,#chips-op-transport .chip,#chips-op-season .chip,#chips-op-pkg .chip').forEach(chip=>{
+document.querySelectorAll('#chips-op-fuel .chip,#chips-op-transport .chip,#chips-op-market .chip,#chips-op-season .chip,#chips-op-pkg .chip').forEach(chip=>{
   chip.addEventListener('click',()=>{
     const list=document.getElementById('op-list');
     makeSR(list,chip.dataset.name||chip.textContent,'');
@@ -2096,11 +2096,6 @@ let currentMonthFilter = '';
 
 function loadMonthly(){
   try{ monthlyRecs=JSON.parse(localStorage.getItem(M_KEY)||'[]'); }catch(e){ monthlyRecs=[]; }
-  // 清除舊版遺留的肉品類月支出記錄：外購醃製品／自製生雞肉只該計入庫存＋逐日肉本，不該算進月固定支出
-  // (現在的 addToMonthly() 已經會擋掉這兩類，但舊資料若是在修正前存進去的，仍會殘留在 localStorage 裡)
-  const beforeLen=monthlyRecs.length;
-  monthlyRecs=monthlyRecs.filter(r=>r.category!=='外購醃製品' && r.category!=='自製生雞肉');
-  if(monthlyRecs.length!==beforeLen) saveMonthly();
 }
 function saveMonthly(){ localStorage.setItem(M_KEY, JSON.stringify(monthlyRecs)); }
 
@@ -2435,17 +2430,20 @@ function renderInventorySummaryTable(){
   const names=new Set([...Object.keys(purchased), ...Object.keys(stockMap)]);
   if(!names.size){ el.innerHTML='<tr><td colspan="4" class="empty" style="padding:10px 0;">尚無進貨或庫存資料</td></tr>'; return; }
 
+  const MEAT_NAMES=['外購翅腿','外購二節翅','外購三節翅','翅腿','二節翅','三節翅'];
   el.innerHTML=[...names].sort().map(name=>{
     const bought=purchased[name]||0;
     const stockInfo=stockMap[name];
     const stock=stockInfo?stockInfo.stock:0;
     const unit=stockInfo?stockInfo.unit:'公斤';
     const used=Math.max(0,Math.round((bought-stock)*1000)/1000);
+    const isMeat=MEAT_NAMES.includes(name);
+    const basketNote=(v)=>isMeat&&v?` (${Math.round(v/KG_PER_BASKET*10)/10}藍)`:'';
     return `<tr style="border-bottom:1px solid #38302640;">
       <td style="padding:6px 4px;">${escH(name)}</td>
-      <td style="text-align:right;padding:6px 4px;">${bought||'—'}${bought?' '+unit:''}</td>
-      <td style="text-align:right;padding:6px 4px;font-weight:700;">${stock} ${unit}</td>
-      <td style="text-align:right;padding:6px 4px;color:var(--faint);">${used||'—'}${used?' '+unit:''}</td>
+      <td style="text-align:right;padding:6px 4px;">${bought||'—'}${bought?' '+unit+basketNote(bought):''}</td>
+      <td style="text-align:right;padding:6px 4px;font-weight:700;">${stock} ${unit}${basketNote(stock)}</td>
+      <td style="text-align:right;padding:6px 4px;color:var(--faint);">${used||'—'}${used?' '+unit+basketNote(used):''}</td>
     </tr>`;
   }).join('');
 }
