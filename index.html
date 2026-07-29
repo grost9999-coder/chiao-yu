@@ -750,6 +750,30 @@ section.active{display:block;}
     <div id="inv-alerts"></div>
   </div>
 
+  <!-- 月底庫存盤點 -->
+  <div class="card">
+    <div class="card-title">📋 月底庫存盤點</div>
+    <p class="muted" style="font-size:12px;">實際去清點每個品項還剩多少，填在「實際盤點」欄位。存檔後系統庫存會直接改成你填的實際數字（不是加減，是校正成正確的數量），並留下這次盤點的紀錄，方便抓出哪裡累積算錯。</p>
+    <div class="field"><label>盤點日期</label><input type="date" id="st-date"></div>
+    <button class="add-btn" id="st-load-btn">＋ 載入目前所有品項來盤點</button>
+    <div id="st-table-wrap" style="display:none;margin-top:10px;overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr style="border-bottom:1px solid #38302680;">
+            <th style="text-align:left;padding:6px 4px;color:var(--faint);">品項</th>
+            <th style="text-align:right;padding:6px 4px;color:var(--faint);">系統庫存</th>
+            <th style="text-align:right;padding:6px 4px;color:var(--faint);">實際盤點</th>
+            <th style="text-align:right;padding:6px 4px;color:var(--faint);">差異</th>
+          </tr>
+        </thead>
+        <tbody id="st-table"></tbody>
+      </table>
+      <button class="btn-primary" id="st-save-btn" style="margin-top:10px;">儲存盤點結果（校正庫存）</button>
+    </div>
+    <div class="section-label" style="margin-top:14px;">盤點歷史</div>
+    <div id="st-history"><div class="empty">尚無盤點紀錄</div></div>
+  </div>
+
   <!-- 進貨與庫存彙整表 -->
   <div class="card">
     <div class="card-title">📊 進貨與庫存彙整表</div>
@@ -2243,7 +2267,7 @@ document.querySelectorAll('.m-range-btn').forEach(btn=>{
 
 // ── INVENTORY STORAGE ──
 const INV_KEY = 'qy_inventory_v2';
-let inventory = { diyBatches:[], purchasedStock:[], rawMeat:[], marinade:[], supplies:[], thresholds:{}, monthlyUsage:{}, marinadeUsed:{} };
+let inventory = { diyBatches:[], purchasedStock:[], rawMeat:[], marinade:[], supplies:[], thresholds:{}, monthlyUsage:{}, marinadeUsed:{}, stocktakes:[] };
 
 function loadInventory(){
   try{ const d=JSON.parse(localStorage.getItem(INV_KEY)||'{}'); if(d.diyBatches) Object.assign(inventory,d); }catch(e){}
@@ -2414,6 +2438,79 @@ function computeCumulativePurchases(){
   return map;
 }
 
+// ── 月底庫存盤點 ──
+function stocktakeSourceList(){
+  return [
+    ...inventory.purchasedStock.map(s=>({name:s.name, qty:s.remaining, unit:s.unit||'公斤', arr:'purchasedStock', ref:s})),
+    ...inventory.rawMeat.map(s=>({name:s.name, qty:s.qty, unit:s.unit||'公斤', arr:'rawMeat', ref:s})),
+    ...inventory.marinade.map(s=>({name:s.name, qty:s.qty, unit:s.unit||'公斤', arr:'marinade', ref:s})),
+    ...inventory.supplies.map(s=>({name:s.name, qty:s.qty, unit:s.unit||'個', arr:'supplies', ref:s})),
+  ];
+}
+document.getElementById('st-load-btn').addEventListener('click',()=>{
+  const list=stocktakeSourceList();
+  const wrap=document.getElementById('st-table-wrap');
+  const tbody=document.getElementById('st-table');
+  if(!list.length){ toast('目前沒有任何庫存品項可以盤點'); return; }
+  tbody.innerHTML=list.map((it,i)=>`
+    <tr style="border-bottom:1px solid #38302640;" data-arr="${it.arr}" data-name="${escH(it.name)}">
+      <td style="padding:6px 4px;">${escH(it.name)}</td>
+      <td style="text-align:right;padding:6px 4px;">${it.qty} ${it.unit}</td>
+      <td style="text-align:right;padding:6px 4px;"><input type="number" inputmode="decimal" class="st-actual" data-current="${it.qty}" data-unit="${it.unit}" style="width:80px;text-align:right;background:var(--bg2);border:1px solid #38302660;border-radius:6px;color:var(--ink);padding:5px;" placeholder="${it.qty}"></td>
+      <td style="text-align:right;padding:6px 4px;color:var(--faint);" class="st-diff">—</td>
+    </tr>`).join('');
+  tbody.querySelectorAll('.st-actual').forEach(inp=>{
+    inp.addEventListener('input',()=>{
+      const cur=parseFloat(inp.dataset.current)||0;
+      const val=inp.value===''?null:parseFloat(inp.value);
+      const diffCell=inp.closest('tr').querySelector('.st-diff');
+      if(val===null||isNaN(val)){ diffCell.textContent='—'; return; }
+      const diff=Math.round((val-cur)*1000)/1000;
+      diffCell.textContent=(diff>0?'+':'')+diff+' '+inp.dataset.unit;
+      diffCell.style.color=diff===0?'var(--faint)':(diff>0?'var(--green)':'var(--red)');
+    });
+  });
+  wrap.style.display='';
+});
+document.getElementById('st-save-btn').addEventListener('click',()=>{
+  const date=document.getElementById('st-date').value||todayStr();
+  const rows=document.querySelectorAll('#st-table tr');
+  const changes=[];
+  rows.forEach(row=>{
+    const inp=row.querySelector('.st-actual');
+    if(!inp||inp.value==='') return;
+    const val=parseFloat(inp.value); if(isNaN(val)) return;
+    const arrName=row.dataset.arr, name=row.dataset.name;
+    const arr=inventory[arrName];
+    const item=arr.find(s=>s.name===name);
+    if(!item) return;
+    const before=arrName==='purchasedStock'?item.remaining:item.qty;
+    const diff=Math.round((val-before)*1000)/1000;
+    if(diff===0) return;
+    if(arrName==='purchasedStock') item.remaining=val; else item.qty=val;
+    item.lastUpdated=date;
+    changes.push({name, before, after:val, diff});
+  });
+  if(!changes.length){ toast('沒有數字變更，未儲存'); return; }
+  saveInventory();
+  inventory.stocktakes.unshift({date, changes});
+  saveInventory();
+  document.getElementById('st-table-wrap').style.display='none';
+  renderInventory();
+  toast(`盤點完成，校正了 ${changes.length} 個品項`);
+});
+function renderStocktakeHistory(){
+  const el=document.getElementById('st-history');
+  if(!el) return;
+  const list=inventory.stocktakes||[];
+  if(!list.length){ el.innerHTML='<div class="empty">尚無盤點紀錄</div>'; return; }
+  el.innerHTML=list.slice(0,10).map(st=>`
+    <div class="purchase-rec">
+      <div class="purchase-date">${st.date}</div>
+      <div class="purchase-meta">${st.changes.map(c=>`${escH(c.name)} ${c.before}→${c.after}（${c.diff>0?'+':''}${c.diff}）`).join('・')}</div>
+    </div>`).join('');
+}
+
 function renderInventorySummaryTable(){
   const el=document.getElementById('inv-summary-table');
   if(!el) return;
@@ -2456,6 +2553,7 @@ function renderInventory(){
   renderInvList('inv-supplies-list', inventory.supplies, '個', 'supplies');
   renderMonthlyUsage();
   renderInventorySummaryTable();
+  renderStocktakeHistory();
   renderAlerts();
 }
 
@@ -2641,6 +2739,7 @@ try{ document.getElementById('m-date').value=todayStr(); }catch(e){}
 try{ document.getElementById('m-month').value=thisMonth(); }catch(e){}
 try{ document.getElementById('diy-add-date').value=todayStr(); }catch(e){}
 try{ document.getElementById('co-date').value=todayStr(); }catch(e){}
+try{ document.getElementById('st-date').value=todayStr(); }catch(e){}
 makeIR(document.getElementById('purchase-list'));
 // ensure first purchase row is meat format
 document.getElementById('purchase-list').innerHTML='';
