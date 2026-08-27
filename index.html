@@ -139,7 +139,7 @@ body{padding-bottom:80px;}
 /* ── TABS ── */
 .tabs{background:var(--bg2);border-bottom:1px solid #38302640;padding:0 16px;}
 .tabs-inner{max-width:540px;margin:0 auto;display:flex;gap:0;}
-.tab{flex:1;padding:10px 0 9px;font-size:13px;font-weight:600;color:var(--faint);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;}
+.tab{flex:1;padding:10px 0 9px;font-size:11px;font-weight:600;color:var(--faint);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;}
 .tab.active{color:var(--amber);border-bottom-color:var(--amber);}
 
 /* ── WRAP ── */
@@ -340,8 +340,8 @@ section.active{display:block;}
 
 <nav class="tabs">
   <div class="tabs-inner">
-    <button class="tab active" id="t-daily">出攤日記</button>
-    <button class="tab" id="t-purchase">進貨記錄</button>
+    <button class="tab active" id="t-daily">出攤</button>
+    <button class="tab" id="t-purchase">進貨</button>
     <button class="tab" id="t-monthly">月支出</button>
     <button class="tab" id="t-marinate">醃製</button>
     <button class="tab" id="t-equipment">器具</button>
@@ -563,8 +563,7 @@ section.active{display:block;}
       <div class="section-label">🛒 外購醃製品品項</div>
       <div class="chips">
         <button class="chip p-meat-chip" data-name="外購三節翅">外購三節翅</button>
-        <button class="chip p-meat-chip" data-name="外購翅腿">外購翅腿</button>
-        <button class="chip p-meat-chip" data-name="外購二節翅">外購二節翅</button>
+        <button class="chip p-meat-chip" data-name="外購翅腿二節翅">外購翅腿二節翅</button>
       </div>
       <div id="p-meat-list"></div>
       <button class="add-btn p-meat-add">＋ 新增品項</button>
@@ -574,8 +573,7 @@ section.active{display:block;}
     <div id="p-chicken-raw" style="display:none;">
       <div class="section-label">🐔 自製生雞肉品項</div>
       <div class="chips">
-        <button class="chip p-raw-chip" data-name="翅腿">翅腿</button>
-        <button class="chip p-raw-chip" data-name="二節翅">二節翅</button>
+        <button class="chip p-raw-chip" data-name="翅腿二節翅">翅腿二節翅</button>
         <button class="chip p-raw-chip" data-name="三節翅">三節翅</button>
       </div>
       <div id="p-raw-list"></div>
@@ -615,7 +613,6 @@ section.active{display:block;}
         <button class="chip p-sup-chip" data-name="60×90塑膠袋">60×90袋</button>
         <button class="chip p-sup-chip" data-name="炸物盆塑膠袋">炸物盆塑膠袋</button>
         <button class="chip p-sup-chip" data-name="炸物盆襯紙">炸物盆襯紙</button>
-        <button class="chip p-sup-chip" data-name="真空袋" data-unit="個">真空袋</button>
         <button class="chip p-sup-chip" data-name="瓦斯">瓦斯</button>
         <button class="chip p-sup-chip" data-name="沙拉油">沙拉油</button>
         <button class="chip p-sup-chip" data-name="胡椒鹽">胡椒鹽</button>
@@ -723,7 +720,6 @@ section.active{display:block;}
     <div class="field" style="margin-bottom:0;"><label>備註（選填）</label><input type="text" id="mar-note" placeholder="例：這批翅腿較小隻"></div>
     <button class="btn-primary" id="mar-save-btn" style="margin-top:12px;">＋ 新增自製批次（自動依配方扣醃料）</button>
   </div>
-
   <div class="card">
     <div class="card-title">醃製批次記錄</div>
     <div id="mar-batch-list"><div class="empty">尚無醃製記錄</div></div>
@@ -752,7 +748,6 @@ section.active{display:block;}
     <button class="btn-primary" id="eq-save-btn" style="margin-top:12px;">儲存器具採購</button>
     <button class="btn-ghost" id="eq-cancel-btn" style="display:none;">取消編輯</button>
   </div>
-
   <div class="card">
     <div class="card-title">攤提狀況</div>
     <div class="sum-grid">
@@ -763,12 +758,10 @@ section.active{display:block;}
     </div>
     <div style="font-size:11px;color:var(--faint);margin-top:8px;">每月從實際淨利提撥3%扣抵器具成本，攤提完為止</div>
   </div>
-
   <div class="card">
     <div class="card-title">器具清單</div>
     <div id="eq-list"><div class="empty">尚無器具記錄</div></div>
   </div>
-
   <div class="card">
     <div class="card-title">快速新增預設器具</div>
     <p class="backup-hint">點選以下品項快速帶入，確認金額後儲存。</p>
@@ -776,7 +769,7 @@ section.active{display:block;}
   </div>
 </section>
 
-
+<section id="s-inventory">
 
   <!-- 庫存概覽 -->
   <div class="card" id="inv-alerts-card" style="display:none;">
@@ -806,8 +799,7 @@ section.active{display:block;}
   <div class="card">
     <div class="card-title">🐔 生雞肉原料庫存</div>
     <div class="chips">
-      <button class="chip inv-raw-chip" data-name="翅腿">翅腿</button>
-      <button class="chip inv-raw-chip" data-name="二節翅">二節翅</button>
+      <button class="chip inv-raw-chip" data-name="翅腿二節翅">翅腿二節翅</button>
       <button class="chip inv-raw-chip" data-name="三節翅">三節翅</button>
     </div>
     <div id="inv-raw-list"></div>
@@ -963,7 +955,23 @@ section.active{display:block;}
 </div><!-- /wrap -->
 
 <div class="toast" id="toast"></div>
+<div id="err-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:999;background:#c0392b;color:#fff;padding:10px 14px;font-size:12px;font-family:monospace;word-break:break-all;white-space:pre-wrap;max-height:50vh;overflow-y:auto;"></div>
 
+<script>
+// Global error handler - shows real error on screen for debugging
+window.onerror = function(msg, src, line, col, err){
+  var b = document.getElementById('err-banner');
+  if(b){
+    b.style.display='block';
+    b.textContent = '⚠️ JS Error: ' + msg + '\nLine: ' + line + ', Col: ' + col + '\nStack: ' + (err&&err.stack?err.stack:'n/a');
+  }
+  return false;
+};
+window.onunhandledrejection = function(e){
+  var b = document.getElementById('err-banner');
+  if(b){ b.style.display='block'; b.textContent += '\nPromise: ' + e.reason; }
+};
+</script>
 <script>
 (function(){
 'use strict';
@@ -1514,18 +1522,21 @@ document.getElementById('save-purchase').addEventListener('click',()=>{
   // update unit prices
   items.forEach(it=>{ if(it.unitCost>0) unitPrices[it.name]=it.unitCost; });
 
-  // 耗材/醃料進貨自動加入月支出
+  // 耗材/醃料進貨自動加入月支出；肉品類（外購醃製品／自製生雞肉）只計入庫存，不計入月固定支出
   function addToMonthly(rec){
+    const mid='p-'+rec.id;
+    monthlyRecs=monthlyRecs.filter(r=>r.id!==mid); // 先移除舊的（若為重新編輯或類型已變更）
+    const isMeat = rec.type==='chicken-purchased'||rec.type==='chicken-raw';
+    if(isMeat){ saveMonthly(); return; }
     const total=rec.items.reduce((s,i)=>s+(i.total||0),0);
     if(!total) return;
-    const typeLabel={'supplies':'耗材進貨','marinade':'醃料進貨','chicken-purchased':'外購醃製品','chicken-raw':'自製生雞肉'};
+    const typeLabel={'supplies':'耗材進貨','marinade':'醃料進貨'};
     const mRec={
-      id:'p-'+rec.id, date:rec.date, month:rec.date.slice(0,7),
+      id:mid, date:rec.date, month:rec.date.slice(0,7),
       name: rec.items.map(i=>i.name).join('、')+(rec.note?`（${rec.note}）`:''),
       category: typeLabel[rec.type]||'進貨',
       amount: total, note:'自進貨記錄自動新增'
     };
-    monthlyRecs=monthlyRecs.filter(r=>r.id!==mRec.id); // remove old if re-adding
     monthlyRecs.push(mRec);
     saveMonthly();
   }
@@ -1941,360 +1952,50 @@ document.querySelectorAll('.m-range-btn').forEach(btn=>{
   });
 });
 
-// ══════════════════════════════════════════
-// ── MARINADE RECORDS ──
-// ══════════════════════════════════════════
-const MAR_KEY = 'qy_marinade_v1';
-let marinadeRecs = [];
-function loadMarinade(){ try{ marinadeRecs=JSON.parse(localStorage.getItem(MAR_KEY)||'[]'); }catch(e){ marinadeRecs=[]; } }
-function saveMarinade(){ localStorage.setItem(MAR_KEY,JSON.stringify(marinadeRecs)); }
-
-const KG_RAW_TO_COOKED = 9/8.5; // 8.5kg raw → 9kg cooked
-
-// Recipe definitions (amounts per 8.5kg raw meat)
-const RECIPES = {
-  '1': {
-    name: '配方1（舊版）',
-    perKg: 8.5,
-    ingredients: [
-      {name:'紅麴豆腐乳', g:25, note:''},
-      {name:'米酒',       g:60, note:''},
-      {name:'白砂糖',     g:50, note:''},
-      {name:'紅麴粉',     g:6,  note:''},
-      {name:'蒜粉',       g:18, note:''},
-      {name:'白胡椒粉',   g:10, note:''},
-      {name:'豆漿粉',     g:25, note:''},
-      {name:'玉米粉',     g:90, note:''},
-      {name:'地瓜粉',     g:120,note:''},
-      {name:'中筋麵粉',   g:60, note:''},
-    ]
-  },
-  '2': {
-    name: '配方2（含甜菜根粉17g）',
-    perKg: 8.5,
-    ingredients: [
-      {name:'紅麴豆腐乳', g:25, note:''},
-      {name:'醬油',       g:25, note:''},
-      {name:'米酒',       g:60, note:''},
-      {name:'白砂糖',     g:50, note:''},
-      {name:'蒜粉',       g:18, note:''},
-      {name:'白胡椒粉',   g:10, note:''},
-      {name:'豆漿粉',     g:25, note:''},
-      {name:'甜菜根粉',   g:17, note:''},
-      {name:'玉米粉',     g:90, note:''},
-      {name:'地瓜粉',     g:120,note:''},
-      {name:'中筋麵粉',   g:60, note:''},
-    ]
-  }
-};
-
-function calcMarinadeDetail(rawKg, recipeId){
-  const recipe = RECIPES[recipeId] || RECIPES['2'];
-  const ratio = rawKg / recipe.perKg;
-  let totalMarinadeCost = 0;
-  const details = recipe.ingredients.map(ing=>{
-    const usedG = Math.round(ing.g * ratio * 10)/10;
-    const usedKg = usedG/1000;
-    const pricePerKg = unitPrices[ing.name] || 0;
-    const cost = Math.round(usedKg * pricePerKg * 100)/100;
-    totalMarinadeCost += cost;
-    return {name: ing.name, g: usedG, cost};
-  });
-  return {details, totalMarinadeCost: Math.round(totalMarinadeCost*100)/100};
-}
-
-function updateMarinadeCalc(){
-  const rawKg = parseFloat(document.getElementById('mar-raw-kg').value)||0;
-  const recipeId = document.getElementById('mar-recipe').value;
-  const item = document.getElementById('mar-item').value;
-
-  const pieces = Math.round(rawKg / KG_PER_BASKET * 10)/10;
-  const cookedKg = Math.round(rawKg * KG_RAW_TO_COOKED * 100)/100;
-
-  const {details, totalMarinadeCost} = calcMarinadeDetail(rawKg, recipeId);
-
-  // meat cost
-  const meatPriceMap = {
-    '自製翅腿': unitPrices['自製翅腿'] || Math.round(1200/18*100)/100,
-    '自製二節翅': unitPrices['自製二節翅'] || Math.round(1200/18*100)/100,
-    '自製三節翅': unitPrices['自製三節翅'] || Math.round(1200/18*100)/100,
-    '花枝丸': 0,
-  };
-  const meatCost = Math.round(rawKg * (meatPriceMap[item]||0));
-  const totalCost = meatCost + Math.round(totalMarinadeCost);
-
-  try{ document.getElementById('mar-pieces').textContent = pieces + ' 件（'+rawKg+'kg）'; }catch(e){}
-  try{ document.getElementById('mar-cooked-kg').textContent = cookedKg + ' 公斤'; }catch(e){}
-  try{ document.getElementById('mar-marinade-cost').textContent = fmt(Math.round(totalMarinadeCost)); }catch(e){}
-  try{ document.getElementById('mar-meat-cost').textContent = fmt(meatCost); }catch(e){}
-  try{ document.getElementById('mar-total-cost').textContent = fmt(totalCost); }catch(e){}
-
-  // recipe detail
-  try{
-    const el = document.getElementById('mar-recipe-detail');
-    if(rawKg > 0){
-      el.innerHTML = '<div style="font-size:10.5px;color:var(--amber2);font-weight:700;margin-bottom:6px;">醃料用量明細</div>' +
-        details.map(d=>`<div style="display:flex;justify-content:space-between;padding:2px 0;"><span>${escH(d.name)}</span><span>${d.g}g ${d.cost>0?fmt(d.cost):''}</span></div>`).join('');
-    } else {
-      el.innerHTML = '';
-    }
-  }catch(e){}
-
-  return {rawKg, cookedKg, pieces, meatCost, totalMarinadeCost: Math.round(totalMarinadeCost), totalCost, details, recipeId, item};
-}
-
-try{
-  document.getElementById('mar-raw-kg').oninput = updateMarinadeCalc;
-  document.getElementById('mar-recipe').onchange = updateMarinadeCalc;
-  document.getElementById('mar-item').onchange = updateMarinadeCalc;
-}catch(e){}
-
-document.getElementById('mar-save-btn').addEventListener('click', ()=>{
-  const calc = updateMarinadeCalc();
-  if(!calc.rawKg){ toast('請輸入生肉重量'); return; }
-  const date = document.getElementById('mar-date').value || todayStr();
-  const note = document.getElementById('mar-note').value.trim();
-
-  // Deduct raw meat from rawMeat inventory
-  if(calc.item !== '花枝丸'){
-    const meatName = calc.item.replace('自製','');
-    // find matching raw meat
-    const rawItem = inventory.rawMeat.find(i=>i.name.includes(meatName)||meatName.includes(i.name.replace('翅腿','').replace('二節翅','').trim()));
-    if(rawItem){
-      rawItem.qty = Math.max(0, Math.round((rawItem.qty - calc.rawKg)*100)/100);
-      rawItem.lastUpdated = date;
-    }
-    // Also deduct from combined 翅腿二節翅 if applicable
-    const combined = inventory.rawMeat.find(i=>i.name==='翅腿二節翅');
-    if(combined && (calc.item==='自製翅腿'||calc.item==='自製二節翅')){
-      combined.qty = Math.max(0, Math.round((combined.qty - calc.rawKg)*100)/100);
-      combined.lastUpdated = date;
-    }
-  }
-
-  // Deduct marinade from marinade inventory
-  const recipe = RECIPES[calc.recipeId] || RECIPES['2'];
-  const ratio = calc.rawKg / recipe.perKg;
-  calc.details.forEach(d=>{
-    const usedKg = d.g/1000;
-    const item = inventory.marinade.find(i=>i.name===d.name);
-    if(item){ item.qty = Math.max(0, Math.round((item.qty - usedKg*ratio)*10000)/10000); item.lastUpdated=date; }
-  });
-  saveInventory();
-
-  // Add to diy batches inventory
-  inventory.diyBatches.push({
-    id: uid(), name: calc.item, totalKg: calc.cookedKg, remaining: calc.cookedKg,
-    date, rawKg: calc.rawKg, recipe: RECIPES[calc.recipeId].name
-  });
-  saveInventory();
-
-  // Add to monthly expenses
-  const mRec = {
-    id: uid(), date, month: date.slice(0,7),
-    name: `${calc.item} ${calc.rawKg}kg醃製`,
-    category: '醃製成本', amount: calc.totalCost, note
-  };
-  monthlyRecs.push(mRec);
-  saveMonthly();
-
-  // Save marinade record
-  marinadeRecs.push({
-    id: uid(), date, item: calc.item, rawKg: calc.rawKg, cookedKg: calc.cookedKg,
-    pieces: calc.pieces, meatCost: calc.meatCost, marinadeCost: calc.totalMarinadeCost,
-    totalCost: calc.totalCost, recipeId: calc.recipeId, note
-  });
-  saveMarinade();
-
-  document.getElementById('mar-raw-kg').value='';
-  document.getElementById('mar-note').value='';
-  updateMarinadeCalc();
-  renderMarinadeRecs();
-  toast('已儲存醃製批次，庫存及月支出已更新');
-});
-
-function renderMarinadeRecs(){
-  loadMarinade();
-  const el = document.getElementById('mar-batch-list'); el.innerHTML='';
-  const sorted = [...marinadeRecs].sort((a,b)=>b.date.localeCompare(a.date));
-  if(!sorted.length){ el.innerHTML='<div class="empty">尚無醃製記錄</div>'; return; }
-  sorted.forEach(r=>{
-    const card = document.createElement('div'); card.className='rec';
-    card.innerHTML=`
-      <div class="rec-top">
-        <div><span class="rec-date">${r.date}</span><span class="rec-loc" style="color:var(--amber2);">配方${r.recipeId}</span></div>
-        <div class="rec-net-wrap"><span class="rec-net-lbl">總成本</span><div class="rec-net neg">${fmt(r.totalCost)}</div></div>
-      </div>
-      <div style="font-size:13px;color:var(--dim);margin-top:4px;">
-        ${escH(r.item)} ${r.rawKg}kg生肉 → <span style="color:var(--green)">${r.cookedKg}kg醃製品</span>
-      </div>
-      <div class="rec-meta">
-        <span>生肉 ${fmt(r.meatCost)}</span>
-        <span>醃料 ${fmt(r.marinadeCost)}</span>
-      </div>
-      ${r.note?`<div style="font-size:11px;color:var(--faint);margin-top:4px;">${escH(r.note)}</div>`:''}
-      <div class="rec-actions" style="margin-top:8px;">
-        <button class="mar-del-btn danger" data-id="${r.id}">刪除記錄</button>
-      </div>`;
-    card.querySelector('.mar-del-btn').onclick=()=>{
-      if(!confirm('確定刪除此醃製記錄？\n⚠️ 已扣除的庫存不會還原')) return;
-      marinadeRecs = marinadeRecs.filter(x=>x.id!==r.id);
-      monthlyRecs = monthlyRecs.filter(x=>x.note!=='自進貨記錄自動新增'||x.id!==r.id);
-      saveMarinade(); saveMonthly(); renderMarinadeRecs(); toast('已刪除');
-    };
-    el.appendChild(card);
-  });
-}
-
-// ══════════════════════════════════════════
-// ── EQUIPMENT RECORDS ──
-// ══════════════════════════════════════════
-const EQ_KEY = 'qy_equipment_v1';
-let equipmentRecs = [];
-let editingEqId = null;
-const EQ_AMORTIZE_RATE = 0.03;
-const RMB_TO_TWD = 4.5;
-
-const EQ_PRESETS = [
-  {name:'醃製機',        currency:'rmb', amount:1123.3},
-  {name:'瀝水籃（2個）', currency:'rmb', amount:48.23},
-  {name:'市集角鋼攤車架',currency:'twd', amount:2140},
-  {name:'市集攤車招牌',  currency:'twd', amount:1820},
-  {name:'帳篷防水遮簾',  currency:'twd', amount:163},
-  {name:'磁鐵條12米',    currency:'rmb', amount:60},
-  {name:'折疊保溫箱60×40×25（3個）',currency:'rmb', amount:68.3+156.6},
-  {name:'折疊保溫箱42×42×25',       currency:'rmb', amount:53.3},
-  {name:'食品塑膠袋45×45×75 50個',  currency:'twd', amount:228},
-  {name:'電子手持秤',    currency:'rmb', amount:34.45},
-  {name:'不鏽鋼油鍋架（2個）',       currency:'rmb', amount:143},
-  {name:'抽真空機',      currency:'twd', amount:0},
-  {name:'市集攤車配件',  currency:'twd', amount:0},
-];
-
-function loadEquipment(){ try{ equipmentRecs=JSON.parse(localStorage.getItem(EQ_KEY)||'[]'); }catch(e){ equipmentRecs=[]; } }
-function saveEquipment(){ localStorage.setItem(EQ_KEY,JSON.stringify(equipmentRecs)); }
-
-function renderEquipmentPresets(){
-  const el=document.getElementById('eq-presets'); if(!el) return;
-  el.innerHTML='';
-  EQ_PRESETS.forEach(p=>{
-    const twd=p.currency==='rmb'?Math.round(p.amount*RMB_TO_TWD):p.amount;
-    const btn=document.createElement('button');
-    btn.className='ghost-btn'; btn.style.cssText='width:100%;text-align:left;padding:9px 12px;margin-bottom:6px;border-radius:9px;border:1px solid #38302660;background:var(--bg2);color:var(--dim);font-size:13px;';
-    btn.innerHTML=`${escH(p.name)} <span style="float:right;color:var(--amber2);">${p.currency==='rmb'?'RMB'+p.amount:'NT$'+p.amount}${p.currency==='rmb'?' → NT$'+twd:''}</span>`;
-    btn.onclick=()=>{
-      document.getElementById('eq-name').value=p.name;
-      document.getElementById('eq-currency').value=p.currency;
-      document.getElementById('eq-amount-orig').value=p.amount||'';
-      document.getElementById('eq-amount-twd').value=twd||'';
-    };
-    el.appendChild(btn);
-  });
-}
-
-try{
-  document.getElementById('eq-amount-orig').oninput=()=>{
-    const orig=parseFloat(document.getElementById('eq-amount-orig').value)||0;
-    const cur=document.getElementById('eq-currency').value;
-    document.getElementById('eq-amount-twd').value=cur==='rmb'?Math.round(orig*RMB_TO_TWD):orig;
-  };
-  document.getElementById('eq-currency').onchange=()=>{
-    const orig=parseFloat(document.getElementById('eq-amount-orig').value)||0;
-    const cur=document.getElementById('eq-currency').value;
-    document.getElementById('eq-amount-twd').value=cur==='rmb'?Math.round(orig*RMB_TO_TWD):orig;
-  };
-}catch(e){}
-
-document.getElementById('eq-save-btn').addEventListener('click',()=>{
-  const name=document.getElementById('eq-name').value.trim();
-  const date=document.getElementById('eq-date').value||todayStr();
-  const currency=document.getElementById('eq-currency').value;
-  const orig=parseFloat(document.getElementById('eq-amount-orig').value)||0;
-  const twd=parseFloat(document.getElementById('eq-amount-twd').value)||Math.round(orig*(currency==='rmb'?RMB_TO_TWD:1));
-  const note=document.getElementById('eq-note').value.trim();
-  if(!name||!twd){ toast('請填入器具名稱和金額'); return; }
-  const rec={id:editingEqId||uid(),date,name,currency,amountOrig:orig,amountTWD:twd,note};
-  if(editingEqId){ const i=equipmentRecs.findIndex(r=>r.id===editingEqId); if(i>-1) equipmentRecs[i]=rec; editingEqId=null; }
-  else equipmentRecs.push(rec);
-  saveEquipment(); resetEqForm(); renderEquipmentRecs(); renderEquipmentSummary(); toast('已儲存器具記錄');
-});
-
-document.getElementById('eq-cancel-btn').addEventListener('click',()=>{ resetEqForm(); toast('已取消'); });
-
-function resetEqForm(){
-  editingEqId=null;
-  document.getElementById('eq-name').value='';
-  document.getElementById('eq-amount-orig').value='';
-  document.getElementById('eq-amount-twd').value='';
-  document.getElementById('eq-note').value='';
-  document.getElementById('eq-save-btn').textContent='儲存器具採購';
-  document.getElementById('eq-cancel-btn').style.display='none';
-}
-
-function renderEquipmentSummary(){
-  loadEquipment();
-  const totalCost=equipmentRecs.reduce((s,r)=>s+(r.amountTWD||0),0);
-  // Calculate amortized: sum of 3% of monthly net from dailyRecs per month since first purchase
-  const months={};
-  dailyRecs.forEach(r=>{ const m=r.date.slice(0,7); if(!months[m]) months[m]=0; months[m]+=(r.net||0); });
-  let amortized=0;
-  Object.values(months).forEach(monthNet=>{ amortized+=Math.max(0,monthNet)*EQ_AMORTIZE_RATE; });
-  amortized=Math.min(amortized,totalCost);
-  try{ document.getElementById('eq-total-cost').textContent=fmt(totalCost); }catch(e){}
-  try{ document.getElementById('eq-amortized').textContent=fmt(Math.round(amortized)); }catch(e){}
-  try{
-    const rem=totalCost-Math.round(amortized);
-    const el=document.getElementById('eq-remaining'); el.textContent=fmt(rem);
-    el.style.color=rem<=0?'var(--green)':'var(--red)';
-  }catch(e){}
-}
-
-function renderEquipmentRecs(){
-  loadEquipment();
-  const el=document.getElementById('eq-list'); el.innerHTML='';
-  if(!equipmentRecs.length){ el.innerHTML='<div class="empty">尚無器具記錄</div>'; return; }
-  const sorted=[...equipmentRecs].sort((a,b)=>b.date.localeCompare(a.date));
-  sorted.forEach(r=>{
-    const card=document.createElement('div'); card.className='rec';
-    card.innerHTML=`
-      <div class="rec-top">
-        <div><span class="rec-date">${r.date}</span></div>
-        <div class="rec-net-wrap"><span class="rec-net-lbl">台幣</span><div class="rec-net neg">${fmt(r.amountTWD)}</div></div>
-      </div>
-      <div style="font-size:14px;font-weight:700;margin-top:4px;">${escH(r.name)}</div>
-      ${r.currency==='rmb'?`<div style="font-size:11px;color:var(--faint)">RMB ${r.amountOrig} × 4.5</div>`:''}
-      ${r.note?`<div style="font-size:11px;color:var(--faint);margin-top:3px;">${escH(r.note)}</div>`:''}
-      <div class="rec-actions" style="margin-top:8px;">
-        <button class="eq-edit-btn" data-id="${r.id}">✏️ 編輯</button>
-        <button class="eq-del-btn danger" data-id="${r.id}">刪除</button>
-      </div>`;
-    card.querySelector('.eq-edit-btn').onclick=()=>{
-      editingEqId=r.id;
-      document.getElementById('eq-name').value=r.name;
-      document.getElementById('eq-date').value=r.date;
-      document.getElementById('eq-currency').value=r.currency;
-      document.getElementById('eq-amount-orig').value=r.amountOrig;
-      document.getElementById('eq-amount-twd').value=r.amountTWD;
-      document.getElementById('eq-note').value=r.note||'';
-      document.getElementById('eq-save-btn').textContent='儲存修改';
-      document.getElementById('eq-cancel-btn').style.display='block';
-      window.scrollTo({top:0,behavior:'smooth'}); toast('編輯模式');
-    };
-    card.querySelector('.eq-del-btn').onclick=()=>{
-      if(!confirm('確定刪除此器具記錄？')) return;
-      equipmentRecs=equipmentRecs.filter(x=>x.id!==r.id);
-      saveEquipment(); renderEquipmentRecs(); renderEquipmentSummary(); toast('已刪除');
-    };
-    el.appendChild(card);
-  });
-}
-
 // ── INVENTORY STORAGE ──
 const INV_KEY = 'qy_inventory_v2';
 let inventory = { diyBatches:[], purchasedStock:[], rawMeat:[], marinade:[], supplies:[], thresholds:{} };
 
 function loadInventory(){
   try{ const d=JSON.parse(localStorage.getItem(INV_KEY)||'{}'); if(d.diyBatches) Object.assign(inventory,d); }catch(e){}
+  migrateMeatCategories();
+}
+
+// 一次性資料轉移：把舊的「翅腿」「二節翅」分開品項合併成「翅腿二節翅」，
+// 對應現在進貨／今日使用共用的名稱，讓庫存扣除能正確配對
+function migrateMeatCategories(){
+  let changed = false;
+  changed = mergeBatchEntries(inventory.purchasedStock, ['外購翅腿','外購二節翅'], '外購翅腿二節翅') || changed;
+  changed = mergeInvEntries(inventory.rawMeat, ['翅腿','二節翅'], '翅腿二節翅') || changed;
+  if(changed) saveInventory();
+}
+function mergeBatchEntries(arr, oldNames, newName){
+  if(!arr) return false;
+  const matches = arr.filter(s=>oldNames.includes(s.name));
+  if(!matches.length) return false;
+  const totalRemaining = matches.reduce((s,m)=>s+(m.remaining||0),0);
+  const totalQty = matches.reduce((s,m)=>s+(m.totalQty||m.remaining||0),0);
+  const earliestDate = matches.map(m=>m.date).filter(Boolean).sort()[0];
+  matches.forEach(m=>{ const idx=arr.indexOf(m); if(idx>-1) arr.splice(idx,1); });
+  const target = arr.find(s=>s.name===newName);
+  if(target){ target.remaining=Math.round(((target.remaining||0)+totalRemaining)*100)/100; target.totalQty=Math.round(((target.totalQty||0)+totalQty)*100)/100; }
+  else arr.push({id:uid(), name:newName, unit:'公斤', totalQty, remaining:totalRemaining, date:earliestDate||todayStr()});
+  return true;
+}
+function mergeInvEntries(arr, oldNames, newName){
+  if(!arr) return false;
+  const matches = arr.filter(s=>oldNames.includes(s.name));
+  if(!matches.length) return false;
+  const totalQty = matches.reduce((s,m)=>s+(m.qty||0),0);
+  const lastUpdated = matches.map(m=>m.lastUpdated).filter(Boolean).sort().pop();
+  matches.forEach(m=>{ const idx=arr.indexOf(m); if(idx>-1) arr.splice(idx,1); });
+  const target = arr.find(s=>s.name===newName);
+  if(target){ target.qty=Math.round(((target.qty||0)+totalQty)*100)/100; if(lastUpdated) target.lastUpdated=lastUpdated; }
+  else arr.push({name:newName, unit:'公斤', qty:totalQty, lastUpdated:lastUpdated||todayStr()});
+  const th1=inventory.thresholds[oldNames[0]]||0, th2=inventory.thresholds[oldNames[1]]||0;
+  if(th1||th2) inventory.thresholds[newName]=Math.max(th1,th2,inventory.thresholds[newName]||0);
+  oldNames.forEach(n=>delete inventory.thresholds[n]);
+  return true;
 }
 
 // deduct (or reverse) meat usage from inventory; multiplier +1=deduct, -1=restore
@@ -2313,6 +2014,8 @@ function deductMeatFromInventory(rec, multiplier){
       s.totalQty=(s.totalQty||s.remaining);
       remaining-=use;
     });
+    // 同步依每日銷售公斤數扣除「生肉品項」庫存，計算剩餘公斤數
+    deductRawMeatByName(it.name, it.qty*multiplier, today);
   });
   // diy items → deduct from diyBatches (自製醃製好的批次，先進先出)
   (rec.diyItems||[]).forEach(it=>{
@@ -2330,6 +2033,22 @@ function deductMeatFromInventory(rec, multiplier){
       const latest=inventory.diyBatches.sort((a,b)=>b.date.localeCompare(a.date))[0];
       if(latest) latest.remaining=Math.round((latest.remaining+Math.abs(remaining))*100)/100;
     }
+    // 同步依每日銷售公斤數扣除「生肉品項」庫存，計算剩餘公斤數
+    deductRawMeatByName(it.name, it.qty*multiplier, today);
+  });
+}
+
+// 依品項名稱找到對應的「生肉品項」庫存並扣除公斤數
+// kgDelta 為正值＝扣除（今日售出／使用），為負值＝退回（編輯記錄時先還原舊值）
+function deductRawMeatByName(name, kgDelta, date){
+  if(!kgDelta || !name) return;
+  const stripped = name.replace('外購','').replace('自製','');
+  const matches = inventory.rawMeat.filter(s=>s.name===name || s.name===stripped || s.name.includes(stripped) || stripped.includes(s.name));
+  if(!matches.length) return;
+  const share = kgDelta/matches.length; // 通常只會有一筆同名品項
+  matches.forEach(s=>{
+    s.qty = Math.round(Math.max(0,(s.qty||0)-share)*100)/100;
+    s.lastUpdated = date;
   });
 }
 function saveInventory(){ localStorage.setItem(INV_KEY, JSON.stringify(inventory)); }
@@ -2382,8 +2101,9 @@ function renderInvList(elId, arr, defaultUnit, cat){
   arr.forEach((item,i)=>{
     const thresh=inventory.thresholds[item.name]||0;
     const low=thresh>0&&item.qty<=thresh;
+    const basketNote = cat==='raw' ? ` <span style="font-size:12px;color:var(--amber2);">（約 ${(item.qty/KG_PER_BASKET).toFixed(1)} 藍）</span>` : '';
     const card=document.createElement('div'); card.className='inv-item';
-    card.innerHTML=`<div class="inv-item-head"><span class="inv-item-name">${escH(item.name)}</span><span class="inv-item-qty ${low?'low':'ok'}">${item.qty} <span style="font-size:12px;font-weight:400;color:var(--faint)">${escH(item.unit||defaultUnit)}</span></span></div><div style="display:flex;justify-content:space-between;align-items:center;"><div class="inv-item-meta">更新：${item.lastUpdated||'—'}</div></div><div class="inv-threshold-row"><label>警示門檻：</label><input type="number" inputmode="decimal" value="${thresh||''}" placeholder="不設定" data-cat="${cat}" data-i="${i}"><span style="font-size:11px;color:var(--faint)">${item.unit||defaultUnit}</span></div><div id="${cat}-edit-${i}" class="inline-edit" style="display:none;"></div><div class="inv-item-actions"><button class="inv-adj-btn" data-cat="${cat}" data-i="${i}">調整數量</button><button class="inv-del-btn danger" data-cat="${cat}" data-i="${i}">刪除</button></div>`;
+    card.innerHTML=`<div class="inv-item-head"><span class="inv-item-name">${escH(item.name)}</span><span class="inv-item-qty ${low?'low':'ok'}">${item.qty} <span style="font-size:12px;font-weight:400;color:var(--faint)">${escH(item.unit||defaultUnit)}</span>${basketNote}</span></div><div style="display:flex;justify-content:space-between;align-items:center;"><div class="inv-item-meta">更新：${item.lastUpdated||'—'}</div></div><div class="inv-threshold-row"><label>警示門檻：</label><input type="number" inputmode="decimal" value="${thresh||''}" placeholder="不設定" data-cat="${cat}" data-i="${i}"><span style="font-size:11px;color:var(--faint)">${item.unit||defaultUnit}</span></div><div id="${cat}-edit-${i}" class="inline-edit" style="display:none;"></div><div class="inv-item-actions"><button class="inv-adj-btn" data-cat="${cat}" data-i="${i}">調整數量</button><button class="inv-del-btn danger" data-cat="${cat}" data-i="${i}">刪除</button></div>`;
     card.querySelector('.inv-adj-btn').onclick=()=>openInvEdit(cat, i, card.querySelector(`#${cat}-edit-${i}`));
     card.querySelector('.inv-del-btn').onclick=()=>{ if(confirm('確定刪除這項庫存？')){ arr.splice(i,1); saveInventory(); renderInventory(); } };
     card.querySelector('.inv-threshold-row input').onchange=(e)=>{ inventory.thresholds[item.name]=parseFloat(e.target.value)||0; saveInventory(); renderAlerts(); };
@@ -2509,15 +2229,202 @@ document.getElementById('inv-deduct-btn').onclick=()=>{
 document.getElementById('t-inventory').onclick=()=>switchTab('inventory');
 
 
+// ══════════════════════════════════════════
+// ── MARINADE RECORDS ──
+// ══════════════════════════════════════════
+const MAR_KEY = 'qy_marinade_v1';
+let marinadeRecs = [];
+function loadMarinade(){ try{ marinadeRecs=JSON.parse(localStorage.getItem(MAR_KEY)||'[]'); }catch(e){ marinadeRecs=[]; } }
+function saveMarinade(){ localStorage.setItem(MAR_KEY,JSON.stringify(marinadeRecs)); }
+
+const KG_RAW_TO_COOKED = 9/8.5;
+
+const RECIPES = {
+  '1': { name:'配方1（舊版）', perKg:8.5, ingredients:[
+    {name:'紅麴豆腐乳',g:25},{name:'米酒',g:60},{name:'白砂糖',g:50},
+    {name:'紅麴粉',g:6},{name:'蒜粉',g:18},{name:'白胡椒粉',g:10},
+    {name:'豆漿粉',g:25},{name:'玉米粉',g:90},{name:'地瓜粉',g:120},{name:'中筋麵粉',g:60},
+  ]},
+  '2': { name:'配方2（含甜菜根粉17g）', perKg:8.5, ingredients:[
+    {name:'紅麴豆腐乳',g:25},{name:'醬油',g:25},{name:'米酒',g:60},{name:'白砂糖',g:50},
+    {name:'蒜粉',g:18},{name:'白胡椒粉',g:10},{name:'豆漿粉',g:25},{name:'甜菜根粉',g:17},
+    {name:'玉米粉',g:90},{name:'地瓜粉',g:120},{name:'中筋麵粉',g:60},
+  ]},
+};
+
+function calcMarinadeDetail(rawKg, recipeId){
+  const recipe=RECIPES[recipeId]||RECIPES['2'];
+  const ratio=rawKg/recipe.perKg;
+  let totalMarinadeCost=0;
+  const details=recipe.ingredients.map(ing=>{
+    const usedG=Math.round(ing.g*ratio*10)/10;
+    const cost=Math.round(usedG/1000*(unitPrices[ing.name]||0)*100)/100;
+    totalMarinadeCost+=cost;
+    return {name:ing.name,g:usedG,cost};
+  });
+  return {details,totalMarinadeCost:Math.round(totalMarinadeCost*100)/100};
+}
+
+function updateMarinadeCalc(){
+  const rawKg=parseFloat(document.getElementById('mar-raw-kg').value)||0;
+  const recipeId=document.getElementById('mar-recipe').value;
+  const item=document.getElementById('mar-item').value;
+  const pieces=Math.round(rawKg/KG_PER_BASKET*10)/10;
+  const cookedKg=Math.round(rawKg*KG_RAW_TO_COOKED*100)/100;
+  const {details,totalMarinadeCost}=calcMarinadeDetail(rawKg,recipeId);
+  const meatPriceMap={'自製翅腿':unitPrices['自製翅腿']||Math.round(1200/18*100)/100,'自製二節翅':unitPrices['自製二節翅']||Math.round(1200/18*100)/100,'自製三節翅':unitPrices['自製三節翅']||Math.round(1200/18*100)/100,'花枝丸':0};
+  const meatCost=Math.round(rawKg*(meatPriceMap[item]||0));
+  const totalCost=meatCost+Math.round(totalMarinadeCost);
+  try{document.getElementById('mar-pieces').textContent=pieces+' 件（'+rawKg+'kg）';}catch(e){}
+  try{document.getElementById('mar-cooked-kg').textContent=cookedKg+' 公斤';}catch(e){}
+  try{document.getElementById('mar-marinade-cost').textContent=fmt(Math.round(totalMarinadeCost));}catch(e){}
+  try{document.getElementById('mar-meat-cost').textContent=fmt(meatCost);}catch(e){}
+  try{document.getElementById('mar-total-cost').textContent=fmt(totalCost);}catch(e){}
+  try{
+    const el=document.getElementById('mar-recipe-detail');
+    if(rawKg>0){el.innerHTML='<div style="font-size:10.5px;color:var(--amber2);font-weight:700;margin-bottom:6px;">醃料用量明細</div>'+details.map(d=>`<div style="display:flex;justify-content:space-between;padding:2px 0;"><span>${escH(d.name)}</span><span>${d.g}g${d.cost>0?' '+fmt(d.cost):''}</span></div>`).join('');}
+    else el.innerHTML='';
+  }catch(e){}
+  return {rawKg,cookedKg,pieces,meatCost,totalMarinadeCost:Math.round(totalMarinadeCost),totalCost,details,recipeId,item};
+}
+
+try{document.getElementById('mar-raw-kg').oninput=updateMarinadeCalc;}catch(e){}
+try{document.getElementById('mar-recipe').onchange=updateMarinadeCalc;}catch(e){}
+try{document.getElementById('mar-item').onchange=updateMarinadeCalc;}catch(e){}
+
+document.getElementById('mar-save-btn').addEventListener('click',()=>{
+  const calc=updateMarinadeCalc();
+  if(!calc.rawKg){toast('請輸入生肉重量');return;}
+  const date=document.getElementById('mar-date').value||todayStr();
+  const note=document.getElementById('mar-note').value.trim();
+  if(calc.item!=='花枝丸'){
+    const rawItem=inventory.rawMeat.find(i=>i.name.includes(calc.item.replace('自製',''))||calc.item.includes(i.name));
+    if(rawItem){rawItem.qty=Math.max(0,Math.round((rawItem.qty-calc.rawKg)*100)/100);rawItem.lastUpdated=date;}
+  }
+  const recipe=RECIPES[calc.recipeId]||RECIPES['2'];
+  const ratio=calc.rawKg/recipe.perKg;
+  calc.details.forEach(d=>{
+    const it=inventory.marinade.find(i=>i.name===d.name);
+    if(it){it.qty=Math.max(0,Math.round((it.qty-d.g/1000*ratio)*10000)/10000);it.lastUpdated=date;}
+  });
+  inventory.diyBatches.push({id:uid(),name:calc.item,totalKg:calc.cookedKg,remaining:calc.cookedKg,date,rawKg:calc.rawKg,recipe:RECIPES[calc.recipeId].name});
+  saveInventory();
+  monthlyRecs.push({id:uid(),date,month:date.slice(0,7),name:`${calc.item} ${calc.rawKg}kg醃製`,category:'醃製成本',amount:calc.totalCost,note});
+  saveMonthly();
+  marinadeRecs.push({id:uid(),date,item:calc.item,rawKg:calc.rawKg,cookedKg:calc.cookedKg,pieces:calc.pieces,meatCost:calc.meatCost,marinadeCost:calc.totalMarinadeCost,totalCost:calc.totalCost,recipeId:calc.recipeId,note});
+  saveMarinade();
+  document.getElementById('mar-raw-kg').value='';
+  document.getElementById('mar-note').value='';
+  updateMarinadeCalc();renderMarinadeRecs();toast('已儲存醃製批次，庫存及月支出已更新');
+});
+
+function renderMarinadeRecs(){
+  loadMarinade();
+  const el=document.getElementById('mar-batch-list');el.innerHTML='';
+  const sorted=[...marinadeRecs].sort((a,b)=>b.date.localeCompare(a.date));
+  if(!sorted.length){el.innerHTML='<div class="empty">尚無醃製記錄</div>';return;}
+  sorted.forEach(r=>{
+    const card=document.createElement('div');card.className='rec';
+    card.innerHTML=`<div class="rec-top"><div><span class="rec-date">${r.date}</span><span class="rec-loc" style="color:var(--amber2);">配方${r.recipeId}</span></div><div class="rec-net-wrap"><span class="rec-net-lbl">總成本</span><div class="rec-net neg">${fmt(r.totalCost)}</div></div></div><div style="font-size:13px;color:var(--dim);margin-top:4px;">${escH(r.item)} ${r.rawKg}kg → <span style="color:var(--green)">${r.cookedKg}kg</span></div><div class="rec-meta"><span>生肉 ${fmt(r.meatCost)}</span><span>醃料 ${fmt(r.marinadeCost)}</span></div>${r.note?`<div style="font-size:11px;color:var(--faint);margin-top:4px;">${escH(r.note)}</div>`:''}<div class="rec-actions" style="margin-top:8px;"><button class="mar-del-btn danger" data-id="${r.id}">刪除記錄</button></div>`;
+    card.querySelector('.mar-del-btn').onclick=()=>{if(!confirm('確定刪除？'))return;marinadeRecs=marinadeRecs.filter(x=>x.id!==r.id);saveMarinade();renderMarinadeRecs();toast('已刪除');};
+    el.appendChild(card);
+  });
+}
+
+// ══════════════════════════════════════════
+// ── EQUIPMENT RECORDS ──
+// ══════════════════════════════════════════
+const EQ_KEY='qy_equipment_v1';
+let equipmentRecs=[];
+let editingEqId=null;
+const EQ_AMORTIZE_RATE=0.03;
+const RMB_TO_TWD=4.5;
+
+const EQ_PRESETS=[
+  {name:'醃製機',currency:'rmb',amount:1123.3},
+  {name:'瀝水籃（2個）',currency:'rmb',amount:48.23},
+  {name:'市集角鋼攤車架',currency:'twd',amount:2140},
+  {name:'市集攤車招牌',currency:'twd',amount:1820},
+  {name:'帳篷防水遮簾',currency:'twd',amount:163},
+  {name:'磁鐵條12米',currency:'rmb',amount:60},
+  {name:'折疊保溫箱60×40×25（3個）',currency:'rmb',amount:224.9},
+  {name:'折疊保溫箱42×42×25',currency:'rmb',amount:53.3},
+  {name:'食品塑膠袋45×45×75 50個',currency:'twd',amount:228},
+  {name:'電子手持秤',currency:'rmb',amount:34.45},
+  {name:'不鏽鋼油鍋架（2個）',currency:'rmb',amount:143},
+  {name:'抽真空機',currency:'twd',amount:0},
+  {name:'市集攤車配件',currency:'twd',amount:0},
+];
+
+function loadEquipment(){try{equipmentRecs=JSON.parse(localStorage.getItem(EQ_KEY)||'[]');}catch(e){equipmentRecs=[];}}
+function saveEquipment(){localStorage.setItem(EQ_KEY,JSON.stringify(equipmentRecs));}
+
+function renderEquipmentPresets(){
+  const el=document.getElementById('eq-presets');if(!el)return;el.innerHTML='';
+  EQ_PRESETS.forEach(p=>{
+    const twd=p.currency==='rmb'?Math.round(p.amount*RMB_TO_TWD):p.amount;
+    const btn=document.createElement('button');
+    btn.style.cssText='width:100%;text-align:left;padding:9px 12px;margin-bottom:6px;border-radius:9px;border:1px solid #38302660;background:var(--bg2);color:var(--dim);font-size:13px;';
+    btn.innerHTML=`${escH(p.name)} <span style="float:right;color:var(--amber2);">${p.currency==='rmb'?'RMB'+p.amount:'NT$'+p.amount}${p.currency==='rmb'?' → NT$'+twd:''}</span>`;
+    btn.onclick=()=>{document.getElementById('eq-name').value=p.name;document.getElementById('eq-currency').value=p.currency;document.getElementById('eq-amount-orig').value=p.amount||'';document.getElementById('eq-amount-twd').value=twd||'';};
+    el.appendChild(btn);
+  });
+}
+
+try{document.getElementById('eq-amount-orig').oninput=()=>{const orig=parseFloat(document.getElementById('eq-amount-orig').value)||0;const cur=document.getElementById('eq-currency').value;document.getElementById('eq-amount-twd').value=cur==='rmb'?Math.round(orig*RMB_TO_TWD):orig;};}catch(e){}
+try{document.getElementById('eq-currency').onchange=()=>{const orig=parseFloat(document.getElementById('eq-amount-orig').value)||0;const cur=document.getElementById('eq-currency').value;document.getElementById('eq-amount-twd').value=cur==='rmb'?Math.round(orig*RMB_TO_TWD):orig;};}catch(e){}
+
+document.getElementById('eq-save-btn').addEventListener('click',()=>{
+  const name=document.getElementById('eq-name').value.trim();
+  const date=document.getElementById('eq-date').value||todayStr();
+  const currency=document.getElementById('eq-currency').value;
+  const orig=parseFloat(document.getElementById('eq-amount-orig').value)||0;
+  const twd=parseFloat(document.getElementById('eq-amount-twd').value)||Math.round(orig*(currency==='rmb'?RMB_TO_TWD:1));
+  const note=document.getElementById('eq-note').value.trim();
+  if(!name||!twd){toast('請填入器具名稱和金額');return;}
+  const rec={id:editingEqId||uid(),date,name,currency,amountOrig:orig,amountTWD:twd,note};
+  if(editingEqId){const i=equipmentRecs.findIndex(r=>r.id===editingEqId);if(i>-1)equipmentRecs[i]=rec;editingEqId=null;}else equipmentRecs.push(rec);
+  saveEquipment();resetEqForm();renderEquipmentRecs();renderEquipmentSummary();toast('已儲存器具記錄');
+});
+
+document.getElementById('eq-cancel-btn').addEventListener('click',()=>{resetEqForm();toast('已取消');});
+
+function resetEqForm(){editingEqId=null;document.getElementById('eq-name').value='';document.getElementById('eq-amount-orig').value='';document.getElementById('eq-amount-twd').value='';document.getElementById('eq-note').value='';document.getElementById('eq-save-btn').textContent='儲存器具採購';document.getElementById('eq-cancel-btn').style.display='none';}
+
+function renderEquipmentSummary(){
+  loadEquipment();
+  const totalCost=equipmentRecs.reduce((s,r)=>s+(r.amountTWD||0),0);
+  const months={};dailyRecs.forEach(r=>{const m=r.date.slice(0,7);if(!months[m])months[m]=0;months[m]+=(r.net||0);});
+  let amortized=0;Object.values(months).forEach(n=>{amortized+=Math.max(0,n)*EQ_AMORTIZE_RATE;});
+  amortized=Math.min(amortized,totalCost);
+  try{document.getElementById('eq-total-cost').textContent=fmt(totalCost);}catch(e){}
+  try{document.getElementById('eq-amortized').textContent=fmt(Math.round(amortized));}catch(e){}
+  try{const rem=totalCost-Math.round(amortized);const el=document.getElementById('eq-remaining');el.textContent=fmt(rem);el.style.color=rem<=0?'var(--green)':'var(--red)';}catch(e){}
+}
+
+function renderEquipmentRecs(){
+  loadEquipment();
+  const el=document.getElementById('eq-list');el.innerHTML='';
+  if(!equipmentRecs.length){el.innerHTML='<div class="empty">尚無器具記錄</div>';return;}
+  [...equipmentRecs].sort((a,b)=>b.date.localeCompare(a.date)).forEach(r=>{
+    const card=document.createElement('div');card.className='rec';
+    card.innerHTML=`<div class="rec-top"><div><span class="rec-date">${r.date}</span></div><div class="rec-net-wrap"><span class="rec-net-lbl">台幣</span><div class="rec-net neg">${fmt(r.amountTWD)}</div></div></div><div style="font-size:14px;font-weight:700;margin-top:4px;">${escH(r.name)}</div>${r.currency==='rmb'?`<div style="font-size:11px;color:var(--faint)">RMB ${r.amountOrig} × 4.5</div>`:''} ${r.note?`<div style="font-size:11px;color:var(--faint);margin-top:3px;">${escH(r.note)}</div>`:''}<div class="rec-actions" style="margin-top:8px;"><button class="eq-edit-btn" data-id="${r.id}">✏️ 編輯</button><button class="eq-del-btn danger" data-id="${r.id}">刪除</button></div>`;
+    card.querySelector('.eq-edit-btn').onclick=()=>{editingEqId=r.id;document.getElementById('eq-name').value=r.name;document.getElementById('eq-date').value=r.date;document.getElementById('eq-currency').value=r.currency;document.getElementById('eq-amount-orig').value=r.amountOrig;document.getElementById('eq-amount-twd').value=r.amountTWD;document.getElementById('eq-note').value=r.note||'';document.getElementById('eq-save-btn').textContent='儲存修改';document.getElementById('eq-cancel-btn').style.display='block';window.scrollTo({top:0,behavior:'smooth'});toast('編輯模式');};
+    card.querySelector('.eq-del-btn').onclick=()=>{if(!confirm('確定刪除？'))return;equipmentRecs=equipmentRecs.filter(x=>x.id!==r.id);saveEquipment();renderEquipmentRecs();renderEquipmentSummary();toast('已刪除');};
+    el.appendChild(card);
+  });
+}
+
+
 load();
 loadInventory();
 loadMonthly();
 loadMarinade();
 loadEquipment();
+try{document.getElementById('mar-date').value=todayStr();}catch(e){}
+try{document.getElementById('eq-date').value=todayStr();}catch(e){}
 buildDenomGrid('float-grid');
 buildDenomGrid('revenue-grid');
-try{ document.getElementById('mar-date').value=todayStr(); }catch(e){}
-try{ document.getElementById('eq-date').value=todayStr(); }catch(e){}
 document.getElementById('d-date').value=todayStr();
 document.getElementById('p-date').value=todayStr();
 try{ document.getElementById('m-date').value=todayStr(); }catch(e){}
