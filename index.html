@@ -2389,10 +2389,11 @@ document.getElementById('eq-save-btn').addEventListener('click',()=>{
 
 document.getElementById('eq-cancel-btn').addEventListener('click',()=>{resetEqForm();toast('已取消');});
 
-function resetEqForm(){editingEqId=null;document.getElementById('eq-name').value='';document.getElementById('eq-amount-orig').value='';document.getElementById('eq-amount-twd').value='';document.getElementById('eq-note').value='';document.getElementById('eq-save-btn').textContent='儲存器具採購';document.getElementById('eq-cancel-btn').style.display='none';}
+function resetEqForm(){editingEqId=null;document.getElementById('eq-name').value='';try{document.getElementById('eq-date').value=todayStr();}catch(e){}document.getElementById('eq-amount-orig').value='';document.getElementById('eq-amount-twd').value='';document.getElementById('eq-note').value='';document.getElementById('eq-save-btn').textContent='儲存器具採購';document.getElementById('eq-cancel-btn').style.display='none';}
 
 function renderEquipmentSummary(){
   loadEquipment();
+  load(); // ensure dailyRecs is current
   const totalCost=equipmentRecs.reduce((s,r)=>s+(r.amountTWD||0),0);
   const months={};dailyRecs.forEach(r=>{const m=r.date.slice(0,7);if(!months[m])months[m]=0;months[m]+=(r.net||0);});
   let amortized=0;Object.values(months).forEach(n=>{amortized+=Math.max(0,n)*EQ_AMORTIZE_RATE;});
