@@ -110,147 +110,129 @@ class Chart {
 }
 </script>
 <style>
-:root{
-  --bg:#18140f;
-  --bg2:#211c15;
-  --card:#27211a;
-  --border:#38302600;
-  --ink:#f2e8d9;
-  --dim:#a89880;
-  --faint:#6a5c4a;
-  --amber:#e8960c;
-  --amber2:#c47d0a;
-  --green:#6db56d;
-  --red:#d96b4a;
-  --blue:#5b9bd5;
-  --r:12px;
-}
+/* ── RESET ── */
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;}
-body{padding-bottom:80px;}
+body{padding-bottom:var(--nav-h);}
 
 /* ── HEADER ── */
-.hdr{background:var(--bg2);border-bottom:1px solid #38302640;padding:12px 16px;position:sticky;top:0;z-index:20;}
-.hdr-inner{max-width:540px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;}
-.hdr h1{margin:0;font-size:16px;font-weight:800;letter-spacing:.3px;}
+.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;position:sticky;top:0;z-index:20;height:56px;display:flex;align-items:center;}
+.hdr-inner{width:100%;max-width:560px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;}
+.hdr h1{margin:0;font-size:18px;font-weight:900;letter-spacing:-.3px;}
 .hdr h1 span{color:var(--amber);}
-.hdr-sub{font-size:10px;color:var(--faint);letter-spacing:1px;}
+.hdr-sub{font-size:10px;color:var(--faint);letter-spacing:1.5px;text-transform:uppercase;}
 
-/* ── TABS ── */
-.tabs{background:var(--bg2);border-bottom:1px solid #38302640;padding:0 16px;}
-.tabs-inner{max-width:540px;margin:0 auto;display:flex;gap:0;}
-.tab{flex:1;padding:10px 0 9px;font-size:11px;font-weight:600;color:var(--faint);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;}
-.tab.active{color:var(--amber);border-bottom-color:var(--amber);}
+/* ── BOTTOM NAV ── */
+.tabs{position:fixed;bottom:0;left:0;right:0;z-index:20;background:var(--bg2);border-top:1px solid var(--border);padding:0;padding-bottom:env(safe-area-inset-bottom);}
+.tabs-inner{max-width:560px;margin:0 auto;display:flex;}
+.tab{flex:1;padding:10px 2px 8px;font-size:9.5px;font-weight:600;color:var(--faint);background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;line-height:1.2;}
+.tab .tab-icon{font-size:18px;line-height:1;}
+.tab.active{color:var(--amber);}
+.tab.active .tab-icon{transform:scale(1.1);}
 
 /* ── WRAP ── */
-.wrap{max-width:540px;margin:0 auto;padding:14px 14px 0;}
+.wrap{max-width:560px;margin:0 auto;padding:12px 14px 0;}
 
 /* ── SECTION ── */
 section{display:none;}
 section.active{display:block;}
 
+/* ── SUMMARY HERO CARDS ── */
+.hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.hero-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 14px 12px;position:relative;overflow:hidden;}
+.hero-card.accent{background:linear-gradient(135deg,#2a1e08,#1f1608);border-color:var(--amber2);}
+.hero-card .hc-label{font-size:10.5px;color:var(--faint);letter-spacing:.5px;margin-bottom:6px;}
+.hero-card .hc-val{font-size:26px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums;}
+.hero-card .hc-val.pos{color:var(--green);}
+.hero-card .hc-val.neg{color:var(--red);}
+.hero-card .hc-val.amber{color:var(--amber);}
+.hero-card .hc-icon{position:absolute;top:12px;right:12px;font-size:20px;opacity:.5;}
+.hero-card .hc-sub{font-size:11px;color:var(--faint);margin-top:4px;}
+
 /* ── CARD ── */
-.card{background:var(--card);border:1px solid #38302648;border-radius:var(--r);padding:14px;margin-bottom:12px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px;}
 .card-title{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:1px;margin:0 0 12px;font-weight:700;}
 .section-label{font-size:10.5px;color:var(--amber2);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin:12px 0 6px;}
-.divider{border:none;border-top:1px dashed #38302666;margin:14px 0;}
+.divider{border:none;border-top:1px dashed var(--border);margin:14px 0;}
 
 /* ── FIELDS ── */
 .field{margin-bottom:12px;}
 .field label{display:block;font-size:12px;color:var(--dim);margin-bottom:5px;}
-.field input[type=text],.field input[type=number],.field input[type=date]{
-  width:100%;background:var(--bg2);border:1px solid #38302660;border-radius:8px;
-  color:var(--ink);font-size:16px;padding:10px 11px;
-}
+.field input[type=text],.field input[type=number],.field input[type=date],.field input[type=month]{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);color:var(--ink);font-size:16px;padding:11px 12px;}
 .field input:focus{outline:2px solid var(--amber);border-color:transparent;}
+.field select{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);color:var(--ink);font-size:15px;padding:11px 12px;}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
 
 /* ── CHIPS ── */
 .chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px;}
-.chip{font-size:12px;padding:6px 11px;border-radius:99px;border:1px solid #38302660;background:var(--bg2);color:var(--dim);}
+.chip{font-size:12px;padding:7px 13px;border-radius:99px;border:1px solid var(--border);background:var(--bg2);color:var(--dim);font-weight:500;}
+.chips-label{font-size:10px;color:var(--faint);letter-spacing:1px;text-transform:uppercase;margin:10px 0 4px;}
 
-/* ── INGREDIENT ROW (price × qty × unit) ── */
-.ir{background:var(--bg2);border:1px solid #38302648;border-radius:9px;padding:10px;margin-bottom:8px;}
+/* ── IR / SR rows ── */
+.ir{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:11px;margin-bottom:8px;}
 .ir-head{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
-.ir-head input.name{flex:1;background:var(--card);border:1px solid #38302660;border-radius:7px;color:var(--ink);font-size:14px;padding:7px 9px;}
-.ir-del{flex:0 0 28px;height:28px;border-radius:6px;border:1px solid #38302660;background:var(--card);color:var(--red);font-size:14px;}
+.ir-head input.name{flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--ink);font-size:14px;padding:8px 10px;}
+.ir-del{flex:0 0 30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--red);font-size:15px;}
 .ir-calc{display:grid;grid-template-columns:1fr 1fr 0.7fr;gap:7px;}
 .ir-f label{display:block;font-size:10px;color:var(--faint);margin-bottom:3px;}
-.ir-f input{width:100%;background:var(--card);border:1px solid #38302660;border-radius:7px;color:var(--ink);font-size:13px;padding:6px 8px;}
+.ir-f input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:7px;color:var(--ink);font-size:13px;padding:7px 8px;}
 .ir-total{text-align:right;font-size:12px;color:var(--faint);margin-top:7px;}
 .ir-total b{color:var(--amber2);}
-
-/* ── SIMPLE ROW (name + amount) ── */
 .sr{display:flex;gap:8px;margin-bottom:8px;align-items:center;}
-.sr input.name{flex:1.4;background:var(--bg2);border:1px solid #38302660;border-radius:8px;color:var(--ink);font-size:14px;padding:8px 10px;}
-.sr input.amt{flex:1;background:var(--bg2);border:1px solid #38302660;border-radius:8px;color:var(--ink);font-size:14px;padding:8px 10px;}
-.sr .del{flex:0 0 30px;height:30px;border-radius:7px;border:1px solid #38302660;background:var(--card);color:var(--red);font-size:14px;}
+.sr input.name{flex:1.4;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--ink);font-size:14px;padding:8px 10px;}
+.sr input.amt{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--ink);font-size:14px;padding:8px 10px;}
+.sr .del{flex:0 0 30px;height:30px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--red);font-size:14px;}
 
 /* ── DENOM GRID ── */
-.denom-grid{border:1px solid #38302648;border-radius:9px;overflow:hidden;}
-.denom-row{display:grid;grid-template-columns:56px 1fr 72px;align-items:center;padding:8px 11px;border-bottom:1px solid #38302640;background:var(--bg2);}
+.denom-grid{border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;}
+.denom-row{display:grid;grid-template-columns:56px 1fr 72px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--bg2);}
 .denom-row:last-child{border-bottom:none;}
 .denom-lbl{font-size:14px;color:var(--dim);font-weight:600;}
-.denom-row input{background:var(--card);border:1px solid #38302660;border-radius:7px;color:var(--ink);font-size:14px;padding:6px 8px;text-align:center;width:100%;}
+.denom-row input{background:var(--card);border:1px solid var(--border);border-radius:7px;color:var(--ink);font-size:14px;padding:6px 8px;text-align:center;width:100%;}
 .denom-sub{font-size:12px;color:var(--faint);text-align:right;font-variant-numeric:tabular-nums;}
 .denom-foot{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--card);}
 .denom-foot span{font-size:13px;color:var(--dim);}
 .denom-foot b{font-size:17px;color:var(--amber);}
-.net-row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;margin-top:6px;background:var(--bg2);border:1px solid #38302648;border-radius:8px;}
+.net-row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;margin-top:6px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;}
 .net-row span{font-size:12px;color:var(--faint);}
 .net-row b{font-size:16px;color:var(--green);}
 
-/* ── SUBTOTAL ROW ── */
-.sub-row{display:flex;justify-content:space-between;font-size:13px;color:var(--faint);margin-top:10px;padding-top:10px;border-top:1px solid #38302648;}
+/* ── SUB / TOTAL rows ── */
+.sub-row{display:flex;justify-content:space-between;font-size:13px;color:var(--faint);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
 .sub-row b{color:var(--dim);font-weight:600;}
 .total-row{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:11px;border-top:2px solid var(--amber2);}
 .total-row span{font-size:14px;color:var(--ink);font-weight:700;}
 .total-row b{font-size:19px;color:var(--amber);font-weight:800;}
 
-/* ── HERO ── */
-.hero{background:linear-gradient(145deg,#2a2015,#1e1810);border:1px solid #38302648;border-radius:var(--r);padding:20px 16px;margin-bottom:12px;text-align:center;}
+/* ── HERO PROFIT BOX ── */
+.hero{background:linear-gradient(155deg,#2a1e08,#1a1308);border:1px solid var(--amber2);border-radius:var(--r);padding:20px 16px;margin-bottom:12px;text-align:center;}
 .hero-label{font-size:11px;color:var(--faint);letter-spacing:2px;text-transform:uppercase;}
-.hero-num{font-size:44px;font-weight:900;margin:4px 0 2px;font-variant-numeric:tabular-nums;}
+.hero-num{font-size:46px;font-weight:900;margin:4px 0 2px;font-variant-numeric:tabular-nums;}
 .hero-num.pos{color:var(--green);}
 .hero-num.neg{color:var(--red);}
 .hero-sub{font-size:13px;color:var(--dim);}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px;}
-.stat{background:var(--bg2);border-radius:9px;padding:10px;text-align:center;}
+.stat{background:rgba(255,255,255,.04);border-radius:10px;padding:10px;text-align:center;}
 .stat-v{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;}
 .stat-l{font-size:11px;color:var(--faint);margin-top:2px;}
-.calc-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:4px 0;border-bottom:1px solid #38302628;color:var(--dim);}
+
+/* ── CALC ROWS ── */
+.calc-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);color:var(--dim);}
 .calc-row:last-child{border-bottom:none;}
 .calc-row.calc-sub span:first-child{padding-left:10px;color:var(--faint);}
 .calc-row.calc-sub span:last-child{color:var(--red);}
-.calc-row.calc-total{font-weight:700;color:var(--ink);border-top:1px solid #38302660;border-bottom:none;margin-top:2px;padding-top:6px;}
+.calc-row.calc-total{font-weight:700;color:var(--ink);border-top:1px solid var(--border);border-bottom:none;margin-top:2px;padding-top:6px;}
 .calc-row b.pos{color:var(--green);}
 .calc-row b{color:var(--amber);}
 
 /* ── BUTTONS ── */
-.btn-primary{width:100%;padding:14px;border-radius:11px;border:none;background:var(--amber);color:#18140f;font-size:16px;font-weight:800;margin-top:4px;}
-.btn-ghost{width:100%;padding:12px;border-radius:10px;border:1px solid #38302660;background:none;color:var(--dim);font-size:14px;margin-top:8px;}
-.btn-add{width:100%;padding:9px;border-radius:9px;border:1px dashed #38302660;background:none;color:var(--amber2);font-size:13px;margin-top:4px;}
+.btn-primary{width:100%;padding:14px;border-radius:var(--r2);border:none;background:var(--amber);color:#0f0d09;font-size:16px;font-weight:800;margin-top:4px;}
+.btn-primary:active{background:var(--amber2);}
+.btn-ghost{width:100%;padding:12px;border-radius:var(--r2);border:1px solid var(--border);background:none;color:var(--dim);font-size:14px;margin-top:8px;}
+.add-btn{width:100%;padding:9px;border-radius:var(--r2);border:1px dashed var(--border);background:none;color:var(--amber2);font-size:13px;margin-top:4px;}
 
-/* ── ADD-ITEM BTN ── */
-.add-btn{width:100%;padding:9px;border-radius:9px;border:1px dashed #38302660;background:none;color:var(--amber2);font-size:13px;margin-top:4px;}
-
-/* ── BACKUP CARD ── */
-.backup-hint{font-size:12.5px;color:var(--dim);line-height:1.6;margin:0 0 11px;}
-.backup-btns{display:flex;gap:8px;margin-bottom:10px;}
-.backup-btns button{flex:1;padding:9px;border-radius:9px;border:1px solid #38302660;background:var(--bg2);color:var(--dim);font-size:13px;}
-.backup-ta{width:100%;min-height:80px;margin-top:8px;background:var(--bg2);border:1px solid #38302660;border-radius:9px;color:var(--ink);font-size:12px;font-family:monospace;padding:9px;resize:vertical;}
-
-/* ── HISTORY CARDS ── */
-.filter-row{display:flex;gap:8px;margin-bottom:12px;}
-.filter-btn{flex:1;padding:8px 0;border-radius:9px;border:1px solid #38302660;background:var(--card);color:var(--faint);font-size:13px;font-weight:600;}
-.filter-btn.active{background:var(--amber);color:#18140f;border-color:var(--amber);}
-.sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px;}
-.sum-card{background:var(--card);border:1px solid #38302648;border-radius:var(--r);padding:12px;}
-.sum-v{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;}
-.sum-l{font-size:11px;color:var(--faint);margin-top:3px;}
-.chart-wrap{height:170px;margin-top:6px;}
-.rec{background:var(--card);border:1px solid #38302648;border-radius:11px;padding:12px 13px;margin-bottom:9px;}
+/* ── RECORDS ── */
+.rec{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;margin-bottom:9px;}
 .rec-top{display:flex;justify-content:space-between;align-items:flex-start;}
 .rec-date{font-size:14px;font-weight:700;}
 .rec-loc{font-size:12px;color:var(--faint);margin-left:5px;}
@@ -261,36 +243,35 @@ section.active{display:block;}
 .rec-net.neg{color:var(--red);}
 .rec-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px;font-size:12px;color:var(--dim);}
 .rec-actions{display:flex;gap:7px;margin-top:9px;}
-.rec-actions button{flex:1;padding:7px;border-radius:8px;border:1px solid #38302660;background:var(--bg2);color:var(--dim);font-size:13px;}
+.rec-actions button{flex:1;padding:7px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--dim);font-size:13px;}
 .rec-actions .danger{color:var(--red);}
-.empty{text-align:center;padding:40px 20px;color:var(--faint);font-size:14px;}
+.empty{text-align:center;padding:32px 20px;color:var(--faint);font-size:14px;}
 
-/* ── ANALYSIS ── */
-.analysis-tab-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;}
-.atab{padding:7px 13px;border-radius:99px;border:1px solid #38302660;background:var(--card);color:var(--faint);font-size:12.5px;font-weight:600;}
-.atab.active{background:var(--amber);color:#18140f;border-color:var(--amber);}
+/* ── FILTER ROW ── */
+.filter-row{display:flex;gap:7px;margin-bottom:12px;}
+.filter-btn{flex:1;padding:8px 0;border-radius:99px;border:1px solid var(--border);background:var(--card);color:var(--faint);font-size:13px;font-weight:600;}
+.filter-btn.active{background:var(--amber);color:#0f0d09;border-color:var(--amber);}
+
+/* ── SUM GRID ── */
+.sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px;}
+.sum-card{background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:13px;}
+.sum-v{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;}
+.sum-l{font-size:11px;color:var(--faint);margin-top:3px;}
+
+/* ── CHART ── */
+.chart-wrap{height:180px;margin-top:8px;}
+
+/* ── ANALYSIS TABS ── */
+.analysis-tab-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.atab{padding:7px 12px;border-radius:99px;border:1px solid var(--border);background:var(--card);color:var(--faint);font-size:12px;font-weight:600;}
+.atab.active{background:var(--amber);color:#0f0d09;border-color:var(--amber);}
 .analysis-panel{display:none;}
 .analysis-panel.active{display:block;}
-.compare-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #38302640;font-size:13px;}
+.compare-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
 .compare-row:last-child{border-bottom:none;}
-.compare-bar{height:6px;border-radius:3px;margin-top:6px;}
-
-/* ── PURCHASE SECTION ── */
-.purchase-rec{background:var(--card);border:1px solid #38302648;border-radius:11px;padding:12px 13px;margin-bottom:9px;}
-.purchase-date{font-size:12px;color:var(--faint);}
-.purchase-title{font-size:14px;font-weight:700;margin:2px 0 6px;}
-.purchase-meta{font-size:12px;color:var(--dim);}
-.cost-highlight{background:var(--bg2);border:1px solid #38302648;border-radius:8px;padding:10px 12px;text-align:center;margin-top:10px;}
-.cost-highlight .v{font-size:22px;font-weight:800;color:var(--amber);}
-.cost-highlight .l{font-size:11px;color:var(--faint);margin-top:2px;}
-
-/* ── FIXED ITEMS ── */
-.fixed-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #38302640;font-size:13px;}
-.fixed-item:last-child{border-bottom:none;}
-.fixed-badge{background:var(--bg2);border-radius:6px;padding:2px 8px;font-size:11px;color:var(--amber2);}
 
 /* ── INVENTORY ── */
-.inv-item{background:var(--bg2);border:1px solid #38302648;border-radius:9px;padding:11px 12px;margin-bottom:8px;}
+.inv-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:11px 12px;margin-bottom:8px;}
 .inv-item-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
 .inv-item-name{font-size:14px;font-weight:700;}
 .inv-item-qty{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;}
@@ -298,34 +279,48 @@ section.active{display:block;}
 .inv-item-qty.ok{color:var(--green);}
 .inv-item-meta{font-size:11px;color:var(--faint);}
 .inv-item-actions{display:flex;gap:7px;margin-top:8px;}
-.inv-item-actions button{flex:1;padding:6px;border-radius:7px;border:1px solid #38302660;background:var(--card);color:var(--dim);font-size:12px;}
+.inv-item-actions button{flex:1;padding:6px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--dim);font-size:12px;}
 .inv-item-actions .danger{color:var(--red);}
-.inv-alert-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #38302640;font-size:13px;}
+.inv-alert-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;}
 .inv-alert-row:last-child{border-bottom:none;}
-.inv-alert-row .name{color:var(--ink);}
-.inv-alert-row .qty{color:var(--red);font-weight:700;}
 .inv-threshold-row{display:flex;align-items:center;gap:8px;margin-top:6px;}
-.inv-threshold-row input{width:70px;background:var(--card);border:1px solid #38302660;border-radius:7px;color:var(--ink);font-size:13px;padding:5px 8px;}
+.inv-threshold-row input{width:70px;background:var(--card);border:1px solid var(--border);border-radius:7px;color:var(--ink);font-size:13px;padding:5px 8px;}
 .inv-threshold-row label{font-size:12px;color:var(--faint);}
-.batch-card{background:var(--bg2);border:1px solid #38302648;border-radius:9px;padding:11px 12px;margin-bottom:8px;}
+.batch-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:11px 12px;margin-bottom:8px;}
 .batch-date{font-size:11px;color:var(--faint);}
 .batch-name{font-size:14px;font-weight:700;margin:2px 0;}
 .batch-qty{font-size:22px;font-weight:800;color:var(--amber);}
 .batch-unit{font-size:12px;color:var(--faint);margin-left:3px;}
 .batch-actions{display:flex;gap:7px;margin-top:8px;}
-.batch-actions button{flex:1;padding:6px;border-radius:7px;border:1px solid #38302660;background:var(--card);color:var(--dim);font-size:12px;}
+.batch-actions button{flex:1;padding:6px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--dim);font-size:12px;}
 .batch-actions .danger{color:var(--red);}
-
-/* ── INLINE EDIT MODAL ── */
 .inline-edit{background:var(--card);border:1px solid var(--amber2);border-radius:10px;padding:12px;margin-top:8px;}
 .inline-edit .field{margin-bottom:8px;}
-.inline-edit .two{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .inline-edit-btns{display:flex;gap:8px;margin-top:8px;}
-.inline-edit-btns button{flex:1;padding:8px;border-radius:8px;border:1px solid #38302660;font-size:13px;}
-.inline-edit-btns .confirm{background:var(--amber);color:#18140f;font-weight:700;border-color:var(--amber);}
+.inline-edit-btns button{flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);font-size:13px;}
+.inline-edit-btns .confirm{background:var(--amber);color:#0f0d09;font-weight:700;border-color:var(--amber);}
 .inline-edit-btns .cancel{background:var(--bg2);color:var(--dim);}
 
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--amber);color:#18140f;padding:9px 18px;border-radius:99px;font-size:13px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none;z-index:99;white-space:nowrap;}
+/* ── FIXED ITEMS ── */
+.fixed-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.fixed-item:last-child{border-bottom:none;}
+.fixed-badge{background:var(--bg2);border-radius:6px;padding:2px 8px;font-size:11px;color:var(--amber2);border:1px solid var(--border);}
+
+/* ── PURCHASE RECORDS ── */
+.purchase-rec{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 13px;margin-bottom:9px;}
+.purchase-date{font-size:12px;color:var(--faint);}
+.purchase-title{font-size:14px;font-weight:700;margin:2px 0 6px;}
+.purchase-meta{font-size:12px;color:var(--dim);}
+.cost-highlight{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center;margin-top:10px;}
+.cost-highlight .v{font-size:22px;font-weight:800;color:var(--amber);}
+.cost-highlight .l{font-size:11px;color:var(--faint);margin-top:2px;}
+
+/* ── BACKUP ── */
+.backup-hint{font-size:12.5px;color:var(--dim);line-height:1.6;margin:0 0 11px;}
+.backup-ta{width:100%;min-height:80px;margin-top:8px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);color:var(--ink);font-size:12px;font-family:monospace;padding:9px;resize:vertical;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:calc(var(--nav-h) + 12px);left:50%;transform:translateX(-50%);background:var(--amber);color:#0f0d09;padding:9px 18px;border-radius:99px;font-size:13px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none;z-index:99;white-space:nowrap;}
 .toast.show{opacity:1;}
 </style>
 </head>
@@ -334,19 +329,19 @@ section.active{display:block;}
 <header class="hdr">
   <div class="hdr-inner">
     <h1>🍗 <span>喬鈺</span>酥香屋</h1>
-    <span class="hdr-sub">損益記帳系統</span>
+    <span class="hdr-sub">損益記帳</span>
   </div>
 </header>
 
 <nav class="tabs">
   <div class="tabs-inner">
-    <button class="tab active" id="t-daily">出攤</button>
-    <button class="tab" id="t-purchase">進貨</button>
-    <button class="tab" id="t-monthly">月支出</button>
-    <button class="tab" id="t-marinate">醃製</button>
-    <button class="tab" id="t-equipment">器具</button>
-    <button class="tab" id="t-inventory">庫存</button>
-    <button class="tab" id="t-analysis">分析</button>
+    <button class="tab active" id="t-daily"><span class="tab-icon">📋</span>出攤</button>
+    <button class="tab" id="t-purchase"><span class="tab-icon">🛒</span>進貨</button>
+    <button class="tab" id="t-monthly"><span class="tab-icon">💳</span>月支出</button>
+    <button class="tab" id="t-marinate"><span class="tab-icon">🧂</span>醃製</button>
+    <button class="tab" id="t-equipment"><span class="tab-icon">🔧</span>器具</button>
+    <button class="tab" id="t-inventory"><span class="tab-icon">📦</span>庫存</button>
+    <button class="tab" id="t-analysis"><span class="tab-icon">📊</span>分析</button>
   </div>
 </nav>
 
@@ -356,6 +351,34 @@ section.active{display:block;}
      分頁①  出攤日記
 ════════════════════════════════ -->
 <section id="s-daily" class="active">
+
+  <!-- 今日摘要 -->
+  <div class="hero-grid" id="daily-summary-grid">
+    <div class="hero-card accent">
+      <div class="hc-label">今日淨利</div>
+      <div class="hc-val pos" id="hs-net">$0</div>
+      <div class="hc-sub" id="hs-margin">淨利率 0%</div>
+      <span class="hc-icon">💰</span>
+    </div>
+    <div class="hero-card">
+      <div class="hc-label">總銷售額</div>
+      <div class="hc-val amber" id="hs-revenue">$0</div>
+      <div class="hc-sub" id="hs-hourly">時薪 $0</div>
+      <span class="hc-icon">📈</span>
+    </div>
+    <div class="hero-card">
+      <div class="hc-label">現金淨入</div>
+      <div class="hc-val" id="hs-cash-net" style="color:var(--blue);">$0</div>
+      <div class="hc-sub">不含食材成本</div>
+      <span class="hc-icon">💵</span>
+    </div>
+    <div class="hero-card">
+      <div class="hc-label">總成本</div>
+      <div class="hc-val neg" id="hs-cost">$0</div>
+      <div class="hc-sub" id="hs-cogs">食材 $0</div>
+      <span class="hc-icon">🧾</span>
+    </div>
+  </div>
 
   <div class="card">
     <div class="card-title">基本資訊</div>
@@ -414,6 +437,8 @@ section.active{display:block;}
     <div class="section-label">交通</div>
     <div class="chips" id="chips-op-transport">
       <button class="chip" data-list="op-list" data-name="交通費">交通費</button>
+      <button class="chip" data-list="op-list" data-name="市場清潔費">市場清潔費</button>
+      <button class="chip" data-list="op-list" data-name="市場電費">市場電費</button>
     </div>
 
     <div class="section-label">調味料</div>
@@ -522,7 +547,18 @@ section.active{display:block;}
       <div class="calc-row calc-sub" id="cd-rent-row" style="display:none"><span>－ 租金</span><span id="cd-rent">$0</span></div>
       <div class="calc-row calc-sub"><span>－ 包材耗材</span><span id="cd-pkg">$0</span></div>
       <div class="calc-row calc-sub"><span>－ 其他開銷</span><span id="cd-op">$0</span></div>
-      <div class="calc-row calc-total"><span>＝ 淨利</span><b id="cd-net">$0</b></div>
+      <div class="calc-row calc-total"><span>＝ 今日淨利</span><b id="cd-net">$0</b></div>
+    </div>
+
+    <!-- 當日現金淨入 -->
+    <div style="margin-top:8px;background:var(--bg2);border-radius:10px;padding:11px 13px;">
+      <div style="font-size:10.5px;color:var(--blue,#5b9bd5);letter-spacing:1px;text-transform:uppercase;font-weight:700;margin-bottom:8px;">當日現金淨入（不含食材成本）</div>
+      <div style="font-size:11px;color:var(--faint);margin-bottom:8px;">食材是進貨時付的，今天實際入袋的現金</div>
+      <div class="calc-row"><span>總銷售額</span><b id="cd-cash-revenue" class="pos">$0</b></div>
+      <div class="calc-row calc-sub" id="cd-cash-rent-row" style="display:none"><span>－ 租金</span><span id="cd-cash-rent">$0</span></div>
+      <div class="calc-row calc-sub"><span>－ 包材耗材</span><span id="cd-cash-pkg">$0</span></div>
+      <div class="calc-row calc-sub"><span>－ 其他開銷</span><span id="cd-cash-op">$0</span></div>
+      <div class="calc-row calc-total"><span>＝ 現金淨入</span><b id="cd-cash-net" style="color:#5b9bd5;">$0</b></div>
     </div>
   </div>
 
@@ -724,6 +760,16 @@ section.active{display:block;}
     <div class="card-title">醃製批次記錄</div>
     <div id="mar-batch-list"><div class="empty">尚無醃製記錄</div></div>
   </div>
+
+  <div class="card">
+    <div class="card-title">🍗 自製醃製品庫存</div>
+    <p class="backup-hint">從「醃製記錄」新增批次後自動加入，可在此調整剩餘數量。</p>
+    <div id="inv-diy-batches">
+      <div class="empty" id="inv-diy-empty">尚未有自製批次記錄</div>
+    </div>
+    <button class="add-btn" id="inv-add-diy-batch">＋ 手動新增批次</button>
+  </div>
+
 </section>
 
 <!-- ════ 生財器具分頁 ════ -->
@@ -777,18 +823,9 @@ section.active{display:block;}
     <div id="inv-alerts"></div>
   </div>
 
-  <!-- 醃製雞肉庫存 -->
+  <!-- 醃製雞肉庫存（外購） -->
   <div class="card">
-    <div class="card-title">🍗 醃製雞肉庫存</div>
-    <div class="section-label">自製批次</div>
-    <div id="inv-diy-batches">
-      <div class="empty" id="inv-diy-empty">尚未有自製批次記錄</div>
-    </div>
-    <button class="add-btn" id="inv-add-diy-batch">＋ 新增自製批次</button>
-
-    <hr class="divider">
-
-    <div class="section-label">外購醃製品</div>
+    <div class="card-title">🍗 外購醃製品庫存</div>
     <div id="inv-purchased-stock">
       <div class="empty" id="inv-purchased-empty">尚未有外購庫存記錄</div>
     </div>
@@ -1270,6 +1307,22 @@ function recalcDaily(){
   document.getElementById('stat-hourly').textContent=fmt(hourly);
   document.getElementById('stat-cost').textContent=fmt(totalCost);
 
+  // ── 今日摘要卡片 ──
+  try{
+    const hsNet=document.getElementById('hs-net');
+    hsNet.textContent=fmt(net);
+    hsNet.className='hc-val '+(net>=0?'pos':'neg');
+    document.getElementById('hs-margin').textContent='淨利率 '+pct(margin);
+    document.getElementById('hs-revenue').textContent=fmt(revenue);
+    document.getElementById('hs-hourly').textContent='時薪 '+fmt(hourly);
+    const cashNet=revenue-rent-(fixedCost+autoPkgCost)-sumItems(opItems);
+    const cnEl=document.getElementById('hs-cash-net');
+    cnEl.textContent=fmt(cashNet);
+    cnEl.style.color=cashNet>=0?'var(--blue)':'var(--red)';
+    document.getElementById('hs-cost').textContent=fmt(totalCost);
+    document.getElementById('hs-cogs').textContent='食材 '+fmt(totalCogs);
+  }catch(e){}
+
   // ── 計算明細更新 ──
   const _s=(id,val)=>{ try{ document.getElementById(id).textContent=val; }catch(e){} };
   const _d=(id,show)=>{ try{ document.getElementById(id).style.display=show?'':'none'; }catch(e){} };
@@ -1289,6 +1342,15 @@ function recalcDaily(){
   try{ document.getElementById('cd-gross').className=gross>=0?'pos':'neg'; }catch(e){}
   try{ document.getElementById('cd-gross2').className=gross>=0?'pos':'neg'; }catch(e){}
   try{ document.getElementById('cd-net').className=net>=0?'pos':'neg'; }catch(e){}
+
+  // 當日現金淨入（不扣食材成本）
+  const cashNet = revenue - rent - (fixedCost+autoPkgCost) - sumItems(opItems);
+  _s('cd-cash-revenue', fmt(revenue));
+  _s('cd-cash-rent', fmt(rent)); _d('cd-cash-rent-row', rent>0);
+  _s('cd-cash-pkg', fmt(fixedCost+autoPkgCost));
+  _s('cd-cash-op', fmt(sumItems(opItems)));
+  _s('cd-cash-net', fmt(cashNet));
+  try{ document.getElementById('cd-cash-net').style.color=cashNet>=0?'#5b9bd5':'var(--red)'; }catch(e){}
   return {rent,hours,revenue,cashRevenue,uber,panda,linepay,platformRevenue,revenueCash:revG.items,floatCash:floatG.items,floatTotal:floatG.total,closingCash:revG.total,purchaseItems,diyItems,opItems,purchaseCost,diyCost,totalCogs,opCost,fixedCost,autoPkgCost,autoBagQty,autoPlasticQty,totalCost,gross,net,margin,hourly};
 }
 
@@ -1603,7 +1665,7 @@ function switchTab(id){
   if(id==='analysis') renderAnalysis();
   if(id==='inventory'){ loadInventory(); renderInventory(); }
   if(id==='monthly') renderMonthlyRecs();
-  if(id==='marinate'){ loadMarinade(); renderMarinadeRecs(); }
+  if(id==='marinate'){ loadInventory(); loadMarinade(); renderMarinadeRecs(); renderDiyBatches(); }
   if(id==='equipment'){ loadEquipment(); renderEquipmentRecs(); renderEquipmentSummary(); renderEquipmentPresets(); }
 }
 document.getElementById('t-daily').onclick=()=>switchTab('daily');
@@ -2055,7 +2117,6 @@ function saveInventory(){ localStorage.setItem(INV_KEY, JSON.stringify(inventory
 
 // ── INVENTORY RENDER ──
 function renderInventory(){
-  renderDiyBatches();
   renderPurchasedStock();
   renderInvList('inv-raw-list', inventory.rawMeat, 'kg', 'raw');
   renderInvList('inv-marinade-list', inventory.marinade, 'kg', 'marinade');
@@ -2074,7 +2135,7 @@ function renderDiyBatches(){
     const card=document.createElement('div'); card.className='batch-card';
     card.innerHTML=`<div class="batch-date">${b.date} 自製</div><div class="batch-name">${escH(b.name||'自製批次')}</div><div><span class="batch-qty">${b.remaining}</span><span class="batch-unit">公斤 剩餘</span> <span style="font-size:12px;color:var(--amber2);">（約 ${(b.remaining/KG_PER_BASKET).toFixed(1)} 藍）</span><br><span style="font-size:11px;color:var(--faint)">原始 ${b.totalKg} 公斤 / ${(b.totalKg/KG_PER_BASKET).toFixed(1)} 藍</span></div><div id="diy-edit-${i}" class="inline-edit" style="display:none;"></div><div class="batch-actions"><button class="diy-edit-btn" data-i="${i}">調整數量</button><button class="diy-del-btn danger" data-i="${i}">刪除批次</button></div>`;
     card.querySelector('.diy-edit-btn').onclick=()=>openInvEdit('diy', i, card.querySelector(`#diy-edit-${i}`));
-    card.querySelector('.diy-del-btn').onclick=()=>{ if(confirm('確定刪除這批次？')){ inventory.diyBatches.splice(i,1); saveInventory(); renderInventory(); } };
+    card.querySelector('.diy-del-btn').onclick=()=>{ if(confirm('確定刪除這批次？')){ inventory.diyBatches.splice(i,1); saveInventory(); renderDiyBatches(); } };
     el.appendChild(card);
   });
 }
@@ -2131,7 +2192,10 @@ function openInvEdit(cat, i, el){
     else if(cat==='raw'){ inventory.rawMeat[i].qty=val; inventory.rawMeat[i].lastUpdated=today; }
     else if(cat==='marinade'){ inventory.marinade[i].qty=val; inventory.marinade[i].lastUpdated=today; }
     else if(cat==='supplies'){ inventory.supplies[i].qty=val; inventory.supplies[i].lastUpdated=today; }
-    saveInventory(); renderInventory(); toast('已更新庫存');
+    saveInventory();
+    if(cat==='diy'||cat==='purchased') renderDiyBatches();
+    else renderInventory();
+    toast('已更新庫存');
   };
 }
 
@@ -2154,7 +2218,7 @@ document.getElementById('inv-add-diy-batch').onclick=()=>{
   const kg=parseFloat(prompt('總公斤數',''));
   if(!kg||isNaN(kg)){ toast('請輸入有效公斤數'); return; }
   inventory.diyBatches.push({id:uid(),name,totalKg:kg,remaining:kg,date:todayStr()});
-  saveInventory(); renderInventory(); toast('已新增自製批次');
+  saveInventory(); renderDiyBatches(); toast('已新增自製批次');
 };
 
 // ── ADD PURCHASED STOCK ──
@@ -2366,7 +2430,14 @@ function renderEquipmentPresets(){
     const btn=document.createElement('button');
     btn.style.cssText='width:100%;text-align:left;padding:9px 12px;margin-bottom:6px;border-radius:9px;border:1px solid #38302660;background:var(--bg2);color:var(--dim);font-size:13px;';
     btn.innerHTML=`${escH(p.name)} <span style="float:right;color:var(--amber2);">${p.currency==='rmb'?'RMB'+p.amount:'NT$'+p.amount}${p.currency==='rmb'?' → NT$'+twd:''}</span>`;
-    btn.onclick=()=>{document.getElementById('eq-name').value=p.name;document.getElementById('eq-currency').value=p.currency;document.getElementById('eq-amount-orig').value=p.amount||'';document.getElementById('eq-amount-twd').value=twd||'';};
+    btn.onclick=()=>{
+      document.getElementById('eq-name').value=p.name;
+      document.getElementById('eq-currency').value=p.currency;
+      document.getElementById('eq-amount-orig').value=p.amount||'';
+      document.getElementById('eq-amount-twd').value=twd||'';
+      window.scrollTo({top:0,behavior:'smooth'});
+      toast('已帶入「'+p.name+'」，確認金額後按儲存');
+    };
     el.appendChild(btn);
   });
 }
