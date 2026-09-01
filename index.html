@@ -421,7 +421,8 @@ section.active{display:block;}
     <div class="section-label">🛒 外購醃製品</div>
     <div class="chips" id="chips-purchase">
       <button class="chip meat-daily-chip" data-list="purchase-list" data-name="外購三節翅">外購三節翅</button>
-      <button class="chip meat-daily-chip" data-list="purchase-list" data-name="外購翅腿二節翅">外購翅腿二節翅</button>
+      <button class="chip meat-daily-chip" data-list="purchase-list" data-name="鳳翅球">鳳翅球</button>
+      <button class="chip meat-daily-chip" data-list="purchase-list" data-name="花枝丸">花枝丸</button>
     </div>
     <div id="purchase-list"></div>
     <button class="add-btn meat-daily-add" data-list="purchase-list">＋ 新增外購項目</button>
@@ -618,7 +619,8 @@ section.active{display:block;}
       <div class="section-label">🛒 外購醃製品品項</div>
       <div class="chips">
         <button class="chip p-meat-chip" data-name="外購三節翅">外購三節翅</button>
-        <button class="chip p-meat-chip" data-name="外購翅腿二節翅">外購翅腿二節翅</button>
+        <button class="chip p-meat-chip" data-name="鳳翅球">鳳翅球</button>
+        <button class="chip p-meat-chip" data-name="花枝丸">花枝丸</button>
       </div>
       <div id="p-meat-list"></div>
       <button class="add-btn p-meat-add">＋ 新增品項</button>
@@ -628,7 +630,8 @@ section.active{display:block;}
     <div id="p-chicken-raw" style="display:none;">
       <div class="section-label">🐔 自製生雞肉品項</div>
       <div class="chips">
-        <button class="chip p-raw-chip" data-name="翅腿二節翅">翅腿二節翅</button>
+        <button class="chip p-raw-chip" data-name="翅腿">翅腿</button>
+        <button class="chip p-raw-chip" data-name="二節翅">二節翅</button>
         <button class="chip p-raw-chip" data-name="三節翅">三節翅</button>
       </div>
       <div id="p-raw-list"></div>
@@ -751,6 +754,7 @@ section.active{display:block;}
           <option value="自製二節翅">自製二節翅</option>
           <option value="自製三節翅">自製三節翅</option>
           <option value="花枝丸">花枝丸</option>
+          <option value="鳳翅球">鳳翅球（外購）</option>
         </select>
       </div>
     </div>
@@ -855,7 +859,8 @@ section.active{display:block;}
   <div class="card">
     <div class="card-title">🐔 生雞肉原料庫存</div>
     <div class="chips">
-      <button class="chip inv-raw-chip" data-name="翅腿二節翅">翅腿二節翅</button>
+      <button class="chip inv-raw-chip" data-name="翅腿">翅腿</button>
+      <button class="chip inv-raw-chip" data-name="二節翅">二節翅</button>
       <button class="chip inv-raw-chip" data-name="三節翅">三節翅</button>
     </div>
     <div id="inv-raw-list"></div>
@@ -932,7 +937,11 @@ section.active{display:block;}
     <div class="filter-row">
       <button class="filter-btn active" data-range="week">本週</button>
       <button class="filter-btn" data-range="month">本月</button>
+      <button class="filter-btn" data-range="pick">選月份</button>
       <button class="filter-btn" data-range="all">全部</button>
+    </div>
+    <div id="month-picker-row" style="display:none;margin-bottom:12px;">
+      <input type="month" id="a-month-pick" style="width:100%;background:var(--bg2);border:1.5px solid var(--amber2);border-radius:var(--r2);color:var(--ink);font-size:15px;padding:10px 12px;">
     </div>
     <div class="sum-grid">
       <div class="sum-card"><div class="sum-v" id="a-total-revenue">$0</div><div class="sum-l">總營業額</div></div>
@@ -1042,11 +1051,21 @@ function load(){
   try{ unitPrices = JSON.parse(localStorage.getItem(KEYS.prices)||'{}'); }catch(e){ unitPrices={}; }
   // 預設單價（每公斤），若使用者已有進貨記錄則沿用，不覆蓋
   const DEFAULT_KG_PRICES = {
-    '外購三節翅':      Math.round(1500/18*100)/100,
+    // 外購已醃
+    '外購三節翅':      45,     // $45/公斤，每件18kg=$810
+    '鳳翅球':          50,     // $50/公斤，每件12kg=$600
+    '花枝丸':          Math.round(430/3*100)/100, // $430/件(5斤≈3kg)
+    // 舊名稱相容
     '外購翅腿二節翅':   Math.round(1650/18*100)/100,
     '外購翅小腿/二節翅':Math.round(1650/18*100)/100,
-    '外購翅腿':        Math.round(1650/18*100)/100,
-    '自製翅腿':        Math.round(1200/18*100)/100,
+    '外購翅腿':         Math.round(1650/18*100)/100,
+    // 自製生肉（每公斤單價）
+    '翅腿':            55,     // $55/公斤，每件18kg=$990
+    '二節翅':          80,     // $80/公斤，每件18kg=$1440
+    '三節翅':          45,     // $45/公斤，每件18kg=$810
+    '自製翅腿':        55,
+    '自製二節翅':      80,
+    '自製三節翅':      45,
     // 耗材每個單價（強制更新確保正確）
     '紙袋':            0.375,  // 2封150元 ÷ 400個 = $0.375/個
     '半斤塑膠袋':      Math.round(27/41*1000)/1000,   // 27元/封 ÷ 41個 ≈ $0.659/個
@@ -1056,7 +1075,7 @@ function load(){
   };
   Object.entries(DEFAULT_KG_PRICES).forEach(([name,price])=>{
     // 強制更新耗材單價
-    if(['紙袋','一斤塑膠袋','炸物盆塑膠袋','炸物盆襯紙'].includes(name)) unitPrices[name]=price;
+    if(['紙袋','一斤塑膠袋','炸物盆塑膠袋','炸物盆襯紙','翅腿','二節翅','三節翅','鳳翅球','自製翅腿','自製二節翅','自製三節翅'].includes(name)) unitPrices[name]=price;
     else if(!unitPrices[name]) unitPrices[name]=price;
   });
 }
@@ -1210,19 +1229,22 @@ function readMeatDailyRows(container){
 
 // ── CHICKEN PURCHASE ROW (進貨用: 藍 + 公斤換算 + 總金額 → 單位成本) ──
 function makeChickenPR(container, name, baskets, total){
+  // 每件重量：鳳翅球12kg，花枝丸5斤(≈3kg)，其他18kg
+  const kgPerUnit = name==='鳳翅球' ? 12 : name==='花枝丸' ? 3 : KG_PER_BASKET;
+  const unitLabel = name==='花枝丸' ? '件(5斤/120顆)' : name==='鳳翅球' ? '件(12kg)' : '件(18kg)';
   const r=document.createElement('div'); r.className='ir';
-  const initKg=baskets?(baskets*KG_PER_BASKET):'';
+  const initKg=baskets?(baskets*kgPerUnit):'';
   r.innerHTML=`
     <div class="ir-head">
       <input class="name" type="text" placeholder="品項名稱" value="${name?escH(name):''}">
       <button class="ir-del">×</button>
     </div>
     <div class="ir-calc">
-      <div class="ir-f"><label>幾藍</label><input class="baskets" type="number" inputmode="decimal" placeholder="0" value="${baskets||''}"></div>
+      <div class="ir-f"><label>件數</label><input class="baskets" type="number" inputmode="decimal" placeholder="0" value="${baskets||''}"></div>
       <div class="ir-f"><label>公斤數</label><input class="kgs" type="number" inputmode="decimal" placeholder="自動換算" value="${initKg||''}"></div>
       <div class="ir-f"><label>總金額</label><input class="total" type="number" inputmode="decimal" placeholder="0" value="${total||''}"></div>
     </div>
-    <div class="ir-total">每藍 18公斤・<span class="kg-display">${initKg||0} 公斤</span>・單位成本 <b class="lt">—</b></div>
+    <div class="ir-total">${unitLabel}・<span class="kg-display">${initKg||0} 公斤</span>・單位成本 <b class="lt">—</b></div>
   `;
   function upd(){
     const b=parseFloat(r.querySelector('.baskets').value)||0;
@@ -1233,7 +1255,7 @@ function makeChickenPR(container, name, baskets, total){
   }
   function basketChanged(){
     const b=parseFloat(r.querySelector('.baskets').value)||0;
-    r.querySelector('.kgs').value=b?b*KG_PER_BASKET:'';
+    r.querySelector('.kgs').value=b?b*kgPerUnit:'';
     upd();
   }
   r.querySelector('.ir-del').onclick=()=>r.remove();
@@ -1708,17 +1730,35 @@ document.querySelectorAll('.atab').forEach(btn=>{
 
 // filter range
 let currentRange='week';
-document.querySelectorAll('.filter-btn').forEach(btn=>{
+let pickedMonth='';
+document.querySelectorAll('.filter-btn[data-range]').forEach(btn=>{
   btn.addEventListener('click',()=>{
-    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active'); currentRange=btn.dataset.range; renderAnalysis();
+    document.querySelectorAll('.filter-btn[data-range]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentRange=btn.dataset.range;
+    const picker=document.getElementById('month-picker-row');
+    if(currentRange==='pick'){
+      picker.style.display='block';
+      if(!pickedMonth) pickedMonth=new Date().toISOString().slice(0,7);
+      try{ document.getElementById('a-month-pick').value=pickedMonth; }catch(e){}
+    } else {
+      if(picker) picker.style.display='none';
+    }
+    renderAnalysis();
   });
 });
+try{
+  document.getElementById('a-month-pick').addEventListener('change',e=>{
+    pickedMonth=e.target.value;
+    renderAnalysis();
+  });
+}catch(e){}
 
 function inRange(dateStr){
   if(currentRange==='all') return true;
   const d=new Date(dateStr+'T00:00:00'),now=new Date();
   if(currentRange==='week'){ const s=new Date(now); s.setDate(now.getDate()-now.getDay()); s.setHours(0,0,0,0); return d>=s; }
+  if(currentRange==='pick'){ return dateStr.slice(0,7)===pickedMonth; }
   return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();
 }
 
@@ -2352,10 +2392,11 @@ function updateMarinadeCalc(){
   const rawKg=parseFloat(document.getElementById('mar-raw-kg').value)||0;
   const recipeId=document.getElementById('mar-recipe').value;
   const item=document.getElementById('mar-item').value;
-  const pieces=Math.round(rawKg/KG_PER_BASKET*10)/10;
+  const kgPerUnit = (item==='鳳翅球') ? 12 : KG_PER_BASKET;
+  const pieces=Math.round(rawKg/kgPerUnit*10)/10;
   const cookedKg=Math.round(rawKg*KG_RAW_TO_COOKED*100)/100;
   const {details,totalMarinadeCost}=calcMarinadeDetail(rawKg,recipeId);
-  const meatPriceMap={'自製翅腿':unitPrices['自製翅腿']||Math.round(1200/18*100)/100,'自製二節翅':unitPrices['自製二節翅']||Math.round(1200/18*100)/100,'自製三節翅':unitPrices['自製三節翅']||Math.round(1200/18*100)/100,'花枝丸':0};
+  const meatPriceMap={'自製翅腿':unitPrices['自製翅腿']||55,'自製二節翅':unitPrices['自製二節翅']||80,'自製三節翅':unitPrices['自製三節翅']||45,'花枝丸':Math.round(430/3*100)/100,'鳳翅球':unitPrices['鳳翅球']||50};
   const meatCost=Math.round(rawKg*(meatPriceMap[item]||0));
   const totalCost=meatCost+Math.round(totalMarinadeCost);
   try{document.getElementById('mar-pieces').textContent=pieces+' 件（'+rawKg+'kg）';}catch(e){}
