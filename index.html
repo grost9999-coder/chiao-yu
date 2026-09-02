@@ -631,6 +631,8 @@ section.active{display:block;}
       <div class="section-label">🛒 外購醃製品品項</div>
       <div class="chips">
         <button class="chip p-meat-chip" data-name="外購三節翅">外購三節翅</button>
+        <button class="chip p-meat-chip" data-name="外購翅腿">外購翅腿</button>
+        <button class="chip p-meat-chip" data-name="外購二節翅">外購二節翅</button>
         <button class="chip p-meat-chip" data-name="鳳翅球">鳳翅球</button>
         <button class="chip p-meat-chip" data-name="花枝丸">花枝丸</button>
       </div>
@@ -699,6 +701,10 @@ section.active{display:block;}
 
   <div class="card">
     <div class="card-title">進貨歷史</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
+      <input type="month" id="p-history-month" style="flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--ink);font-size:14px;padding:8px 10px;">
+      <button id="p-history-clear" style="padding:8px 12px;border-radius:var(--r2);border:1px solid var(--border);background:var(--card);color:var(--faint);font-size:12px;">全部</button>
+    </div>
     <div id="p-history-list"><div class="empty">尚未有進貨記錄</div></div>
   </div>
 
@@ -742,6 +748,7 @@ section.active{display:block;}
       <div class="sum-card"><div class="sum-v" id="m-count">0筆</div><div class="sum-l">記錄筆數</div></div>
     </div>
     <div id="m-category-summary" style="margin-top:8px;"></div>
+    <button id="btn-clean-marinade-cost" style="width:100%;margin-top:10px;padding:9px;border-radius:var(--r2);border:1px dashed var(--red);background:none;color:var(--red);font-size:12px;">🧹 清除舊版自動加入的「醃製成本」記錄</button>
   </div>
 
   <div class="card">
@@ -793,6 +800,10 @@ section.active{display:block;}
   </div>
   <div class="card">
     <div class="card-title">醃製批次記錄</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
+      <input type="month" id="mar-history-month" style="flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--ink);font-size:14px;padding:8px 10px;">
+      <button id="mar-history-clear" style="padding:8px 12px;border-radius:var(--r2);border:1px solid var(--border);background:var(--card);color:var(--faint);font-size:12px;">全部</button>
+    </div>
     <div id="mar-batch-list"><div class="empty">尚無醃製記錄</div></div>
   </div>
 
@@ -967,8 +978,16 @@ section.active{display:block;}
       <div class="card-title">💰 月底現金結算</div>
       <p class="backup-hint">食材貨款透過銷售賺回，不從現金扣除。這裡只計算實際離開口袋的現金。</p>
 
+      <div class="field"><label>結算月份</label>
+        <input type="month" id="settle-month" style="width:100%;background:var(--bg2);border:1.5px solid var(--amber2);border-radius:var(--r2);color:var(--ink);font-size:16px;padding:11px 12px;">
+      </div>
       <div class="field"><label>月初預備金（帶入的現金）</label>
-        <input type="number" inputmode="decimal" id="settle-opening" placeholder="0" style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--ink);font-size:16px;padding:11px 12px;width:100%;">
+        <div style="display:flex;gap:8px;">
+          <input type="number" inputmode="decimal" id="settle-opening" placeholder="0" style="flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--ink);font-size:16px;padding:11px 12px;">
+          <button id="settle-save-opening" style="padding:0 14px;border-radius:var(--r2);border:none;background:var(--amber);color:#0f0d09;font-size:13px;font-weight:700;">儲存</button>
+        </div>
+        <div style="font-size:11px;color:var(--faint);margin-top:4px;">填入後按儲存，下次切換到此月份會自動帶入</div>
+      </div>
       </div>
       <div class="field"><label>轉帳租金（當月已轉帳）</label>
         <input type="number" inputmode="decimal" id="settle-rent-transfer" placeholder="0" style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--ink);font-size:16px;padding:11px 12px;width:100%;">
@@ -1722,18 +1741,22 @@ document.getElementById('save-purchase').addEventListener('click',()=>{
 
 function renderPurchaseHistory(){
   const el=document.getElementById('p-history-list');
-  const sorted=[...purchaseRecs].sort((a,b)=>b.date.localeCompare(a.date));
-  if(!sorted.length){ el.innerHTML='<div class="empty">尚未有進貨記錄</div>'; return; }
+  const filterMonth=document.getElementById('p-history-month')?document.getElementById('p-history-month').value:'';
+  let sorted=[...purchaseRecs].sort((a,b)=>b.date.localeCompare(a.date));
+  if(filterMonth) sorted=sorted.filter(r=>r.date.slice(0,7)===filterMonth);
+  if(!sorted.length){ el.innerHTML=`<div class="empty">${filterMonth?filterMonth+'月沒有進貨記錄':'尚未有進貨記錄'}</div>`; return; }
   const typeNames={'chicken-purchased':'外購醃製品','chicken-raw':'自製生雞肉','marinade':'醃料進貨','supplies':'耗材進貨'};
-  el.innerHTML='';
-  sorted.slice(0,30).forEach(r=>{
+  // show month total
+  const monthTotal=sorted.reduce((s,r)=>s+r.items.reduce((ss,i)=>ss+(i.total||0),0),0);
+  el.innerHTML=filterMonth?`<div style="font-size:12px;color:var(--amber2);font-weight:700;margin-bottom:8px;padding:6px 10px;background:var(--bg2);border-radius:8px;">${filterMonth} 進貨合計：${fmt(monthTotal)}（${sorted.length}筆）</div>`:'';
+  sorted.forEach(r=>{
     const card=document.createElement('div'); card.className='purchase-rec';
     const total=r.items.reduce((s,i)=>s+(i.total||0),0);
     const isChicken=r.type==='chicken-purchased'||r.type==='chicken-raw';
     card.innerHTML=`
       <div class="purchase-date">${r.date}</div>
       <div class="purchase-title">${typeNames[r.type]||r.type}</div>
-      <div class="purchase-meta">${r.items.map(i=>isChicken&&i.baskets?`${i.name} ${i.baskets}藍(${i.qty}公斤) $${i.total}`:`${i.name} ${i.qty}${i.unit||''} $${i.total||0}`).join('・')}</div>
+      <div class="purchase-meta">${r.items.map(i=>isChicken&&i.baskets?`${i.name} ${i.baskets}件(${i.qty}公斤) $${i.total}`:`${i.name} ${i.qty}${i.unit||''} $${i.total||0}`).join('・')}</div>
       ${r.note?`<div style="font-size:12px;color:var(--faint);margin-top:4px;">備註：${escH(r.note)}</div>`:''}
       ${total?`<div class="cost-highlight"><div class="v">${fmt(total)}</div><div class="l">本次進貨總金額</div></div>`:''}
       <div class="rec-actions" style="margin-top:8px;">
@@ -1770,6 +1793,17 @@ document.getElementById('t-marinate').onclick=()=>switchTab('marinate');
 document.getElementById('t-equipment').onclick=()=>switchTab('equipment');
 document.getElementById('t-inventory').onclick=()=>switchTab('inventory');
 document.getElementById('t-analysis').onclick=()=>switchTab('analysis');
+
+// 進貨月份篩選
+try{
+  document.getElementById('p-history-month').addEventListener('change', renderPurchaseHistory);
+  document.getElementById('p-history-clear').addEventListener('click', ()=>{ document.getElementById('p-history-month').value=''; renderPurchaseHistory(); });
+}catch(e){}
+// 醃製月份篩選
+try{
+  document.getElementById('mar-history-month').addEventListener('change', renderMarinadeRecs);
+  document.getElementById('mar-history-clear').addEventListener('click', ()=>{ document.getElementById('mar-history-month').value=''; renderMarinadeRecs(); });
+}catch(e){}
 
 // ── ANALYSIS PANELS ──
 document.querySelectorAll('.atab').forEach(btn=>{
@@ -1920,19 +1954,23 @@ function renderAnalysis(){
 
   // ── 月底現金結算 ──
   try{
+    const settleMon = document.getElementById('settle-month').value || pickedMonth || new Date().toISOString().slice(0,7);
+    // load saved opening for this month
+    const savedOpening = localStorage.getItem('settle_opening_'+settleMon);
+    const openingEl = document.getElementById('settle-opening');
+    if(savedOpening && openingEl && !openingEl.value) openingEl.value = savedOpening;
+
     const opening = parseFloat(document.getElementById('settle-opening').value)||0;
     const rentTransfer = parseFloat(document.getElementById('settle-rent-transfer').value)||0;
     const purchaseTransfer = parseFloat(document.getElementById('settle-purchase-transfer').value)||0;
     const otherTransfer = parseFloat(document.getElementById('settle-other-transfer').value)||0;
 
-    // 現場收現合計（收現金的部分，不含平台）
-    const cashIn = allFiltered.reduce((s,r)=>s+(r.cashRevenue||0),0);
-    // 平台收入
-    const platformIn = allFiltered.reduce((s,r)=>s+(r.platformRevenue||0),0);
-    // 現金租金（付現的）
-    const rentCash = allFiltered.reduce((s,r)=>s+(r.rent&&r.rentType!=='transfer'&&r.rentType!=='prepaid'?(r.rent||0):0),0);
-    // 現金耗材/其他開銷（月支出中非轉帳的）
-    const opCash = allFiltered.reduce((s,r)=>s+(r.opCost||0),0);
+    // 用結算月份篩選出攤記錄
+    const settleFiltered = settleMon ? dailyRecs.filter(r=>r.date.slice(0,7)===settleMon) : allFiltered;
+    const cashIn = settleFiltered.reduce((s,r)=>s+(r.cashRevenue||0),0);
+    const platformIn = settleFiltered.reduce((s,r)=>s+(r.platformRevenue||0),0);
+    const rentCash = settleFiltered.reduce((s,r)=>s+(r.rent&&r.rentType!=='transfer'&&r.rentType!=='prepaid'?(r.rent||0):0),0);
+    const opCash = settleFiltered.reduce((s,r)=>s+(r.opCost||0),0);
 
     const closing = opening + cashIn + platformIn - rentCash - opCash - rentTransfer - purchaseTransfer - otherTransfer;
 
@@ -1957,6 +1995,26 @@ function renderAnalysis(){
 ['settle-opening','settle-rent-transfer','settle-purchase-transfer','settle-other-transfer'].forEach(id=>{
   try{ document.getElementById(id).addEventListener('input', ()=>renderAnalysis()); }catch(e){}
 });
+// 結算月份切換 → 載入該月儲存的月初預備金
+try{
+  const settleMonEl = document.getElementById('settle-month');
+  settleMonEl.value = new Date().toISOString().slice(0,7);
+  settleMonEl.addEventListener('change', ()=>{
+    const mon = settleMonEl.value;
+    const saved = localStorage.getItem('settle_opening_'+mon);
+    document.getElementById('settle-opening').value = saved||'';
+    renderAnalysis();
+  });
+}catch(e){}
+// 儲存月初預備金
+try{
+  document.getElementById('settle-save-opening').addEventListener('click', ()=>{
+    const mon = document.getElementById('settle-month').value || new Date().toISOString().slice(0,7);
+    const val = document.getElementById('settle-opening').value;
+    localStorage.setItem('settle_opening_'+mon, val);
+    toast(`已儲存 ${mon} 月初預備金 ${val?'$'+parseInt(val).toLocaleString():'$0'}`);
+  });
+}catch(e){}
 document.getElementById('btn-export').onclick=()=>{
   const data={app:'qy_v2',exportedAt:new Date().toISOString(),dailyRecs,purchaseRecs,unitPrices,inventory,monthlyRecs};
   document.getElementById('export-text').value=JSON.stringify(data);
@@ -2154,6 +2212,18 @@ document.getElementById('m-save-btn').addEventListener('click',()=>{
 });
 
 document.getElementById('m-cancel-btn').addEventListener('click',()=>{ resetMonthlyForm(); toast('已取消'); });
+
+// 清除舊版醃製成本
+try{
+  document.getElementById('btn-clean-marinade-cost').addEventListener('click',()=>{
+    const before=monthlyRecs.length;
+    monthlyRecs=monthlyRecs.filter(r=>r.category!=='醃製成本');
+    const removed=before-monthlyRecs.length;
+    if(removed===0){ toast('沒有找到醃製成本記錄'); return; }
+    saveMonthly(); renderMonthlyRecs();
+    toast(`已清除 ${removed} 筆醃製成本，不影響進貨記錄`);
+  });
+}catch(e){}
 
 document.querySelectorAll('.m-range-btn').forEach(btn=>{
   btn.addEventListener('click',()=>{
@@ -2524,7 +2594,7 @@ document.getElementById('mar-save-btn').addEventListener('click',()=>{
   });
   inventory.diyBatches.push({id:uid(),name:calc.item,totalKg:calc.cookedKg,remaining:calc.cookedKg,date,rawKg:calc.rawKg,recipe:RECIPES[calc.recipeId].name});
   saveInventory();
-  monthlyRecs.push({id:uid(),date,month:date.slice(0,7),name:`${calc.item} ${calc.rawKg}kg醃製`,category:'醃製成本',amount:calc.totalCost,note});
+  // 醃製成本不自動加月支出（進貨時已各自記錄）
   saveMonthly();
   marinadeRecs.push({id:uid(),date,item:calc.item,rawKg:calc.rawKg,cookedKg:calc.cookedKg,pieces:calc.pieces,meatCost:calc.meatCost,marinadeCost:calc.totalMarinadeCost,totalCost:calc.totalCost,recipeId:calc.recipeId,note});
   saveMarinade();
@@ -2536,8 +2606,14 @@ document.getElementById('mar-save-btn').addEventListener('click',()=>{
 function renderMarinadeRecs(){
   loadMarinade();
   const el=document.getElementById('mar-batch-list');el.innerHTML='';
-  const sorted=[...marinadeRecs].sort((a,b)=>b.date.localeCompare(a.date));
-  if(!sorted.length){el.innerHTML='<div class="empty">尚無醃製記錄</div>';return;}
+  const filterMonth=document.getElementById('mar-history-month')?document.getElementById('mar-history-month').value:'';
+  let sorted=[...marinadeRecs].sort((a,b)=>b.date.localeCompare(a.date));
+  if(filterMonth) sorted=sorted.filter(r=>r.date.slice(0,7)===filterMonth);
+  if(!sorted.length){ el.innerHTML=`<div class="empty">${filterMonth?filterMonth+'月沒有醃製記錄':'尚無醃製記錄'}</div>`; return; }
+  // month summary
+  const monthTotal=sorted.reduce((s,r)=>s+(r.totalCost||0),0);
+  const monthKg=sorted.reduce((s,r)=>s+(r.rawKg||0),0);
+  if(filterMonth) el.innerHTML=`<div style="font-size:12px;color:var(--amber2);font-weight:700;margin-bottom:8px;padding:6px 10px;background:var(--bg2);border-radius:8px;">${filterMonth} 醃製合計：${monthKg}kg 成本${fmt(monthTotal)}（${sorted.length}批）</div>`;
   sorted.forEach(r=>{
     const card=document.createElement('div');card.className='rec';
     card.innerHTML=`<div class="rec-top"><div><span class="rec-date">${r.date}</span><span class="rec-loc" style="color:var(--amber2);">配方${r.recipeId}</span></div><div class="rec-net-wrap"><span class="rec-net-lbl">總成本</span><div class="rec-net neg">${fmt(r.totalCost)}</div></div></div><div style="font-size:13px;color:var(--dim);margin-top:4px;">${escH(r.item)} ${r.rawKg}kg → <span style="color:var(--green)">${r.cookedKg}kg</span></div><div class="rec-meta"><span>生肉 ${fmt(r.meatCost)}</span><span>醃料 ${fmt(r.marinadeCost)}</span></div>${r.note?`<div style="font-size:11px;color:var(--faint);margin-top:4px;">${escH(r.note)}</div>`:''}<div class="rec-actions" style="margin-top:8px;"><button class="mar-del-btn danger" data-id="${r.id}">刪除記錄</button></div>`;
