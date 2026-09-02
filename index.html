@@ -964,6 +964,42 @@ section.active{display:block;}
       <div class="sum-card"><div class="sum-v" id="a-avg-hour">$0</div><div class="sum-l">平均時薪</div></div>
     </div>
     <div class="card">
+      <div class="card-title">💰 月底現金結算</div>
+      <p class="backup-hint">食材貨款透過銷售賺回，不從現金扣除。這裡只計算實際離開口袋的現金。</p>
+
+      <div class="field"><label>月初預備金（帶入的現金）</label>
+        <input type="number" inputmode="decimal" id="settle-opening" placeholder="0" style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--ink);font-size:16px;padding:11px 12px;width:100%;">
+      </div>
+      <div class="field"><label>轉帳租金（當月已轉帳）</label>
+        <input type="number" inputmode="decimal" id="settle-rent-transfer" placeholder="0" style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--ink);font-size:16px;padding:11px 12px;width:100%;">
+      </div>
+      <div class="field"><label>轉帳貨款（當月已轉帳進貨）</label>
+        <input type="number" inputmode="decimal" id="settle-purchase-transfer" placeholder="0" style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--ink);font-size:16px;padding:11px 12px;width:100%;">
+      </div>
+      <div class="field" style="margin-bottom:0;"><label>其他轉帳支出</label>
+        <input type="number" inputmode="decimal" id="settle-other-transfer" placeholder="0" style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--ink);font-size:16px;padding:11px 12px;width:100%;">
+      </div>
+
+      <div style="background:var(--bg2);border-radius:var(--r2);padding:13px;margin-top:14px;">
+        <div class="calc-row"><span>月初預備金</span><b id="st-opening" style="color:var(--dim);">$0</b></div>
+        <div class="calc-row"><span>＋ 現場收現合計</span><b id="st-cash-in" style="color:var(--green);">$0</b></div>
+        <div class="calc-row"><span>＋ 平台收入（Uber/熊貓/LinePay）</span><b id="st-platform" style="color:var(--green);">$0</b></div>
+        <div class="calc-row calc-sub"><span>－ 現金租金支出</span><span id="st-rent-cash">$0</span></div>
+        <div class="calc-row calc-sub"><span>－ 現金耗材支出</span><span id="st-op-cash">$0</span></div>
+        <div class="calc-row calc-sub"><span>－ 轉帳租金</span><span id="st-rent-transfer">$0</span></div>
+        <div class="calc-row calc-sub"><span>－ 轉帳貨款</span><span id="st-purchase-transfer">$0</span></div>
+        <div class="calc-row calc-sub"><span>－ 其他轉帳支出</span><span id="st-other-transfer">$0</span></div>
+        <div class="calc-row calc-total" style="margin-top:6px;">
+          <span>預估月底手頭現金</span>
+          <b id="st-closing" style="font-size:20px;">$0</b>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--faint);margin-top:8px;">
+        ⚠️ 食材貨款已透過銷售賺回，若庫存還有剩，代表那部分貨款尚未回收
+      </div>
+    </div>
+
+    <div class="card">
       <div class="card-title">淨利趨勢</div>
       <div class="chart-wrap"><canvas id="chart-profit"></canvas></div>
     </div>
@@ -1881,9 +1917,46 @@ function renderAnalysis(){
       locList.appendChild(row);
     });
   }catch(e){ console.warn('location error:',e.message); }
+
+  // ── 月底現金結算 ──
+  try{
+    const opening = parseFloat(document.getElementById('settle-opening').value)||0;
+    const rentTransfer = parseFloat(document.getElementById('settle-rent-transfer').value)||0;
+    const purchaseTransfer = parseFloat(document.getElementById('settle-purchase-transfer').value)||0;
+    const otherTransfer = parseFloat(document.getElementById('settle-other-transfer').value)||0;
+
+    // 現場收現合計（收現金的部分，不含平台）
+    const cashIn = allFiltered.reduce((s,r)=>s+(r.cashRevenue||0),0);
+    // 平台收入
+    const platformIn = allFiltered.reduce((s,r)=>s+(r.platformRevenue||0),0);
+    // 現金租金（付現的）
+    const rentCash = allFiltered.reduce((s,r)=>s+(r.rent&&r.rentType!=='transfer'&&r.rentType!=='prepaid'?(r.rent||0):0),0);
+    // 現金耗材/其他開銷（月支出中非轉帳的）
+    const opCash = allFiltered.reduce((s,r)=>s+(r.opCost||0),0);
+
+    const closing = opening + cashIn + platformIn - rentCash - opCash - rentTransfer - purchaseTransfer - otherTransfer;
+
+    const _st=(id,val,color)=>{try{const el=document.getElementById(id);el.textContent=val;if(color)el.style.color=color;}catch(e){}};
+    _st('st-opening', fmt(opening));
+    _st('st-cash-in', fmt(cashIn), 'var(--green)');
+    _st('st-platform', fmt(platformIn), platformIn>0?'var(--green)':'var(--faint)');
+    _st('st-rent-cash', fmt(rentCash));
+    _st('st-op-cash', fmt(opCash));
+    _st('st-rent-transfer', fmt(rentTransfer));
+    _st('st-purchase-transfer', fmt(purchaseTransfer));
+    _st('st-other-transfer', fmt(otherTransfer));
+    const closingEl = document.getElementById('st-closing');
+    if(closingEl){
+      closingEl.textContent = fmt(closing);
+      closingEl.style.color = closing>=0?'var(--green)':'var(--red)';
+    }
+  }catch(e){ console.warn('settlement error:',e.message); }
 }
 
 // ── BACKUP ──
+['settle-opening','settle-rent-transfer','settle-purchase-transfer','settle-other-transfer'].forEach(id=>{
+  try{ document.getElementById(id).addEventListener('input', ()=>renderAnalysis()); }catch(e){}
+});
 document.getElementById('btn-export').onclick=()=>{
   const data={app:'qy_v2',exportedAt:new Date().toISOString(),dailyRecs,purchaseRecs,unitPrices,inventory,monthlyRecs};
   document.getElementById('export-text').value=JSON.stringify(data);
