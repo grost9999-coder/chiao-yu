@@ -406,7 +406,17 @@ section.active{display:block;}
       <div class="field"><label>工作時數</label><input type="number" inputmode="decimal" id="d-hours" placeholder="例：7"></div>
     </div>
     <div class="field"><label>擺攤地點（選填）</label><input type="text" id="d-loc" placeholder="例：南田市場"></div>
-    <div class="field" style="margin-bottom:0;"><label>租金（場地費）</label><input type="number" inputmode="decimal" id="d-rent" placeholder="0"></div>
+    <div class="field" style="margin-bottom:0;">
+      <label>租金（場地費）</label>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;">
+        <input type="number" inputmode="decimal" id="d-rent" placeholder="0">
+        <select id="d-rent-type" style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--ink);font-size:13px;padding:11px 8px;white-space:nowrap;">
+          <option value="cash">💵 付現</option>
+          <option value="transfer">🏦 轉帳</option>
+          <option value="prepaid">📅 預繳</option>
+        </select>
+      </div>
+    </div>
   </div>
 
   <div class="card">
@@ -421,6 +431,8 @@ section.active{display:block;}
     <div class="section-label">🛒 外購醃製品</div>
     <div class="chips" id="chips-purchase">
       <button class="chip meat-daily-chip" data-list="purchase-list" data-name="外購三節翅">外購三節翅</button>
+      <button class="chip meat-daily-chip" data-list="purchase-list" data-name="外購翅腿">外購翅腿</button>
+      <button class="chip meat-daily-chip" data-list="purchase-list" data-name="外購二節翅">外購二節翅</button>
       <button class="chip meat-daily-chip" data-list="purchase-list" data-name="鳳翅球">鳳翅球</button>
       <button class="chip meat-daily-chip" data-list="purchase-list" data-name="花枝丸">花枝丸</button>
     </div>
@@ -1053,6 +1065,8 @@ function load(){
   const DEFAULT_KG_PRICES = {
     // 外購已醃
     '外購三節翅':      45,     // $45/公斤，每件18kg=$810
+    '外購翅腿':        55,     // $55/公斤，每件18kg=$990
+    '外購二節翅':      80,     // $80/公斤，每件18kg=$1440
     '鳳翅球':          50,     // $50/公斤，每件12kg=$600
     '花枝丸':          Math.round(430/3*100)/100, // $430/件(5斤≈3kg)
     // 舊名稱相容
@@ -1283,6 +1297,8 @@ function readPR(container){ const items=[]; container.querySelectorAll('.ir').fo
 // ── DAILY RECALC ──
 function recalcDaily(){
   const rent=parseFloat(document.getElementById('d-rent').value)||0;
+  const rentType=document.getElementById('d-rent-type')?document.getElementById('d-rent-type').value:'cash';
+  const rentLabel={'cash':'付現','transfer':'轉帳','prepaid':'預繳'}[rentType]||'';
   const hours=parseFloat(document.getElementById('d-hours').value)||0;
   const floatG=readDenomGrid('float-grid');
   const revG=readDenomGrid('revenue-grid');
@@ -1376,7 +1392,7 @@ function recalcDaily(){
   _s('cd-diy', fmt(diyCost));
   _s('cd-gross', fmt(gross));
   _s('cd-gross2', fmt(gross));
-  _s('cd-rent', fmt(rent)); _d('cd-rent-row', rent>0);
+  _s('cd-rent', fmt(rent)+(rentLabel?' ('+rentLabel+')':'')); _d('cd-rent-row', rent>0);
   _s('cd-pkg', fmt(fixedCost+autoPkgCost));
   _s('cd-op', fmt(sumItems(opItems)));
   _s('cd-net', fmt(net));
@@ -1392,7 +1408,7 @@ function recalcDaily(){
   _s('cd-cash-op', fmt(sumItems(opItems)));
   _s('cd-cash-net', fmt(cashNet));
   try{ document.getElementById('cd-cash-net').style.color=cashNet>=0?'#5b9bd5':'var(--red)'; }catch(e){}
-  return {rent,hours,revenue,cashRevenue,uber,panda,linepay,platformRevenue,revenueCash:revG.items,floatCash:floatG.items,floatTotal:floatG.total,closingCash:revG.total,purchaseItems,diyItems,opItems,purchaseCost,diyCost,totalCogs,opCost,fixedCost,autoPkgCost,autoBagQty,autoPlasticQty,totalCost,gross,net,margin,hourly};
+  return {rent,rentType,hours,revenue,cashRevenue,uber,panda,linepay,platformRevenue,revenueCash:revG.items,floatCash:floatG.items,floatTotal:floatG.total,closingCash:revG.total,purchaseItems,diyItems,opItems,purchaseCost,diyCost,totalCogs,opCost,fixedCost,autoPkgCost,autoBagQty,autoPlasticQty,totalCost,gross,net,margin,hourly};
 }
 
 function recalcDenoms(){ recalcDaily(); }
@@ -1422,7 +1438,7 @@ document.getElementById('save-daily').addEventListener('click',()=>{
   const date=document.getElementById('d-date').value||todayStr();
   const loc=document.getElementById('d-loc').value.trim();
   if(!calc.closingCash&&!calc.purchaseCost&&!calc.diyCost&&!calc.rent&&!calc.opCost){ toast('請至少填入一項數據'); return; }
-  const rec={id:editingId||uid(),date,location:loc,hours:calc.hours,rent:calc.rent,purchaseItems:calc.purchaseItems,diyItems:calc.diyItems,opItems:calc.opItems,revenueCash:calc.revenueCash,floatCash:calc.floatCash,closingCash:calc.closingCash,floatTotal:calc.floatTotal,cashRevenue:calc.cashRevenue,uber:calc.uber,panda:calc.panda,linepay:calc.linepay,platformRevenue:calc.platformRevenue,revenue:calc.revenue,purchaseCost:calc.purchaseCost,diyCost:calc.diyCost,totalCogs:calc.totalCogs,opCost:calc.opCost,fixedCost:calc.fixedCost,gross:calc.gross,net:calc.net};
+  const rec={id:editingId||uid(),date,location:loc,hours:calc.hours,rent:calc.rent,rentType:calc.rentType,purchaseItems:calc.purchaseItems,diyItems:calc.diyItems,opItems:calc.opItems,revenueCash:calc.revenueCash,floatCash:calc.floatCash,closingCash:calc.closingCash,floatTotal:calc.floatTotal,cashRevenue:calc.cashRevenue,uber:calc.uber,panda:calc.panda,linepay:calc.linepay,platformRevenue:calc.platformRevenue,revenue:calc.revenue,purchaseCost:calc.purchaseCost,diyCost:calc.diyCost,totalCogs:calc.totalCogs,opCost:calc.opCost,fixedCost:calc.fixedCost,gross:calc.gross,net:calc.net};
   if(editingId){ const i=dailyRecs.findIndex(r=>r.id===editingId); if(i>-1) dailyRecs[i]=rec; editingId=null; } else { dailyRecs.push(rec); }
   // ── AUTO DEDUCT MEAT FROM INVENTORY ──
   // if editing, first reverse old deduction
@@ -1443,6 +1459,7 @@ function resetDaily(){
   document.getElementById('d-loc').value='';
   document.getElementById('d-hours').value='';
   document.getElementById('d-rent').value='';
+  try{ document.getElementById('d-rent-type').value='cash'; }catch(e){}
   clearDenomGrid('float-grid'); clearDenomGrid('revenue-grid');
   document.getElementById('d-uber').value='';
   document.getElementById('d-panda').value='';
@@ -1479,6 +1496,7 @@ function openEdit(id){
   document.getElementById('d-loc').value=r.location||'';
   document.getElementById('d-hours').value=r.hours||'';
   document.getElementById('d-rent').value=r.rent||'';
+  try{ document.getElementById('d-rent-type').value=r.rentType||'cash'; }catch(e){}
   clearDenomGrid('float-grid'); if(r.floatCash) fillDenomGrid('float-grid',r.floatCash);
   clearDenomGrid('revenue-grid'); if(r.revenueCash) fillDenomGrid('revenue-grid',r.revenueCash);
   document.getElementById('d-uber').value=r.uber||'';
