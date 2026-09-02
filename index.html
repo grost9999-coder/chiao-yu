@@ -615,7 +615,15 @@ section.active{display:block;}
   <div class="card">
     <div class="card-title">新增進貨記錄</div>
     <div class="two">
-      <div class="field"><label>進貨日期</label><input type="date" id="p-date"></div>
+      <div class="two">
+        <div class="field"><label>進貨日期</label><input type="date" id="p-date"></div>
+        <div class="field"><label>付款方式</label>
+          <select id="p-pay-type" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--ink);font-size:15px;padding:10px 11px;">
+            <option value="cash">💵 現金</option>
+            <option value="transfer">🏦 轉帳</option>
+          </select>
+        </div>
+      </div>
       <div class="field"><label>進貨類型</label>
         <select id="p-type" style="width:100%;background:var(--bg2);border:1px solid #38302660;border-radius:8px;color:var(--ink);font-size:15px;padding:10px 11px;">
           <option value="chicken-purchased">外購醃製品（已醃製，直接批發）</option>
@@ -728,6 +736,7 @@ section.active{display:block;}
       <button class="chip m-cat-chip" data-name="沙拉油">沙拉油</button>
       <button class="chip m-cat-chip" data-name="胡椒鹽">胡椒鹽</button>
       <button class="chip m-cat-chip" data-name="辣椒粉">辣椒粉</button>
+      <button class="chip m-cat-chip" data-name="冷凍庫租金">冷凍庫租金</button>
     </div>
     <div class="field"><label>項目名稱</label><input type="text" id="m-name" placeholder="例：瓦斯 2罐"></div>
     <div class="field"><label>金額</label><input type="number" inputmode="decimal" id="m-amount" placeholder="0"></div>
@@ -999,11 +1008,11 @@ section.active{display:block;}
         <div style="font-size:11px;color:var(--faint);margin-top:4px;">填入後按儲存，下次切換到此月份會自動帶入</div>
       </div>
       </div>
-      <div class="field"><label>轉帳租金（當月已轉帳）</label>
-        <input type="number" inputmode="decimal" id="settle-rent-transfer" placeholder="0" style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--ink);font-size:16px;padding:11px 12px;width:100%;">
+      <div class="field"><label>轉帳租金（留空自動從出攤記錄計算）</label>
+        <input type="number" inputmode="decimal" id="settle-rent-transfer" placeholder="留空=自動" style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--ink);font-size:16px;padding:11px 12px;width:100%;">
       </div>
-      <div class="field"><label>轉帳貨款（當月已轉帳進貨）</label>
-        <input type="number" inputmode="decimal" id="settle-purchase-transfer" placeholder="0" style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--ink);font-size:16px;padding:11px 12px;width:100%;">
+      <div class="field"><label>轉帳貨款（留空自動從進貨記錄計算）</label>
+        <input type="number" inputmode="decimal" id="settle-purchase-transfer" placeholder="留空=自動" style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--ink);font-size:16px;padding:11px 12px;width:100%;">
       </div>
       <div class="field" style="margin-bottom:0;"><label>其他轉帳支出</label>
         <input type="number" inputmode="decimal" id="settle-other-transfer" placeholder="0" style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--ink);font-size:16px;padding:11px 12px;width:100%;">
@@ -1661,6 +1670,7 @@ function applyPurchaseToInventory(rec, multiplier){
 function loadPurchaseIntoForm(rec){
   editingPurchaseId = rec.id;
   document.getElementById('p-date').value = rec.date;
+  try{ document.getElementById('p-pay-type').value = rec.payType||'cash'; }catch(e){}
   document.getElementById('p-type').value = rec.type;
   document.getElementById('p-note').value = rec.note||'';
   // trigger type change to show correct panel
@@ -1696,6 +1706,7 @@ function resetPurchaseForm(){
 document.getElementById('save-purchase').addEventListener('click',()=>{
   const type=document.getElementById('p-type').value;
   const date=document.getElementById('p-date').value||todayStr();
+  const payType=document.getElementById('p-pay-type')?document.getElementById('p-pay-type').value:'cash';
   const note=document.getElementById('p-note').value.trim();
   let items=[];
   if(type==='chicken-purchased') items=readChickenPR(document.getElementById('p-meat-list'));
@@ -1729,14 +1740,14 @@ document.getElementById('save-purchase').addEventListener('click',()=>{
   if(editingPurchaseId){
     const oldRec=purchaseRecs.find(r=>r.id===editingPurchaseId);
     if(oldRec) applyPurchaseToInventory(oldRec, -1);
-    const newRec={id:editingPurchaseId, date, type, items, note};
+    const newRec={id:editingPurchaseId, date, type, items, note, payType};
     applyPurchaseToInventory(newRec, +1);
     addToMonthly(newRec);
     const idx=purchaseRecs.findIndex(r=>r.id===editingPurchaseId);
     if(idx>-1) purchaseRecs[idx]=newRec;
     toast('已更新進貨記錄，庫存及月支出已同步');
   } else {
-    const rec={id:uid(), date, type, items, note};
+    const rec={id:uid(), date, type, items, note, payType};
     applyPurchaseToInventory(rec, +1);
     addToMonthly(rec);
     purchaseRecs.push(rec);
@@ -1764,7 +1775,7 @@ function renderPurchaseHistory(){
     const isChicken=r.type==='chicken-purchased'||r.type==='chicken-raw';
     card.innerHTML=`
       <div class="purchase-date">${r.date}</div>
-      <div class="purchase-title">${typeNames[r.type]||r.type}</div>
+      <div class="purchase-title">${typeNames[r.type]||r.type} <span style="font-size:11px;color:${r.payType==='transfer'?'var(--blue)':'var(--green)'};">${r.payType==='transfer'?'🏦 轉帳':'💵 現金'}</span></div>
       <div class="purchase-meta">${r.items.map(i=>isChicken&&i.baskets?`${i.name} ${i.baskets}件(${i.qty}公斤) $${i.total}`:`${i.name} ${i.qty}${i.unit||''} $${i.total||0}`).join('・')}</div>
       ${r.note?`<div style="font-size:12px;color:var(--faint);margin-top:4px;">備註：${escH(r.note)}</div>`:''}
       ${total?`<div class="cost-highlight"><div class="v">${fmt(total)}</div><div class="l">本次進貨總金額</div></div>`:''}
@@ -1970,9 +1981,25 @@ function renderAnalysis(){
     if(savedOpening && openingEl && !openingEl.value) openingEl.value = savedOpening;
 
     const opening = parseFloat(document.getElementById('settle-opening').value)||0;
-    const rentTransfer = parseFloat(document.getElementById('settle-rent-transfer').value)||0;
-    const purchaseTransfer = parseFloat(document.getElementById('settle-purchase-transfer').value)||0;
+    const rentTransferInput = parseFloat(document.getElementById('settle-rent-transfer').value);
+    const purchaseTransferInput = parseFloat(document.getElementById('settle-purchase-transfer').value);
     const otherTransfer = parseFloat(document.getElementById('settle-other-transfer').value)||0;
+
+    // Auto-calculate from records if field is empty
+    const autoRentTransfer = isNaN(rentTransferInput)
+      ? settleFiltered.reduce((s,r)=>s+((r.rentType==='transfer'||r.rentType==='prepaid')?(r.rent||0):0),0)
+      : rentTransferInput;
+    const autoPurchaseTransfer = isNaN(purchaseTransferInput)
+      ? purchaseRecs.filter(r=>r.date.slice(0,7)===settleMon&&r.payType==='transfer')
+          .reduce((s,r)=>s+r.items.reduce((ss,i)=>ss+(i.total||0),0),0)
+      : purchaseTransferInput;
+
+    // Update display hint
+    try{ document.getElementById('settle-rent-transfer').placeholder = '自動:'+autoRentTransfer||'0'; }catch(e){}
+    try{ document.getElementById('settle-purchase-transfer').placeholder = '自動:'+autoPurchaseTransfer||'0'; }catch(e){}
+
+    const rentTransfer = autoRentTransfer;
+    const purchaseTransfer = autoPurchaseTransfer;
 
     // 用結算月份篩選出攤記錄
     const settleFiltered = settleMon ? dailyRecs.filter(r=>r.date.slice(0,7)===settleMon) : allFiltered;
@@ -1989,8 +2016,8 @@ function renderAnalysis(){
     _st('st-platform', fmt(platformIn), platformIn>0?'var(--green)':'var(--faint)');
     _st('st-rent-cash', fmt(rentCash));
     _st('st-op-cash', fmt(opCash));
-    _st('st-rent-transfer', fmt(rentTransfer));
-    _st('st-purchase-transfer', fmt(purchaseTransfer));
+    _st('st-rent-transfer', fmt(rentTransfer)+(isNaN(rentTransferInput)?' (自動)':''));
+    _st('st-purchase-transfer', fmt(purchaseTransfer)+(isNaN(purchaseTransferInput)?' (自動)':''));
     _st('st-other-transfer', fmt(otherTransfer));
     const closingEl = document.getElementById('st-closing');
     if(closingEl){
