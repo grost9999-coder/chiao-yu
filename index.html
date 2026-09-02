@@ -985,10 +985,16 @@ section.active{display:block;}
       <div class="field"><label>結算月份</label>
         <input type="month" id="settle-month" style="width:100%;background:var(--bg2);border:1.5px solid var(--amber2);border-radius:var(--r2);color:var(--ink);font-size:16px;padding:11px 12px;">
       </div>
-      <div class="field"><label>月初預備金（帶入的現金）</label>
-        <div style="display:flex;gap:8px;">
-          <input type="number" inputmode="decimal" id="settle-opening" placeholder="0" style="flex:1;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--ink);font-size:16px;padding:11px 12px;">
-          <button id="settle-save-opening" style="padding:0 14px;border-radius:var(--r2);border:none;background:var(--amber);color:#0f0d09;font-size:13px;font-weight:700;">儲存</button>
+      <div class="field"><label>月初預備金（幣值計數）</label>
+        <div class="denom-grid" id="settle-denom-grid" style="margin-bottom:6px;"></div>
+        <div class="denom-foot" style="border:1px solid var(--border);border-radius:0 0 var(--r2) var(--r2);">
+          <span>預備金合計</span>
+          <b id="settle-opening-total">$0</b>
+        </div>
+        <input type="hidden" id="settle-opening" value="0">
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="settle-save-opening" style="flex:1;padding:10px;border-radius:var(--r2);border:none;background:var(--amber);color:#0f0d09;font-size:13px;font-weight:700;">儲存月初預備金</button>
+          <button id="settle-clear-opening" style="padding:10px 14px;border-radius:var(--r2);border:1px solid var(--border);background:none;color:var(--faint);font-size:13px;">清除</button>
         </div>
         <div style="font-size:11px;color:var(--faint);margin-top:4px;">填入後按儲存，下次切換到此月份會自動帶入</div>
       </div>
@@ -2003,20 +2009,92 @@ function renderAnalysis(){
 try{
   const settleMonEl = document.getElementById('settle-month');
   settleMonEl.value = new Date().toISOString().slice(0,7);
+
+  // Build settle denom grid
+  const SETTLE_DENOMS = [1000,500,100,50,10];
+  const settleGrid = document.getElementById('settle-denom-grid');
+  if(settleGrid){
+    settleGrid.innerHTML='';
+    SETTLE_DENOMS.forEach(d=>{
+      const row=document.createElement('div'); row.className='denom-row';
+      row.innerHTML=`<span class="denom-lbl">$${d}</span><input type="number" inputmode="numeric" min="0" class="sdc" data-d="${d}" placeholder="0"><span class="sdc-sub denom-sub">$0</span>`;
+      row.querySelector('.sdc').addEventListener('input',()=>updateSettleOpening());
+      settleGrid.appendChild(row);
+    });
+  }
+
+  function updateSettleOpening(){
+    let total=0;
+    document.querySelectorAll('.sdc').forEach(inp=>{
+      const d=parseFloat(inp.dataset.d)||0;
+      const c=parseFloat(inp.value)||0;
+      const sub=d*c;
+      const subEl=inp.parentElement.querySelector('.sdc-sub');
+      if(subEl) subEl.textContent='$'+sub.toLocaleString();
+      total+=sub;
+    });
+    const totalEl=document.getElementById('settle-opening-total');
+    if(totalEl) totalEl.textContent='$'+total.toLocaleString();
+    const hiddenEl=document.getElementById('settle-opening');
+    if(hiddenEl) hiddenEl.value=total;
+    renderAnalysis();
+  }
+
+  function loadSettleOpening(mon){
+    const saved=localStorage.getItem('settle_opening_'+mon);
+    if(!saved) return;
+    try{
+      const data=JSON.parse(saved);
+      if(typeof data==='object'&&data.denoms){
+        // restore denom counts
+        document.querySelectorAll('.sdc').forEach(inp=>{
+          const d=inp.dataset.d;
+          inp.value=data.denoms[d]||'';
+        });
+      } else {
+        // legacy: single number, put into 1000s
+        const val=parseFloat(saved)||0;
+        const thou=document.querySelector('.sdc[data-d="1000"]');
+        if(thou) thou.value=Math.floor(val/1000)||'';
+      }
+      updateSettleOpening();
+    }catch(e){
+      // legacy single number
+      const val=parseFloat(saved)||0;
+      const thou=document.querySelector('.sdc[data-d="1000"]');
+      if(thou){ thou.value=Math.floor(val/1000)||''; updateSettleOpening(); }
+    }
+  }
+
   settleMonEl.addEventListener('change', ()=>{
-    const mon = settleMonEl.value;
-    const saved = localStorage.getItem('settle_opening_'+mon);
-    document.getElementById('settle-opening').value = saved||'';
+    // clear inputs
+    document.querySelectorAll('.sdc').forEach(inp=>inp.value='');
+    updateSettleOpening();
+    loadSettleOpening(settleMonEl.value);
     renderAnalysis();
   });
-}catch(e){}
+
+  // load current month
+  loadSettleOpening(settleMonEl.value);
+
+}catch(e){ console.warn('settle denom init error:',e); }
+
 // 儲存月初預備金
 try{
   document.getElementById('settle-save-opening').addEventListener('click', ()=>{
     const mon = document.getElementById('settle-month').value || new Date().toISOString().slice(0,7);
-    const val = document.getElementById('settle-opening').value;
-    localStorage.setItem('settle_opening_'+mon, val);
-    toast(`已儲存 ${mon} 月初預備金 ${val?'$'+parseInt(val).toLocaleString():'$0'}`);
+    const denoms={};
+    document.querySelectorAll('.sdc').forEach(inp=>{ denoms[inp.dataset.d]=inp.value||'0'; });
+    const total=parseFloat(document.getElementById('settle-opening').value)||0;
+    localStorage.setItem('settle_opening_'+mon, JSON.stringify({denoms,total}));
+    toast(`已儲存 ${mon} 月初預備金 $${total.toLocaleString()}`);
+  });
+  document.getElementById('settle-clear-opening').addEventListener('click', ()=>{
+    document.querySelectorAll('.sdc').forEach(inp=>inp.value='');
+    document.getElementById('settle-opening').value='0';
+    document.getElementById('settle-opening-total').textContent='$0';
+    document.querySelectorAll('.sdc-sub').forEach(el=>el.textContent='$0');
+    renderAnalysis();
   });
 }catch(e){}
 document.getElementById('btn-export').onclick=()=>{
@@ -2098,6 +2176,9 @@ let monthlyRecs = [];
 let editingMonthlyId = null;
 let currentMonthFilter = '';
 let pickedMonthlyMonth = '';
+
+function loadMonthly(){ try{ monthlyRecs=JSON.parse(localStorage.getItem(M_KEY)||'[]'); }catch(e){ monthlyRecs=[]; } }
+function saveMonthly(){ localStorage.setItem(M_KEY, JSON.stringify(monthlyRecs)); }
 
 function inMonthFilter(rec){
   if(currentMonthFilter==='all') return true;
