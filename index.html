@@ -1133,11 +1133,10 @@ function load(){
     '外購翅腿':        55,     // $55/公斤，每件18kg=$990
     '外購二節翅':      80,     // $80/公斤，每件18kg=$1440
     '鳳翅球':          50,     // $50/公斤，每件12kg=$600
-    '花枝丸':          Math.round(430/3*100)/100, // $430/件(5斤≈3kg)
+    '花枝丸':          Math.round(430/3*100)/100,
     // 舊名稱相容
     '外購翅腿二節翅':   Math.round(1650/18*100)/100,
     '外購翅小腿/二節翅':Math.round(1650/18*100)/100,
-    '外購翅腿':         Math.round(1650/18*100)/100,
     // 自製生肉（每公斤單價）
     '翅腿':            55,     // $55/公斤，每件18kg=$990
     '二節翅':          80,     // $80/公斤，每件18kg=$1440
@@ -2179,6 +2178,9 @@ let pickedMonthlyMonth = '';
 
 function loadMonthly(){ try{ monthlyRecs=JSON.parse(localStorage.getItem(M_KEY)||'[]'); }catch(e){ monthlyRecs=[]; } }
 function saveMonthly(){ localStorage.setItem(M_KEY, JSON.stringify(monthlyRecs)); }
+
+function thisMonth(){ return new Date().toISOString().slice(0,7); }
+function prevMonth(){ const d=new Date(); d.setMonth(d.getMonth()-1); return d.toISOString().slice(0,7); }
 
 function inMonthFilter(rec){
   if(currentMonthFilter==='all') return true;
