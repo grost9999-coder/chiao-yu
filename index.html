@@ -741,7 +741,11 @@ section.active{display:block;}
     <div class="filter-row">
       <button class="filter-btn active m-range-btn" data-month="">本月</button>
       <button class="filter-btn m-range-btn" data-month="prev">上月</button>
+      <button class="filter-btn m-range-btn" data-month="pick">選月份</button>
       <button class="filter-btn m-range-btn" data-month="all">全部</button>
+    </div>
+    <div id="m-month-picker-row" style="display:none;margin-bottom:10px;">
+      <input type="month" id="m-month-pick" style="width:100%;background:var(--bg2);border:1.5px solid var(--amber2);border-radius:var(--r2);color:var(--ink);font-size:15px;padding:10px 12px;">
     </div>
     <div class="sum-grid" id="m-summary-grid">
       <div class="sum-card"><div class="sum-v" id="m-total">$0</div><div class="sum-l">總支出</div></div>
@@ -2093,21 +2097,12 @@ const M_KEY = 'qy_monthly_v1';
 let monthlyRecs = [];
 let editingMonthlyId = null;
 let currentMonthFilter = '';
-
-function loadMonthly(){
-  try{ monthlyRecs=JSON.parse(localStorage.getItem(M_KEY)||'[]'); }catch(e){ monthlyRecs=[]; }
-}
-function saveMonthly(){ localStorage.setItem(M_KEY, JSON.stringify(monthlyRecs)); }
-
-function thisMonth(){ return new Date().toISOString().slice(0,7); }
-function prevMonth(){
-  const d=new Date(); d.setMonth(d.getMonth()-1);
-  return d.toISOString().slice(0,7);
-}
+let pickedMonthlyMonth = '';
 
 function inMonthFilter(rec){
   if(currentMonthFilter==='all') return true;
   if(currentMonthFilter==='prev') return (rec.month||rec.date.slice(0,7))===prevMonth();
+  if(currentMonthFilter==='pick') return (rec.month||rec.date.slice(0,7))===pickedMonthlyMonth;
   return (rec.month||rec.date.slice(0,7))===thisMonth();
 }
 
@@ -2230,9 +2225,23 @@ document.querySelectorAll('.m-range-btn').forEach(btn=>{
     document.querySelectorAll('.m-range-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     currentMonthFilter=btn.dataset.month;
+    const picker=document.getElementById('m-month-picker-row');
+    if(currentMonthFilter==='pick'){
+      if(picker) picker.style.display='block';
+      if(!pickedMonthlyMonth) pickedMonthlyMonth=thisMonth();
+      try{ document.getElementById('m-month-pick').value=pickedMonthlyMonth; }catch(e){}
+    } else {
+      if(picker) picker.style.display='none';
+    }
     renderMonthlyRecs();
   });
 });
+try{
+  document.getElementById('m-month-pick').addEventListener('change',e=>{
+    pickedMonthlyMonth=e.target.value;
+    renderMonthlyRecs();
+  });
+}catch(e){}
 
 // ── INVENTORY STORAGE ──
 const INV_KEY = 'qy_inventory_v2';
