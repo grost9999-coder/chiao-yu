@@ -1985,7 +1985,14 @@ function renderAnalysis(){
     const purchaseTransferInput = parseFloat(document.getElementById('settle-purchase-transfer').value);
     const otherTransfer = parseFloat(document.getElementById('settle-other-transfer').value)||0;
 
-    // Auto-calculate from records if field is empty
+    // 先篩選出攤記錄（必須在auto計算前）
+    const settleFiltered = settleMon ? dailyRecs.filter(r=>r.date.slice(0,7)===settleMon) : allFiltered;
+    const cashIn = settleFiltered.reduce((s,r)=>s+(r.cashRevenue||0),0);
+    const platformIn = settleFiltered.reduce((s,r)=>s+(r.platformRevenue||0),0);
+    const rentCash = settleFiltered.reduce((s,r)=>s+(r.rent&&r.rentType!=='transfer'&&r.rentType!=='prepaid'?(r.rent||0):0),0);
+    const opCash = settleFiltered.reduce((s,r)=>s+(r.opCost||0),0);
+
+    // 自動計算轉帳金額（留空時）
     const autoRentTransfer = isNaN(rentTransferInput)
       ? settleFiltered.reduce((s,r)=>s+((r.rentType==='transfer'||r.rentType==='prepaid')?(r.rent||0):0),0)
       : rentTransferInput;
@@ -1994,19 +2001,8 @@ function renderAnalysis(){
           .reduce((s,r)=>s+r.items.reduce((ss,i)=>ss+(i.total||0),0),0)
       : purchaseTransferInput;
 
-    // Update display hint
-    try{ document.getElementById('settle-rent-transfer').placeholder = '自動:'+autoRentTransfer||'0'; }catch(e){}
-    try{ document.getElementById('settle-purchase-transfer').placeholder = '自動:'+autoPurchaseTransfer||'0'; }catch(e){}
-
     const rentTransfer = autoRentTransfer;
     const purchaseTransfer = autoPurchaseTransfer;
-
-    // 用結算月份篩選出攤記錄
-    const settleFiltered = settleMon ? dailyRecs.filter(r=>r.date.slice(0,7)===settleMon) : allFiltered;
-    const cashIn = settleFiltered.reduce((s,r)=>s+(r.cashRevenue||0),0);
-    const platformIn = settleFiltered.reduce((s,r)=>s+(r.platformRevenue||0),0);
-    const rentCash = settleFiltered.reduce((s,r)=>s+(r.rent&&r.rentType!=='transfer'&&r.rentType!=='prepaid'?(r.rent||0):0),0);
-    const opCash = settleFiltered.reduce((s,r)=>s+(r.opCost||0),0);
 
     const closing = opening + cashIn + platformIn - rentCash - opCash - rentTransfer - purchaseTransfer - otherTransfer;
 
