@@ -2786,14 +2786,61 @@ function renderMarinadeRecs(){
   let sorted=[...marinadeRecs].sort((a,b)=>b.date.localeCompare(a.date));
   if(filterMonth) sorted=sorted.filter(r=>r.date.slice(0,7)===filterMonth);
   if(!sorted.length){ el.innerHTML=`<div class="empty">${filterMonth?filterMonth+'月沒有醃製記錄':'尚無醃製記錄'}</div>`; return; }
-  // month summary
   const monthTotal=sorted.reduce((s,r)=>s+(r.totalCost||0),0);
   const monthKg=sorted.reduce((s,r)=>s+(r.rawKg||0),0);
   if(filterMonth) el.innerHTML=`<div style="font-size:12px;color:var(--amber2);font-weight:700;margin-bottom:8px;padding:6px 10px;background:var(--bg2);border-radius:8px;">${filterMonth} 醃製合計：${monthKg}kg 成本${fmt(monthTotal)}（${sorted.length}批）</div>`;
   sorted.forEach(r=>{
     const card=document.createElement('div');card.className='rec';
-    card.innerHTML=`<div class="rec-top"><div><span class="rec-date">${r.date}</span><span class="rec-loc" style="color:var(--amber2);">配方${r.recipeId}</span></div><div class="rec-net-wrap"><span class="rec-net-lbl">總成本</span><div class="rec-net neg">${fmt(r.totalCost)}</div></div></div><div style="font-size:13px;color:var(--dim);margin-top:4px;">${escH(r.item)} ${r.rawKg}kg → <span style="color:var(--green)">${r.cookedKg}kg</span></div><div class="rec-meta"><span>生肉 ${fmt(r.meatCost)}</span><span>醃料 ${fmt(r.marinadeCost)}</span></div>${r.note?`<div style="font-size:11px;color:var(--faint);margin-top:4px;">${escH(r.note)}</div>`:''}<div class="rec-actions" style="margin-top:8px;"><button class="mar-del-btn danger" data-id="${r.id}">刪除記錄</button></div>`;
-    card.querySelector('.mar-del-btn').onclick=()=>{if(!confirm('確定刪除？'))return;marinadeRecs=marinadeRecs.filter(x=>x.id!==r.id);saveMarinade();renderMarinadeRecs();toast('已刪除');};
+    const recipeObj=RECIPES[r.recipeId]||null;
+    card.innerHTML=`
+      <div class="rec-top">
+        <div><span class="rec-date">${r.date}</span><span class="rec-loc" style="color:var(--amber2);">配方${r.recipeId}</span></div>
+        <div class="rec-net-wrap"><span class="rec-net-lbl">總成本</span><div class="rec-net neg">${fmt(r.totalCost)}</div></div>
+      </div>
+      <div style="font-size:13px;color:var(--dim);margin-top:4px;">${escH(r.item)} ${r.rawKg}kg → <span style="color:var(--green)">${r.cookedKg}kg</span></div>
+      <div class="rec-meta"><span>生肉 ${fmt(r.meatCost)}</span><span>醃料 ${fmt(r.marinadeCost)}</span></div>
+      ${r.note?`<div style="font-size:11px;color:var(--faint);margin-top:4px;">${escH(r.note)}</div>`:''}
+      <div class="rec-actions" style="margin-top:8px;">
+        <button class="mar-view-btn">📋 查看配方</button>
+        <button class="mar-edit-load-btn">✏️ 載入編輯</button>
+        <button class="mar-del-btn danger">刪除</button>
+      </div>
+      <div class="mar-detail-panel" style="display:none;margin-top:10px;background:var(--bg2);border-radius:10px;padding:12px;">
+        <div style="font-size:11px;color:var(--amber2);font-weight:700;margin-bottom:8px;">${recipeObj?recipeObj.name:''} — ${r.rawKg}kg生肉用量</div>
+        ${recipeObj?recipeObj.ingredients.map(ing=>{
+          const ratio=r.rawKg/recipeObj.perKg;
+          const usedG=Math.round(ing.g*ratio*10)/10;
+          const up=unitPrices[ing.name]||0;
+          const cost=Math.round(usedG/1000*up*100)/100;
+          return `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px;">
+            <span style="color:var(--ink)">${escH(ing.name)}</span>
+            <span style="color:var(--faint)">${usedG}g</span>
+            <span style="color:${up>0?'var(--amber2)':'var(--red)'}">${up>0?fmt(cost):'$?'}</span>
+          </div>`;
+        }).join(''):'<div style="color:var(--faint)">配方資料不存在</div>'}
+      </div>`;
+    card.querySelector('.mar-view-btn').onclick=()=>{
+      const panel=card.querySelector('.mar-detail-panel');
+      const btn=card.querySelector('.mar-view-btn');
+      const show=panel.style.display==='none';
+      panel.style.display=show?'block':'none';
+      btn.textContent=show?'▲ 收起':'📋 查看配方';
+    };
+    card.querySelector('.mar-edit-load-btn').onclick=()=>{
+      // Load into form
+      try{ document.getElementById('mar-item').value=r.item; }catch(e){}
+      try{ document.getElementById('mar-recipe').value=r.recipeId||'3'; }catch(e){}
+      try{ document.getElementById('mar-raw-kg').value=r.rawKg; }catch(e){}
+      try{ document.getElementById('mar-note').value=r.note||''; }catch(e){}
+      updateMarinadeCalc();
+      window.scrollTo({top:0,behavior:'smooth'});
+      toast('已載入「'+r.item+'」'+r.rawKg+'kg，修改後按儲存新增批次');
+    };
+    card.querySelector('.mar-del-btn').onclick=()=>{
+      if(!confirm('確定刪除？'))return;
+      marinadeRecs=marinadeRecs.filter(x=>x.id!==r.id);
+      saveMarinade();renderMarinadeRecs();toast('已刪除');
+    };
     el.appendChild(card);
   });
 }
