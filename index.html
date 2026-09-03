@@ -678,6 +678,9 @@ section.active{display:block;}
         <button class="chip p-mar-chip" data-name="亞硝酸鈉">亞硝酸鈉</button>
         <button class="chip p-mar-chip" data-name="豆漿粉">豆漿粉</button>
         <button class="chip p-mar-chip" data-name="醬油">醬油</button>
+        <button class="chip p-mar-chip" data-name="五香粉">五香粉</button>
+        <button class="chip p-mar-chip" data-name="工研醋">工研醋</button>
+        <button class="chip p-mar-chip" data-name="醃製沙拉油">醃製沙拉油</button>
       </div>
       <div id="p-mar-list"></div>
       <button class="add-btn p-mar-add">＋ 新增醃料</button>
@@ -792,6 +795,7 @@ section.active{display:block;}
     </div>
     <div class="field"><label>配方</label>
       <select id="mar-recipe" style="width:100%;background:var(--bg2);border:1px solid #38302660;border-radius:8px;color:var(--ink);font-size:15px;padding:10px 11px;">
+        <option value="3">配方3（B版本）</option>
         <option value="2">配方2（含甜菜根粉17g）</option>
         <option value="1">配方1（舊版）</option>
       </select>
@@ -915,6 +919,15 @@ section.active{display:block;}
       <button class="chip inv-mar-chip" data-name="紅麴豆腐乳">紅麴豆腐乳</button>
       <button class="chip inv-mar-chip" data-name="地瓜粉">地瓜粉</button>
       <button class="chip inv-mar-chip" data-name="玉米粉">玉米粉</button>
+      <button class="chip inv-mar-chip" data-name="甜菜根粉">甜菜根粉</button>
+      <button class="chip inv-mar-chip" data-name="中筋麵粉">中筋麵粉</button>
+      <button class="chip inv-mar-chip" data-name="豆漿粉">豆漿粉</button>
+      <button class="chip inv-mar-chip" data-name="醬油">醬油</button>
+      <button class="chip inv-mar-chip" data-name="五香粉">五香粉</button>
+      <button class="chip inv-mar-chip" data-name="工研醋">工研醋</button>
+      <button class="chip inv-mar-chip" data-name="醃製沙拉油">醃製沙拉油</button>
+      <button class="chip inv-mar-chip" data-name="磷酸鈉鹽">磷酸鈉鹽</button>
+      <button class="chip inv-mar-chip" data-name="亞硝酸鈉">亞硝酸鈉</button>
     </div>
     <div id="inv-marinade-list"></div>
     <button class="add-btn inv-mar-add">＋ 新增醃料品項</button>
@@ -1987,14 +2000,23 @@ function renderAnalysis(){
 
     // 先篩選出攤記錄（必須在auto計算前）
     const settleFiltered = settleMon ? dailyRecs.filter(r=>r.date.slice(0,7)===settleMon) : allFiltered;
-    const cashIn = settleFiltered.reduce((s,r)=>s+(r.cashRevenue||0),0);
-    const platformIn = settleFiltered.reduce((s,r)=>s+(r.platformRevenue||0),0);
-    const rentCash = settleFiltered.reduce((s,r)=>s+(r.rent&&r.rentType!=='transfer'&&r.rentType!=='prepaid'?(r.rent||0):0),0);
+
+    // 相容舊記錄：cashRevenue可能不存在，改用revenue-平台收入估算
+    const cashIn = settleFiltered.reduce((s,r)=>{
+      if(r.cashRevenue!=null) return s+r.cashRevenue;
+      return s+((r.revenue||0)-(r.uber||0)-(r.panda||0)-(r.linepay||0));
+    },0);
+    const platformIn = settleFiltered.reduce((s,r)=>s+(r.platformRevenue||(r.uber||0)+(r.panda||0)+(r.linepay||0)),0);
+    // 相容舊記錄：rentType可能不存在，預設視為付現
+    const rentCash = settleFiltered.reduce((s,r)=>{
+      const rt=r.rentType||'cash';
+      return s+(rt!=='transfer'&&rt!=='prepaid'?(r.rent||0):0);
+    },0);
     const opCash = settleFiltered.reduce((s,r)=>s+(r.opCost||0),0);
 
     // 自動計算轉帳金額（留空時）
     const autoRentTransfer = isNaN(rentTransferInput)
-      ? settleFiltered.reduce((s,r)=>s+((r.rentType==='transfer'||r.rentType==='prepaid')?(r.rent||0):0),0)
+      ? settleFiltered.reduce((s,r)=>{const rt=r.rentType||'cash'; return s+((rt==='transfer'||rt==='prepaid')?(r.rent||0):0);},0)
       : rentTransferInput;
     const autoPurchaseTransfer = isNaN(purchaseTransferInput)
       ? purchaseRecs.filter(r=>r.date.slice(0,7)===settleMon&&r.payType==='transfer')
@@ -2649,6 +2671,25 @@ const RECIPES = {
     {name:'蒜粉',g:18},{name:'白胡椒粉',g:10},{name:'豆漿粉',g:25},{name:'甜菜根粉',g:17},
     {name:'玉米粉',g:90},{name:'地瓜粉',g:120},{name:'中筋麵粉',g:60},
   ]},
+  '3': { name:'配方3（B版本）', perKg:34, ingredients:[
+    // 濕料
+    {name:'紅麴豆腐乳',g:378},
+    {name:'醬油',g:28},
+    {name:'米酒',g:198},
+    {name:'醃製沙拉油',g:68},
+    {name:'工研醋',g:9},
+    // 乾料
+    {name:'豆漿粉',g:113},
+    {name:'蒜粉',g:100},
+    {name:'白砂糖',g:85},
+    {name:'白胡椒粉',g:34},
+    {name:'五香粉',g:9},
+    {name:'甜菜根粉',g:19},
+    // 掛粉
+    {name:'地瓜粉',g:1870},
+    {name:'玉米粉',g:510},
+    {name:'中筋麵粉',g:283},
+  ]},
 };
 
 function calcMarinadeDetail(rawKg, recipeId){
@@ -2682,8 +2723,28 @@ function updateMarinadeCalc(){
   try{document.getElementById('mar-total-cost').textContent=fmt(totalCost);}catch(e){}
   try{
     const el=document.getElementById('mar-recipe-detail');
-    if(rawKg>0){el.innerHTML='<div style="font-size:10.5px;color:var(--amber2);font-weight:700;margin-bottom:6px;">醃料用量明細</div>'+details.map(d=>`<div style="display:flex;justify-content:space-between;padding:2px 0;"><span>${escH(d.name)}</span><span>${d.g}g${d.cost>0?' '+fmt(d.cost):''}</span></div>`).join('');}
-    else el.innerHTML='';
+    if(rawKg>0){
+      el.innerHTML='<div style="font-size:10.5px;color:var(--amber2);font-weight:700;margin-bottom:8px;">醃料用量明細（單價顯示紅色表示未設定，點擊可設定）</div>'+
+        details.map(d=>{
+          const up=unitPrices[d.name]||0;
+          const cost=d.cost;
+          const priceColor=up>0?'var(--green)':'var(--red)';
+          const safeName=d.name.replace(/'/g,"\\'");
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);">
+            <span style="flex:1.2">${escH(d.name)}</span>
+            <span style="color:var(--faint);margin:0 8px;min-width:50px;text-align:right;">${d.g}g</span>
+            <span style="color:${priceColor};font-size:11px;cursor:pointer;min-width:70px;text-align:right;" onclick="(function(){
+              const v=prompt('${safeName} 每公斤單價（目前$${up}）','${up}');
+              if(v===null)return;
+              unitPrices['${safeName}']=parseFloat(v)||0;
+              localStorage.setItem('qy_prices_v2',JSON.stringify(unitPrices));
+              updateMarinadeCalc();
+            })()">${up>0?fmt(cost)+'（$'+up+'/kg）':'未設定 ▶'}</span>
+          </div>`;
+        }).join('');
+    } else {
+      el.innerHTML='';
+    }
   }catch(e){}
   return {rawKg,cookedKg,pieces,meatCost,totalMarinadeCost:Math.round(totalMarinadeCost),totalCost,details,recipeId,item};
 }
