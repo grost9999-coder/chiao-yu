@@ -3044,10 +3044,24 @@ function updateMarinadeCalc(){
   return {rawKg,cookedKg,pieces,meatCost,totalMarinadeCost:Math.round(totalMarinadeCost),totalCost,details,recipeId,item};
 }
 
-function rawStockFor(item){
+function rawStockOptions(item){
   if(item==='花枝丸'||item==='鳳翅球') return null;
   const stripped=(item||'').replace('自製','');
-  return inventory.rawMeat.find(i=>sameMeatName(i.name,stripped))||null;
+  if(item==='檸檬雞'){
+    const exact=inventory.rawMeat.filter(i=>i.name==='檸檬雞');
+    const wing=inventory.rawMeat.filter(i=>i.name!=='檸檬雞'&&sameMeatName(i.name,'翅腿'));
+    return [...exact,...wing];
+  }
+  return inventory.rawMeat.filter(i=>sameMeatName(i.name,stripped));
+}
+
+function rawStockFor(item,preferredName,requiredKg=0,restorableKg=0){
+  const options=rawStockOptions(item)||[];
+  if(preferredName){
+    const preferred=options.find(i=>i.name===preferredName);
+    if(preferred) return preferred;
+  }
+  return options.find(i=>(Number(i.qty)||0)+restorableKg+1e-6>=requiredKg)||options[0]||null;
 }
 
 function marinadeUsage(rawKg,recipeId){
@@ -3077,9 +3091,14 @@ function reconcileMarinadeBatchLinks(){
 }
 
 function marinationShortage(calc,oldRec){
-  const raw=rawStockFor(calc.item);
-  if(!['花枝丸','鳳翅球'].includes(calc.item)&&!raw) return `${calc.item.replace('自製','')} 尚未建立生肉庫存，請先到進貨管理新增`;
-  const oldRaw=oldRec&&raw&&sameMeatName(oldRec.item,calc.item)?Number(oldRec.rawKg)||0:0;
+  const sameItem=oldRec&&oldRec.item===calc.item;
+  const oldRaw=sameItem?Number(oldRec.rawKg)||0:0;
+  const preferredName=sameItem?(oldRec.rawStockName||''):'';
+  const raw=rawStockFor(calc.item,preferredName,calc.rawKg,oldRaw);
+  calc.rawStockName=raw?raw.name:'';
+  if(!['花枝丸','鳳翅球'].includes(calc.item)&&!raw){
+    return calc.item==='檸檬雞'?'尚未建立檸檬雞或翅腿生肉庫存，請先到進貨管理新增':'尚未建立生肉庫存，請先到進貨管理新增';
+  }
   if(raw&&((Number(raw.qty)||0)+oldRaw+1e-6)<calc.rawKg) return `${raw.name} 庫存不足（可用 ${Math.round(((Number(raw.qty)||0)+oldRaw)*100)/100} 公斤）`;
   const oldUse={};
   if(oldRec) marinadeUsage(oldRec.rawKg,oldRec.recipeId).forEach(u=>oldUse[u.name]=(oldUse[u.name]||0)+u.kg);
@@ -3094,7 +3113,7 @@ function marinationShortage(calc,oldRec){
 }
 
 function restoreMarinationInputs(rec){
-  const raw=rawStockFor(rec.item);
+  const raw=rawStockFor(rec.item,rec.rawStockName);
   if(raw){ raw.qty=Math.round(((Number(raw.qty)||0)+(Number(rec.rawKg)||0))*10000)/10000; raw.lastUpdated=todayStr(); }
   marinadeUsage(rec.rawKg,rec.recipeId).forEach(use=>{
     const it=inventory.marinade.find(i=>i.name===use.name);
@@ -3103,7 +3122,8 @@ function restoreMarinationInputs(rec){
 }
 
 function consumeMarinationInputs(calc,date){
-  const raw=rawStockFor(calc.item);
+  const raw=rawStockFor(calc.item,calc.rawStockName,calc.rawKg);
+  calc.rawStockName=raw?raw.name:'';
   if(raw){ raw.qty=Math.round(Math.max(0,(Number(raw.qty)||0)-calc.rawKg)*10000)/10000; raw.lastUpdated=date; }
   marinadeUsage(calc.rawKg,calc.recipeId).forEach(use=>{
     const it=inventory.marinade.find(i=>i.name===use.name);
@@ -3146,7 +3166,7 @@ document.getElementById('mar-save-btn').addEventListener('click',()=>{
   const batchId=oldBatch?oldBatch.id:uid();
   inventory.diyBatches.push({id:batchId,name:calc.item,totalKg:calc.cookedKg,remaining:Math.max(0,Math.round((calc.cookedKg-consumed)*100)/100),date,rawKg:calc.rawKg,recipe:RECIPES[calc.recipeId].name});
   saveInventory();
-  const rec={id:editingMarinadeId||uid(),batchId,date,item:calc.item,rawKg:calc.rawKg,cookedKg:calc.cookedKg,pieces:calc.pieces,meatCost:calc.meatCost,marinadeCost:calc.totalMarinadeCost,totalCost:calc.totalCost,recipeId:calc.recipeId,note};
+  const rec={id:editingMarinadeId||uid(),batchId,date,item:calc.item,rawStockName:calc.rawStockName||'',rawKg:calc.rawKg,cookedKg:calc.cookedKg,pieces:calc.pieces,meatCost:calc.meatCost,marinadeCost:calc.totalMarinadeCost,totalCost:calc.totalCost,recipeId:calc.recipeId,note};
   if(oldRec){ const i=marinadeRecs.findIndex(r=>r.id===oldRec.id); marinadeRecs[i]=rec; }
   else marinadeRecs.push(rec);
   saveMarinade();
