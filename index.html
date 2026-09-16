@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#11100d">
+<meta name="description" content="喬鈺酥香屋離線營運、庫存與損益記帳系統">
 <title>喬鈺酥香屋 · 記帳系統</title>
 <script>
 // ── Mini Chart (no external dependency) ──
@@ -111,23 +113,25 @@ class Chart {
 </script>
 <style>
 :root{
-  --bg:#18140f;
-  --bg2:#211c15;
-  --card:#2a231b;
-  --card2:#332b21;
-  --border:#4a3e2e;
-  --ink:#f2e8d9;
-  --dim:#c4aa8a;
-  --faint:#8a7058;
-  --amber:#f0a020;
-  --amber2:#d4880e;
-  --amber3:#ffc84a;
-  --green:#6db56d;
-  --red:#d96b4a;
-  --blue:#5b9bd5;
-  --r:12px;
-  --r2:10px;
-  --nav-h:64px;
+  --bg:#11100d;
+  --bg2:#191815;
+  --card:#211f1a;
+  --card2:#29261f;
+  --border:#3b382e;
+  --ink:#f7f0df;
+  --dim:#c8baa2;
+  --faint:#887f70;
+  --amber:#f3a31b;
+  --amber2:#cf7d08;
+  --amber3:#ffd479;
+  --green:#74b891;
+  --red:#e47c6f;
+  --blue:#76a8d8;
+  --r:18px;
+  --r2:12px;
+  --nav-h:72px;
+  --sidebar-w:264px;
+  --ease-out:cubic-bezier(.23,1,.32,1);
 }
 /* ── RESET ── */
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -341,26 +345,221 @@ section.active{display:block;}
 /* ── TOAST ── */
 .toast{position:fixed;bottom:calc(var(--nav-h) + 12px);left:50%;transform:translateX(-50%);background:var(--amber);color:#0f0d09;padding:9px 18px;border-radius:99px;font-size:13px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none;z-index:99;white-space:nowrap;}
 .toast.show{opacity:1;}
+
+/* ── 2026 UI EVOLUTION ─────────────────────────────────────────── */
+html{scroll-behavior:smooth;color-scheme:dark;}
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 82% -10%,rgba(243,163,27,.10),transparent 30rem),
+    linear-gradient(180deg,#15130f 0%,var(--bg) 30rem);
+  letter-spacing:.01em;
+}
+body.light{
+  --bg:#f6f1e7;--bg2:#eee6d8;--card:#fffcf6;--card2:#f5ede0;
+  --border:#dacdb9;--ink:#28231c;--dim:#6f6251;--faint:#918370;
+  --amber:#d87b0b;--amber2:#b86400;--amber3:#f2a42c;
+  --green:#2f8059;--red:#b64d3f;--blue:#356f9d;
+  color-scheme:light;
+  background:
+    radial-gradient(circle at 85% -10%,rgba(216,123,11,.14),transparent 30rem),
+    linear-gradient(180deg,#fbf7ee 0%,var(--bg) 32rem);
+}
+button,input,select,textarea{font:inherit;}
+button:not(:disabled){cursor:pointer;}
+button{transition:transform 150ms var(--ease-out),background-color 180ms var(--ease-out),border-color 180ms var(--ease-out),color 180ms var(--ease-out),box-shadow 180ms var(--ease-out);}
+button:active{transform:scale(.97);}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid color-mix(in srgb,var(--amber) 42%,transparent)!important;outline-offset:2px;}
+
+.hdr{
+  height:70px;padding:0 16px;
+  background:rgba(17,16,13,.86);border-bottom:1px solid var(--border);
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+}
+body.light .hdr,body.light .tabs{background:rgba(255,252,246,.90);}
+.hdr-inner{max-width:1400px;gap:12px;}
+.brand-lockup{display:flex;align-items:center;gap:11px;min-width:0;}
+.brand-mark{width:38px;height:38px;display:grid;place-items:center;flex:0 0 auto;border-radius:12px;background:linear-gradient(145deg,var(--amber3),var(--amber));color:#211507;font-weight:950;font-size:18px;box-shadow:0 7px 22px rgba(243,163,27,.20);}
+.brand-copy{min-width:0;}
+.hdr h1{font-size:17px;letter-spacing:.01em;white-space:nowrap;}
+.hdr h1 span{color:var(--amber3);}
+body.light .hdr h1 span{color:var(--amber2);}
+.hdr-sub{display:block;margin-top:2px;font-size:9px;color:var(--faint);letter-spacing:.16em;}
+.header-actions{display:flex;align-items:center;gap:8px;}
+.save-status{display:none;align-items:center;gap:7px;font-size:11px;color:var(--faint);white-space:nowrap;}
+.status-dot{width:7px;height:7px;border-radius:99px;background:var(--green);box-shadow:0 0 0 4px color-mix(in srgb,var(--green) 14%,transparent);}
+.icon-btn{width:38px;height:38px;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--dim);display:grid;place-items:center;font-size:18px;line-height:1;}
+.icon-btn:hover{border-color:var(--amber2);color:var(--amber);}
+
+.tabs{background:rgba(17,16,13,.94);border-top:1px solid var(--border);}
+.tabs-inner{max-width:720px;}
+.nav-eyebrow{display:none;}
+.tab{min-height:64px;padding:9px 2px 7px;color:var(--faint);font-size:10px;font-weight:750;position:relative;}
+.tab .tab-icon{height:20px;display:grid;place-items:center;}
+.tab .tab-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+.tab.active{color:var(--amber3);}
+body.light .tab.active{color:var(--amber2);}
+.tab.active:after{content:"";position:absolute;left:50%;bottom:3px;width:18px;height:3px;border-radius:99px;background:currentColor;transform:translateX(-50%);}
+
+.wrap{max-width:720px;padding:20px 16px 100px;}
+.page-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin:3px 2px 20px;}
+.page-kicker{margin:0 0 6px;font-size:10px;color:var(--amber);font-weight:800;letter-spacing:.18em;text-transform:uppercase;}
+.page-heading h2{margin:0;font-family:ui-serif,"Noto Serif TC","Songti TC",serif;font-size:clamp(26px,6vw,38px);line-height:1.05;letter-spacing:-.04em;}
+.page-heading p{margin:7px 0 0;max-width:620px;color:var(--faint);font-size:13px;line-height:1.6;}
+.page-date{flex:0 0 auto;padding:7px 10px;border:1px solid var(--border);border-radius:99px;background:var(--card);color:var(--dim);font-size:11px;font-variant-numeric:tabular-nums;}
+
+.card,.hero-card,.hero,.rec,.purchase-rec,.sum-card,.inv-item,.batch-card{
+  border-color:var(--border);
+  box-shadow:0 12px 34px rgba(0,0,0,.14);
+}
+body.light .card,body.light .hero-card,body.light .hero,body.light .rec,body.light .purchase-rec,body.light .sum-card,body.light .inv-item,body.light .batch-card{box-shadow:0 12px 34px rgba(76,55,26,.07);}
+.card{padding:18px;margin-bottom:14px;}
+.card-title{font-size:12px;color:var(--dim);letter-spacing:.12em;margin-bottom:15px;display:flex;align-items:center;gap:8px;}
+.card-title:before{content:"";width:7px;height:7px;border-radius:2px;background:var(--amber);box-shadow:0 0 0 4px color-mix(in srgb,var(--amber) 10%,transparent);}
+.section-label{font-size:11px;color:var(--amber);letter-spacing:.1em;margin-top:15px;}
+.hero-grid{gap:10px;margin-bottom:14px;}
+.hero-card{padding:16px;min-height:116px;}
+.hero-card.accent{background:linear-gradient(145deg,#33240c,#1e190f);border-color:color-mix(in srgb,var(--amber) 56%,var(--border));}
+body.light .hero-card.accent{background:linear-gradient(145deg,#fff4d8,#fffaf0);}
+.hero-card .hc-label{font-size:11px;margin-bottom:10px;}
+.hero-card .hc-val{font-size:clamp(24px,7vw,32px);letter-spacing:-.05em;}
+.hero-card .hc-icon{font-size:18px;filter:saturate(.7);}
+.hero{background:linear-gradient(155deg,#2c210f,#181610);padding:24px 18px;}
+body.light .hero{background:linear-gradient(155deg,#fff4dc,#fffaf0);}
+.hero-num{font-size:clamp(43px,10vw,58px);letter-spacing:-.055em;}
+
+.field{margin-bottom:14px;}
+.field label{font-size:12px;color:var(--dim);font-weight:650;margin-bottom:6px;}
+.field input[type=text],.field input[type=number],.field input[type=date],.field input[type=month],.field select,
+.ir input,.sr input,.inv-threshold-row input,.backup-ta{
+  background:var(--bg2)!important;border:1px solid var(--border)!important;color:var(--ink)!important;
+  min-height:44px;border-radius:11px!important;
+}
+.field input:hover,.field select:hover,.ir input:hover,.sr input:hover{border-color:color-mix(in srgb,var(--amber) 38%,var(--border))!important;}
+input::placeholder,textarea::placeholder{color:color-mix(in srgb,var(--faint) 72%,transparent);}
+select{color-scheme:inherit;}
+.chips{gap:8px;}
+.chip{padding:8px 13px;background:var(--bg2);border-color:var(--border);color:var(--dim);}
+.chip:hover{border-color:var(--amber2);color:var(--amber3);background:color-mix(in srgb,var(--amber) 8%,var(--bg2));}
+body.light .chip:hover{color:var(--amber2);}
+.ir,.inv-item,.batch-card{background:var(--bg2);padding:12px;border-radius:14px;}
+.ir-head input.name,.ir-f input,.sr input.name,.sr input.amt{background:var(--card)!important;}
+.denom-grid{border-radius:14px;}
+.denom-row{background:var(--bg2);border-color:var(--border);}
+.denom-row input{background:var(--card)!important;min-height:38px;border-color:var(--border);}
+.denom-foot{background:var(--card);}
+.net-row{background:var(--bg2);}
+
+.btn-primary{min-height:50px;border-radius:13px;background:linear-gradient(135deg,var(--amber3),var(--amber));box-shadow:0 10px 24px rgba(243,163,27,.17);}
+body.light .btn-primary{color:#fff7e9;background:linear-gradient(135deg,#e78b14,#c96b04);}
+.btn-primary:hover{filter:brightness(1.05);box-shadow:0 12px 28px rgba(243,163,27,.24);}
+.btn-ghost,.add-btn{min-height:43px;border-radius:12px;}
+.add-btn:hover,.btn-ghost:hover{border-color:var(--amber2);color:var(--amber);background:color-mix(in srgb,var(--amber) 7%,transparent);}
+.rec,.purchase-rec{padding:15px 16px;border-radius:15px;}
+.rec-actions button,.batch-actions button,.inv-item-actions button{min-height:36px;border-radius:10px;}
+.filter-row,.analysis-tab-row{overflow-x:auto;scrollbar-width:none;padding:1px 1px 4px;}
+.filter-row::-webkit-scrollbar,.analysis-tab-row::-webkit-scrollbar{display:none;}
+.filter-btn,.atab{flex:0 0 auto;min-width:88px;padding:9px 13px;}
+.filter-btn.active,.atab.active{background:var(--amber);color:#1c1308;box-shadow:0 5px 16px rgba(243,163,27,.16);}
+.sum-card{padding:15px;border-radius:15px;}
+.sum-v{font-size:22px;letter-spacing:-.035em;}
+.chart-wrap{height:220px;}
+.backup-btns,.backup-action-row{display:flex;gap:8px;}
+.backup-btns button,.backup-action-row button,.file-picker-label{flex:1;min-height:42px;padding:9px 11px;border-radius:11px;border:1px solid var(--border);background:var(--bg2);color:var(--dim);font-size:13px;text-align:center;display:grid;place-items:center;}
+.backup-btns button:hover,.backup-action-row button:hover,.file-picker-label:hover{border-color:var(--amber2);color:var(--amber);}
+.file-picker-label{margin-top:8px;cursor:pointer;}
+.file-picker-label input{display:none;}
+.toast{bottom:calc(var(--nav-h) + 14px);background:var(--ink);color:var(--bg);box-shadow:0 12px 32px rgba(0,0,0,.26);}
+.empty{border:1px dashed var(--border);border-radius:12px;background:color-mix(in srgb,var(--bg2) 65%,transparent);}
+
+@media (max-width:480px){
+  .two{grid-template-columns:1fr;gap:0;}
+  .hero-grid{grid-template-columns:1fr 1fr;}
+  .hero-card{min-height:110px;padding:14px;}
+  .hero-card .hc-icon{display:none;}
+  .page-heading{align-items:flex-start;}
+  .page-date{display:none;}
+  .card{padding:16px;}
+  .ir-calc{grid-template-columns:1fr 1fr;}
+  .ir-calc .ir-f:last-child:nth-child(3){grid-column:1/-1;}
+  .backup-btns,.backup-action-row{flex-direction:column;}
+}
+
+@media (min-width:960px){
+  body{padding:0 0 0 var(--sidebar-w);}
+  .hdr{position:fixed;left:0;top:0;width:var(--sidebar-w);height:118px;padding:24px 22px 16px;border:0;border-right:1px solid var(--border);z-index:30;}
+  .hdr-inner{height:100%;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:13px;}
+  .brand-mark{width:44px;height:44px;border-radius:14px;font-size:20px;}
+  .hdr h1{font-size:18px;}
+  .header-actions{width:100%;justify-content:space-between;}
+  .save-status{display:flex;}
+  .icon-btn{width:34px;height:34px;}
+  .tabs{left:0;right:auto;top:118px;bottom:0;width:var(--sidebar-w);padding:9px 14px 22px;border:0;border-right:1px solid var(--border);overflow-y:auto;}
+  .tabs-inner{max-width:none;display:flex;flex-direction:column;gap:3px;}
+  .nav-eyebrow{display:block;margin:16px 12px 6px;color:var(--faint);font-size:9px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;}
+  .nav-eyebrow:first-child{margin-top:5px;}
+  .tab{flex:none;width:100%;min-height:46px;padding:10px 12px;border-radius:12px;display:flex;flex-direction:row;justify-content:flex-start;gap:12px;font-size:13px;text-align:left;}
+  .tab:hover{color:var(--ink);background:color-mix(in srgb,var(--card) 70%,transparent);}
+  .tab.active{color:var(--ink);background:linear-gradient(90deg,color-mix(in srgb,var(--amber) 20%,var(--card)),var(--card));box-shadow:inset 3px 0 0 var(--amber);}
+  body.light .tab.active{color:var(--ink);}
+  .tab.active:after{display:none;}
+  .tab .tab-icon{height:22px;}
+  .wrap{max-width:1460px;margin:0 auto;padding:36px 40px 52px;}
+  section.active{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start;}
+  section.active>.page-heading,section.active>.hero-grid,section.active>.analysis-tab-row,section.active>.analysis-panel{grid-column:1/-1;}
+  section.active>.card,section.active>.hero,section.active>.btn-primary,section.active>.btn-ghost{margin:0;}
+  section.active>.btn-primary,section.active>.btn-ghost{grid-column:1/-1;max-width:520px;justify-self:center;width:100%;}
+  #s-daily>.hero-grid{grid-template-columns:repeat(4,minmax(0,1fr));}
+  #s-daily>.hero-grid .hero-card{min-height:130px;}
+  #s-daily>.card:last-child{grid-column:1/-1;}
+  #s-purchase{grid-template-columns:minmax(0,1.25fr) minmax(360px,.75fr);}
+  #s-monthly>.card:last-child{grid-column:1/-1;}
+  #s-marinate>.card:first-of-type{grid-row:2/span 2;}
+  #s-equipment>.card:last-child{grid-column:1/-1;}
+  #s-inventory>.card:last-child{grid-column:1/-1;}
+  .analysis-panel.active{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start;}
+  .analysis-panel.active>.filter-row,.analysis-panel.active>#month-picker-row,.analysis-panel.active>.sum-grid,.analysis-panel.active>#a-rec-list{grid-column:1/-1;}
+  .analysis-panel.active>.card{margin:0;}
+  #a-compare.active>.card,#a-supplies.active>.card,#a-efficiency.active>.card:last-child{grid-column:1/-1;}
+  #a-profit>.sum-grid{grid-template-columns:repeat(6,minmax(0,1fr));}
+  .toast{bottom:24px;}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *,*:before,*:after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;}
+}
 </style>
 </head>
 <body>
 
 <header class="hdr">
   <div class="hdr-inner">
-    <h1>🍗 <span>喬鈺</span>酥香屋</h1>
-    <span class="hdr-sub">損益記帳</span>
+    <div class="brand-lockup">
+      <div class="brand-mark" aria-hidden="true">喬</div>
+      <div class="brand-copy">
+        <h1><span>喬鈺</span>酥香屋</h1>
+        <span class="hdr-sub">營運記帳台</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="save-status"><span class="status-dot"></span>資料儲存於本機</span>
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="切換明亮模式" title="切換明暗外觀">☼</button>
+    </div>
   </div>
 </header>
 
-<nav class="tabs">
+<nav class="tabs" aria-label="主要功能">
   <div class="tabs-inner">
-    <button class="tab active" id="t-daily"><span class="tab-icon">📋</span>出攤</button>
-    <button class="tab" id="t-purchase"><span class="tab-icon">🛒</span>進貨</button>
-    <button class="tab" id="t-monthly"><span class="tab-icon">💳</span>月支出</button>
-    <button class="tab" id="t-marinate"><span class="tab-icon">🧂</span>醃製</button>
-    <button class="tab" id="t-equipment"><span class="tab-icon">🔧</span>器具</button>
-    <button class="tab" id="t-inventory"><span class="tab-icon">📦</span>庫存</button>
-    <button class="tab" id="t-analysis"><span class="tab-icon">📊</span>分析</button>
+    <span class="nav-eyebrow">日常營運</span>
+    <button type="button" class="tab active" id="t-daily" aria-current="page"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3h6v1.5M8 9h8M8 13h8M8 17h5"/></svg></span><span class="tab-label">出攤日記</span></button>
+    <button type="button" class="tab" id="t-purchase"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 4h2l2.2 10.3a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6L20 8H7"/><circle cx="10" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg></span><span class="tab-label">進貨管理</span></button>
+    <button type="button" class="tab" id="t-monthly"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16v12H4zM4 10h16M8 4v3M16 4v3"/><path d="M8 14h3M8 17h5"/></svg></span><span class="tab-label">月支出</span></button>
+    <span class="nav-eyebrow">生產管理</span>
+    <button type="button" class="tab" id="t-marinate"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3"/><path d="M8 15h8"/></svg></span><span class="tab-label">醃製生產</span></button>
+    <button type="button" class="tab" id="t-equipment"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5 5L3 18l3 3 6.7-6.7a4 4 0 0 0 5-5l-2.2 2.2-3-3z"/></svg></span><span class="tab-label">生財器具</span></button>
+    <button type="button" class="tab" id="t-inventory"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 7 8-4 8 4-8 4zM4 7v10l8 4 8-4V7M12 11v10"/></svg></span><span class="tab-label">庫存中心</span></button>
+    <span class="nav-eyebrow">經營洞察</span>
+    <button type="button" class="tab" id="t-analysis"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><span class="tab-label">經營分析</span></button>
   </div>
 </nav>
 
@@ -814,6 +1013,7 @@ section.active{display:block;}
     <div id="mar-recipe-detail" style="background:var(--bg2);border-radius:9px;padding:11px 13px;margin-bottom:12px;font-size:12px;color:var(--faint);"></div>
     <div class="field" style="margin-bottom:0;"><label>備註（選填）</label><input type="text" id="mar-note" placeholder="例：這批翅腿較小隻"></div>
     <button class="btn-primary" id="mar-save-btn" style="margin-top:12px;">＋ 新增自製批次（自動依配方扣醃料）</button>
+    <button class="btn-ghost" id="mar-cancel-btn" style="display:none;">取消編輯</button>
   </div>
   <div class="card">
     <div class="card-title">醃製批次記錄</div>
@@ -1020,7 +1220,6 @@ section.active{display:block;}
         </div>
         <div style="font-size:11px;color:var(--faint);margin-top:4px;">填入後按儲存，下次切換到此月份會自動帶入</div>
       </div>
-      </div>
       <div class="field"><label>轉帳租金（留空自動從出攤記錄計算）</label>
         <input type="number" inputmode="decimal" id="settle-rent-transfer" placeholder="留空=自動" style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--ink);font-size:16px;padding:11px 12px;width:100%;">
       </div>
@@ -1106,10 +1305,14 @@ section.active{display:block;}
     </div>
     <div id="export-area" style="display:none;">
       <textarea class="backup-ta" id="export-text" readonly></textarea>
-      <button class="btn-primary" id="btn-copy" style="margin-top:8px;">複製備份文字</button>
+      <div class="backup-action-row" style="margin-top:8px;">
+        <button id="btn-copy">複製備份文字</button>
+        <button id="btn-download">下載 JSON 檔</button>
+      </div>
     </div>
     <div id="import-area" style="display:none;">
       <textarea class="backup-ta" id="import-text" placeholder="把備份文字貼在這裡"></textarea>
+      <label class="file-picker-label">或選擇 JSON 備份檔<input type="file" id="import-file" accept="application/json,.json"></label>
       <button class="btn-primary" id="btn-restore" style="margin-top:8px;">還原這份備份</button>
     </div>
   </div>
@@ -1410,8 +1613,9 @@ function recalcDaily(){
   // fixed items from unit prices
   // 炸物盆塑膠袋：每天5個，150個$284 → 每個$1.893
   // 炸物盆襯紙：每天2張，每張$1
-  const bagPrice=Math.round((unitPrices['炸物盆塑膠袋']||0)*5);
-  const paperPrice=(unitPrices['炸物盆襯紙']||0)*2;
+  const hasSales=revenue>0;
+  const bagPrice=hasSales?Math.round((unitPrices['炸物盆塑膠袋']||0)*5):0;
+  const paperPrice=hasSales?(unitPrices['炸物盆襯紙']||0)*2:0;
   try{ document.getElementById('fixed-bag-cost').textContent=fmt(bagPrice); }catch(e){}
   try{ document.getElementById('fixed-paper-cost').textContent=fmt(paperPrice); }catch(e){}
   const fixedCost=bagPrice+paperPrice;
@@ -1458,7 +1662,8 @@ function recalcDaily(){
     document.getElementById('hs-margin').textContent='淨利率 '+pct(margin);
     document.getElementById('hs-revenue').textContent=fmt(revenue);
     document.getElementById('hs-hourly').textContent='時薪 '+fmt(hourly);
-    const cashNet=revenue-rent-(fixedCost+autoPkgCost)-sumItems(opItems);
+    const cashRent=rentType==='cash'?rent:0;
+    const cashNet=revenue-cashRent-(fixedCost+autoPkgCost)-sumItems(opItems);
     const cnEl=document.getElementById('hs-cash-net');
     cnEl.textContent=fmt(cashNet);
     cnEl.style.color=cashNet>=0?'var(--blue)':'var(--red)';
@@ -1487,9 +1692,10 @@ function recalcDaily(){
   try{ document.getElementById('cd-net').className=net>=0?'pos':'neg'; }catch(e){}
 
   // 當日現金淨入（不扣食材成本）
-  const cashNet = revenue - rent - (fixedCost+autoPkgCost) - sumItems(opItems);
+  const cashRent = rentType==='cash'?rent:0;
+  const cashNet = revenue - cashRent - (fixedCost+autoPkgCost) - sumItems(opItems);
   _s('cd-cash-revenue', fmt(revenue));
-  _s('cd-cash-rent', fmt(rent)); _d('cd-cash-rent-row', rent>0);
+  _s('cd-cash-rent', fmt(cashRent)); _d('cd-cash-rent-row', cashRent>0);
   _s('cd-cash-pkg', fmt(fixedCost+autoPkgCost));
   _s('cd-cash-op', fmt(sumItems(opItems)));
   _s('cd-cash-net', fmt(cashNet));
@@ -1525,14 +1731,11 @@ document.getElementById('save-daily').addEventListener('click',()=>{
   const loc=document.getElementById('d-loc').value.trim();
   if(!calc.closingCash&&!calc.purchaseCost&&!calc.diyCost&&!calc.rent&&!calc.opCost){ toast('請至少填入一項數據'); return; }
   const rec={id:editingId||uid(),date,location:loc,hours:calc.hours,rent:calc.rent,rentType:calc.rentType,purchaseItems:calc.purchaseItems,diyItems:calc.diyItems,opItems:calc.opItems,revenueCash:calc.revenueCash,floatCash:calc.floatCash,closingCash:calc.closingCash,floatTotal:calc.floatTotal,cashRevenue:calc.cashRevenue,uber:calc.uber,panda:calc.panda,linepay:calc.linepay,platformRevenue:calc.platformRevenue,revenue:calc.revenue,purchaseCost:calc.purchaseCost,diyCost:calc.diyCost,totalCogs:calc.totalCogs,opCost:calc.opCost,fixedCost:calc.fixedCost,gross:calc.gross,net:calc.net};
-  if(editingId){ const i=dailyRecs.findIndex(r=>r.id===editingId); if(i>-1) dailyRecs[i]=rec; editingId=null; } else { dailyRecs.push(rec); }
-  // ── AUTO DEDUCT MEAT FROM INVENTORY ──
-  // if editing, first reverse old deduction
-  if(editingId){
-    const oldRec=dailyRecs.find(r=>r.id===editingId);
-    if(oldRec) deductMeatFromInventory(oldRec, -1);
-  }
+  // 編輯時先回沖舊用量，再套用新用量，避免重複扣庫存。
+  const oldRec=editingId?dailyRecs.find(r=>r.id===editingId):null;
+  if(oldRec) deductMeatFromInventory(oldRec, -1);
   deductMeatFromInventory(rec, +1);
+  if(editingId){ const i=dailyRecs.findIndex(r=>r.id===editingId); if(i>-1) dailyRecs[i]=rec; editingId=null; } else { dailyRecs.push(rec); }
   saveInventory();
 
   saveDaily(); toast('已儲存今日記錄，庫存已自動扣除'); resetDaily(); renderAnalysis(); renderRecentRecs();
@@ -1569,7 +1772,7 @@ function renderRecentRecs(){
     card.className='rec'; card.style.marginBottom='8px';
     card.innerHTML=`<div class="rec-top"><div><span class="rec-date">${r.date}</span><span class="rec-loc">${r.location?escH(r.location):''}</span></div><div class="rec-net-wrap"><span class="rec-net-lbl">淨利</span><div class="rec-net ${r.net>=0?'pos':'neg'}">${fmt(r.net)}</div></div></div><div class="rec-meta"><span>銷售額 ${fmt(r.revenue)}</span><span>毛利 ${fmt(r.gross)}</span><span>時薪 ${fmt(h)}</span></div><div class="rec-actions"><button class="rec-edit-btn" data-id="${r.id}">✏️ 編輯</button><button class="rec-del-btn danger" data-id="${r.id}">刪除</button></div>`;
     card.querySelector('.rec-edit-btn').onclick=()=>openEdit(r.id);
-    card.querySelector('.rec-del-btn').onclick=()=>{ if(confirm('確定刪除這筆記錄？')){ dailyRecs=dailyRecs.filter(x=>x.id!==r.id); saveDaily(); renderRecentRecs(); renderAnalysis(); toast('已刪除'); } };
+    card.querySelector('.rec-del-btn').onclick=()=>{ if(confirm('確定刪除這筆記錄？\n庫存用量會同步回沖。')){ deductMeatFromInventory(r,-1); saveInventory(); dailyRecs=dailyRecs.filter(x=>x.id!==r.id); saveDaily(); renderRecentRecs(); renderAnalysis(); toast('已刪除，庫存已回沖'); } };
     el.appendChild(card);
   });
 }
@@ -1809,9 +2012,10 @@ function renderPurchaseHistory(){
 
 // ── TABS ──
 function switchTab(id){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>{ t.classList.remove('active'); t.removeAttribute('aria-current'); });
   document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
-  document.getElementById('t-'+id).classList.add('active');
+  const tab=document.getElementById('t-'+id);
+  tab.classList.add('active'); tab.setAttribute('aria-current','page');
   document.getElementById('s-'+id).classList.add('active');
   if(id==='analysis') renderAnalysis();
   if(id==='inventory'){ loadInventory(); renderInventory(); }
@@ -1932,7 +2136,7 @@ function renderAnalysis(){
       const h=r.hours&&r.hours>0?r.net/r.hours:0;
       card.innerHTML=`<div class="rec-top"><div><span class="rec-date">${r.date}</span><span class="rec-loc">${r.location?escH(r.location):''}</span></div><div class="rec-net-wrap"><span class="rec-net-lbl">當日淨利</span><div class="rec-net ${(r.net||0)>=0?'pos':'neg'}">${fmt(r.net)}</div></div></div><div class="rec-meta"><span>銷售額 ${fmt(r.revenue)}</span><span>毛利 ${fmt(r.gross)}</span><span>時薪 ${fmt(h)}</span></div><div class="rec-actions"><button class="edit-btn" data-id="${r.id}">編輯</button><button class="del-btn danger" data-id="${r.id}">刪除</button></div>`;
       card.querySelector('.edit-btn').onclick=()=>{ openEdit(r.id); switchTab('daily'); };
-      card.querySelector('.del-btn').onclick=()=>{ if(confirm('確定刪除這筆記錄？')){ dailyRecs=dailyRecs.filter(x=>x.id!==r.id); saveDaily(); renderAnalysis(); toast('已刪除'); } };
+      card.querySelector('.del-btn').onclick=()=>{ if(confirm('確定刪除這筆記錄？\n庫存用量會同步回沖。')){ deductMeatFromInventory(r,-1); saveInventory(); dailyRecs=dailyRecs.filter(x=>x.id!==r.id); saveDaily(); renderAnalysis(); renderRecentRecs(); toast('已刪除，庫存已回沖'); } };
       recList.appendChild(card);
     });
   }catch(e){ console.warn('recList error:',e.message); }
@@ -1960,7 +2164,7 @@ function renderAnalysis(){
 
   // efficiency
   try{
-    const bestDay=sorted[0];
+    const bestDay=filtered.length?filtered.reduce((best,r)=>(!best||(r.net||0)>(best.net||0))?r:best,null):null;
     document.getElementById('a-best-day').textContent=bestDay?`${fmt(bestDay.net)} (${bestDay.date.slice(5)})`:'—';
     const bestHour=sorted.reduce((best,r)=>{ const h=r.hours>0?r.net/r.hours:0; return h>best?h:best; },0);
     document.getElementById('a-best-hour').textContent=fmt(bestHour);
@@ -2142,7 +2346,12 @@ try{
   });
 }catch(e){}
 document.getElementById('btn-export').onclick=()=>{
-  const data={app:'qy_v2',exportedAt:new Date().toISOString(),dailyRecs,purchaseRecs,unitPrices,inventory,monthlyRecs};
+  const settlement={};
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(key&&key.startsWith('settle_opening_')) settlement[key]=localStorage.getItem(key);
+  }
+  const data={app:'qy_v3',version:3,exportedAt:new Date().toISOString(),dailyRecs,purchaseRecs,unitPrices,inventory,monthlyRecs,marinadeRecs,equipmentRecs,settlement};
   document.getElementById('export-text').value=JSON.stringify(data);
   document.getElementById('export-area').style.display='block';
   document.getElementById('import-area').style.display='none';
@@ -2156,6 +2365,21 @@ document.getElementById('btn-copy').onclick=async()=>{
   try{ await navigator.clipboard.writeText(text); toast('已複製，貼到 LINE 儲存'); }
   catch(e){ document.getElementById('export-text').select(); toast('請手動選取後複製'); }
 };
+document.getElementById('btn-download').onclick=()=>{
+  if(!document.getElementById('export-text').value) document.getElementById('btn-export').click();
+  const raw=document.getElementById('export-text').value;
+  const blob=new Blob([raw],{type:'application/json;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`喬鈺酥香屋_備份_${todayStr()}.json`;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  toast('備份檔已下載');
+};
+document.getElementById('import-file').addEventListener('change',async e=>{
+  const file=e.target.files&&e.target.files[0]; if(!file) return;
+  try{ document.getElementById('import-text').value=await file.text(); toast('已讀取備份檔，確認後按還原'); }
+  catch(err){ toast('無法讀取這個檔案'); }
+});
 document.getElementById('btn-restore').onclick=()=>{
   const raw=document.getElementById('import-text').value.trim();
   if(!raw){ toast('請先貼上備份文字'); return; }
@@ -2166,9 +2390,12 @@ document.getElementById('btn-restore').onclick=()=>{
   if(parsed.inventory) Object.assign(inventory,parsed.inventory);
   savePurchase(); saveInventory();
   if(parsed.monthlyRecs){ const map={}; monthlyRecs.forEach(r=>map[r.id]=r); parsed.monthlyRecs.forEach(r=>map[r.id]=r); monthlyRecs=Object.values(map); saveMonthly(); }
+  if(parsed.marinadeRecs){ const map={}; marinadeRecs.forEach(r=>map[r.id]=r); parsed.marinadeRecs.forEach(r=>map[r.id]=r); marinadeRecs=Object.values(map); saveMarinade(); }
+  if(parsed.equipmentRecs){ const map={}; equipmentRecs.forEach(r=>map[r.id]=r); parsed.equipmentRecs.forEach(r=>map[r.id]=r); equipmentRecs=Object.values(map); saveEquipment(); }
+  if(parsed.settlement) Object.entries(parsed.settlement).forEach(([key,val])=>{ if(key.startsWith('settle_opening_')) localStorage.setItem(key,val); });
   toast('還原成功！');
   document.getElementById('import-text').value=''; document.getElementById('import-area').style.display='none';
-  renderPurchaseHistory(); renderAnalysis(); recalcDaily(); renderRecentRecs();
+  reconcileMarinadeBatchLinks(); renderPurchaseHistory(); renderAnalysis(); recalcDaily(); renderRecentRecs(); renderMarinadeRecs(); renderInventory();
 };
 
 // ── WIRE DAILY CHIPS ──
@@ -2377,7 +2604,10 @@ let inventory = { diyBatches:[], purchasedStock:[], rawMeat:[], marinade:[], sup
 
 function loadInventory(){
   try{ const d=JSON.parse(localStorage.getItem(INV_KEY)||'{}'); if(d.diyBatches) Object.assign(inventory,d); }catch(e){}
+  let addedIds=false;
+  ['diyBatches','purchasedStock'].forEach(key=>(inventory[key]||[]).forEach(item=>{ if(!item.id){ item.id=uid(); addedIds=true; } }));
   migrateMeatCategories();
+  if(addedIds) saveInventory();
 }
 
 // 一次性資料轉移：把舊的「翅腿」「二節翅」分開品項合併成「翅腿二節翅」，
@@ -2418,43 +2648,61 @@ function mergeInvEntries(arr, oldNames, newName){
 }
 
 // deduct (or reverse) meat usage from inventory; multiplier +1=deduct, -1=restore
-function deductMeatFromInventory(rec, multiplier){
-  const today=rec.date||todayStr();
-  // purchased items → deduct from purchasedStock
-  (rec.purchaseItems||[]).forEach(it=>{
-    if(!it.qty) return;
-    const qty=it.qty*multiplier;
-    // find matching stock (by name)
-    let remaining=qty;
-    inventory.purchasedStock.filter(s=>s.name===it.name||s.name.includes(it.name.replace('外購',''))).forEach(s=>{
-      if(remaining<=0) return;
-      const use=multiplier>0?Math.min(s.remaining,remaining):Math.abs(remaining);
-      s.remaining=Math.max(0,s.remaining-use*Math.sign(multiplier));
-      s.totalQty=(s.totalQty||s.remaining);
-      remaining-=use;
+function sameMeatName(a,b){
+  const clean=s=>(s||'').replace(/外購|自製|醃製|雞肉/g,'').replace(/[\s/]/g,'');
+  const x=clean(a),y=clean(b);
+  return !!x&&!!y&&(x===y||x.includes(y)||y.includes(x));
+}
+
+function adjustFinishedStock(items, stock, multiplier, savedAllocations){
+  if(multiplier<0&&savedAllocations&&savedAllocations.length){
+    savedAllocations.forEach(allocation=>{
+      const s=stock.find(item=>item.id===allocation.stockId); if(!s) return;
+      const max=Number(s.totalKg)||Number(s.totalQty)||Infinity;
+      s.remaining=Math.round(Math.min(max,(Number(s.remaining)||0)+(Number(allocation.amount)||0))*100)/100;
     });
-    // 同步依每日銷售公斤數扣除「生肉品項」庫存，計算剩餘公斤數
-    deductRawMeatByName(it.name, it.qty*multiplier, today);
-  });
-  // diy items → deduct from diyBatches (自製醃製好的批次，先進先出)
-  (rec.diyItems||[]).forEach(it=>{
+    return savedAllocations;
+  }
+  const allocations=[];
+  (items||[]).forEach(it=>{
     if(!it.qty||!it.name||it.name==='醃料（攤算）') return;
-    let remaining=it.qty*multiplier;
+    const matches=stock.filter(s=>sameMeatName(s.name,it.name)).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+    let qty=Math.abs(it.qty);
     if(multiplier>0){
-      // deduct from batches oldest first
-      inventory.diyBatches.filter(b=>b.remaining>0).sort((a,b)=>a.date.localeCompare(b.date)).forEach(b=>{
-        if(remaining<=0) return;
-        const use=Math.min(b.remaining,remaining);
-        b.remaining=Math.max(0,b.remaining-use); remaining-=use;
+      matches.forEach(s=>{
+        if(qty<=0) return;
+        const available=Math.max(0,Number(s.remaining)||0);
+        const use=Math.min(available,qty);
+        s.remaining=Math.round((available-use)*100)/100;
+        if(use>0) allocations.push({stockId:s.id,name:s.name,amount:use});
+        qty=Math.round((qty-use)*100)/100;
       });
-    } else {
-      // restore: add back to most recent batch
-      const latest=inventory.diyBatches.sort((a,b)=>b.date.localeCompare(a.date))[0];
-      if(latest) latest.remaining=Math.round((latest.remaining+Math.abs(remaining))*100)/100;
+    }else{
+      // 回沖至同品項最新批次，且不超過該批原始數量。
+      [...matches].reverse().forEach(s=>{
+        if(qty<=0) return;
+        const cap=Math.max(0,(Number(s.totalKg)||Number(s.totalQty)||0)-(Number(s.remaining)||0));
+        const put=Math.min(cap,qty);
+        s.remaining=Math.round(((Number(s.remaining)||0)+put)*100)/100;
+        qty=Math.round((qty-put)*100)/100;
+      });
     }
-    // 同步依每日銷售公斤數扣除「生肉品項」庫存，計算剩餘公斤數
-    deductRawMeatByName(it.name, it.qty*multiplier, today);
   });
+  return allocations;
+}
+
+function deductMeatFromInventory(rec, multiplier){
+  // 出攤只扣「已完成的外購／自製成品」；生肉已在醃製當下扣除，不可再次扣帳。
+  if(multiplier>0){
+    rec.inventoryAllocations={
+      purchase:adjustFinishedStock(rec.purchaseItems,inventory.purchasedStock,multiplier),
+      diy:adjustFinishedStock(rec.diyItems,inventory.diyBatches,multiplier)
+    };
+  }else{
+    const saved=rec.inventoryAllocations||{};
+    adjustFinishedStock(rec.purchaseItems,inventory.purchasedStock,multiplier,saved.purchase);
+    adjustFinishedStock(rec.diyItems,inventory.diyBatches,multiplier,saved.diy);
+  }
 }
 
 // 依品項名稱找到對應的「生肉品項」庫存並扣除公斤數
@@ -2483,12 +2731,10 @@ function renderInventory(){
 
 function renderDiyBatches(){
   const el=document.getElementById('inv-diy-batches');
-  const empty=document.getElementById('inv-diy-empty');
-  const batches=inventory.diyBatches.filter(b=>b.remaining>0);
-  if(!batches.length){ el.innerHTML=''; el.appendChild(empty); empty.style.display='block'; return; }
-  empty.style.display='none';
+  const batches=inventory.diyBatches.map((b,i)=>({b,i})).filter(({b})=>b.remaining>0);
+  if(!batches.length){ el.innerHTML='<div class="empty" id="inv-diy-empty">尚未有自製批次記錄</div>'; return; }
   el.innerHTML='';
-  batches.forEach((b,i)=>{
+  batches.forEach(({b,i})=>{
     const card=document.createElement('div'); card.className='batch-card';
     card.innerHTML=`<div class="batch-date">${b.date} 自製</div><div class="batch-name">${escH(b.name||'自製批次')}</div><div><span class="batch-qty">${b.remaining}</span><span class="batch-unit">公斤 剩餘</span> <span style="font-size:12px;color:var(--amber2);">（約 ${(b.remaining/KG_PER_BASKET).toFixed(1)} 藍）</span><br><span style="font-size:11px;color:var(--faint)">原始 ${b.totalKg} 公斤 / ${(b.totalKg/KG_PER_BASKET).toFixed(1)} 藍</span></div><div id="diy-edit-${i}" class="inline-edit" style="display:none;"></div><div class="batch-actions"><button class="diy-edit-btn" data-i="${i}">調整數量</button><button class="diy-del-btn danger" data-i="${i}">刪除批次</button></div>`;
     card.querySelector('.diy-edit-btn').onclick=()=>openInvEdit('diy', i, card.querySelector(`#diy-edit-${i}`));
@@ -2499,12 +2745,10 @@ function renderDiyBatches(){
 
 function renderPurchasedStock(){
   const el=document.getElementById('inv-purchased-stock');
-  const empty=document.getElementById('inv-purchased-empty');
-  const items=inventory.purchasedStock.filter(b=>b.remaining>0);
-  if(!items.length){ el.innerHTML=''; el.appendChild(empty); empty.style.display='block'; return; }
-  empty.style.display='none';
+  const items=inventory.purchasedStock.map((b,i)=>({b,i})).filter(({b})=>b.remaining>0);
+  if(!items.length){ el.innerHTML='<div class="empty" id="inv-purchased-empty">尚未有外購庫存記錄</div>'; return; }
   el.innerHTML='';
-  items.forEach((b,i)=>{
+  items.forEach(({b,i})=>{
     const card=document.createElement('div'); card.className='batch-card';
     card.innerHTML=`<div class="batch-date">${b.date}</div><div class="batch-name">${escH(b.name)}</div><div><span class="batch-qty">${b.remaining}</span><span class="batch-unit">公斤 剩餘</span> <span style="font-size:12px;color:var(--amber2);">（約 ${(b.remaining/KG_PER_BASKET).toFixed(1)} 藍）</span></div><div id="pur-edit-${i}" class="inline-edit" style="display:none;"></div><div class="batch-actions"><button class="pur-edit-btn" data-i="${i}">調整數量</button><button class="pur-del-btn danger" data-i="${i}">刪除</button></div>`;
     card.querySelector('.pur-edit-btn').onclick=()=>openInvEdit('purchased', i, card.querySelector(`#pur-edit-${i}`));
@@ -2655,6 +2899,7 @@ document.getElementById('t-inventory').onclick=()=>switchTab('inventory');
 // ══════════════════════════════════════════
 const MAR_KEY = 'qy_marinade_v1';
 let marinadeRecs = [];
+let editingMarinadeId = null;
 function loadMarinade(){ try{ marinadeRecs=JSON.parse(localStorage.getItem(MAR_KEY)||'[]'); }catch(e){ marinadeRecs=[]; } }
 function saveMarinade(){ localStorage.setItem(MAR_KEY,JSON.stringify(marinadeRecs)); }
 
@@ -2749,34 +2994,113 @@ function updateMarinadeCalc(){
   return {rawKg,cookedKg,pieces,meatCost,totalMarinadeCost:Math.round(totalMarinadeCost),totalCost,details,recipeId,item};
 }
 
+function rawStockFor(item){
+  if(item==='花枝丸'||item==='鳳翅球') return null;
+  const stripped=(item||'').replace('自製','');
+  return inventory.rawMeat.find(i=>sameMeatName(i.name,stripped))||null;
+}
+
+function marinadeUsage(rawKg,recipeId){
+  return calcMarinadeDetail(rawKg,recipeId).details.map(d=>({name:d.name,kg:d.g/1000}));
+}
+
+function batchForMarinade(rec){
+  if(rec.batchId){
+    const byId=inventory.diyBatches.find(b=>b.id===rec.batchId);
+    if(byId) return byId;
+  }
+  return inventory.diyBatches.find(b=>
+    sameMeatName(b.name,rec.item)&&b.date===rec.date&&
+    Math.abs((Number(b.rawKg)||0)-(Number(rec.rawKg)||0))<.011&&
+    Math.abs((Number(b.totalKg)||0)-(Number(rec.cookedKg)||0))<.011
+  )||null;
+}
+
+function reconcileMarinadeBatchLinks(){
+  const used=new Set(); let changed=false;
+  marinadeRecs.forEach(rec=>{
+    if(rec.batchId&&inventory.diyBatches.some(b=>b.id===rec.batchId)){ used.add(rec.batchId); return; }
+    const batch=inventory.diyBatches.find(b=>!used.has(b.id)&&sameMeatName(b.name,rec.item)&&b.date===rec.date&&Math.abs((Number(b.rawKg)||0)-(Number(rec.rawKg)||0))<.011&&Math.abs((Number(b.totalKg)||0)-(Number(rec.cookedKg)||0))<.011);
+    if(batch){ rec.batchId=batch.id; used.add(batch.id); changed=true; }
+  });
+  if(changed) saveMarinade();
+}
+
+function marinationShortage(calc,oldRec){
+  const raw=rawStockFor(calc.item);
+  if((calc.item||'').startsWith('自製')&&!raw) return `${calc.item.replace('自製','')} 尚未建立生肉庫存，請先到進貨管理新增`;
+  const oldRaw=oldRec&&raw&&sameMeatName(oldRec.item,calc.item)?Number(oldRec.rawKg)||0:0;
+  if(raw&&((Number(raw.qty)||0)+oldRaw+1e-6)<calc.rawKg) return `${raw.name} 庫存不足（可用 ${Math.round(((Number(raw.qty)||0)+oldRaw)*100)/100} 公斤）`;
+  const oldUse={};
+  if(oldRec) marinadeUsage(oldRec.rawKg,oldRec.recipeId).forEach(u=>oldUse[u.name]=(oldUse[u.name]||0)+u.kg);
+  for(const use of marinadeUsage(calc.rawKg,calc.recipeId)){
+    const it=inventory.marinade.find(i=>i.name===use.name);
+    if(!it) return `${use.name} 尚未建立醃料庫存，請先到進貨管理新增`;
+    if(it&&((Number(it.qty)||0)+(oldUse[use.name]||0)+1e-8)<use.kg){
+      return `${use.name} 庫存不足（需要 ${use.kg.toFixed(3)} 公斤）`;
+    }
+  }
+  return '';
+}
+
+function restoreMarinationInputs(rec){
+  const raw=rawStockFor(rec.item);
+  if(raw){ raw.qty=Math.round(((Number(raw.qty)||0)+(Number(rec.rawKg)||0))*10000)/10000; raw.lastUpdated=todayStr(); }
+  marinadeUsage(rec.rawKg,rec.recipeId).forEach(use=>{
+    const it=inventory.marinade.find(i=>i.name===use.name);
+    if(it){ it.qty=Math.round(((Number(it.qty)||0)+use.kg)*10000)/10000; it.lastUpdated=todayStr(); }
+  });
+}
+
+function consumeMarinationInputs(calc,date){
+  const raw=rawStockFor(calc.item);
+  if(raw){ raw.qty=Math.round(Math.max(0,(Number(raw.qty)||0)-calc.rawKg)*10000)/10000; raw.lastUpdated=date; }
+  marinadeUsage(calc.rawKg,calc.recipeId).forEach(use=>{
+    const it=inventory.marinade.find(i=>i.name===use.name);
+    if(it){ it.qty=Math.round(Math.max(0,(Number(it.qty)||0)-use.kg)*10000)/10000; it.lastUpdated=date; }
+  });
+}
+
+function resetMarinadeForm(){
+  editingMarinadeId=null;
+  document.getElementById('mar-date').value=todayStr();
+  document.getElementById('mar-raw-kg').value='';
+  document.getElementById('mar-note').value='';
+  document.getElementById('mar-save-btn').textContent='＋ 新增自製批次（自動依配方扣醃料）';
+  const cancel=document.getElementById('mar-cancel-btn'); if(cancel) cancel.style.display='none';
+  updateMarinadeCalc();
+}
+
 try{document.getElementById('mar-raw-kg').oninput=updateMarinadeCalc;}catch(e){}
 try{document.getElementById('mar-recipe').onchange=updateMarinadeCalc;}catch(e){}
 try{document.getElementById('mar-item').onchange=updateMarinadeCalc;}catch(e){}
+document.getElementById('mar-cancel-btn').addEventListener('click',()=>{ resetMarinadeForm(); toast('已取消編輯'); });
 
 document.getElementById('mar-save-btn').addEventListener('click',()=>{
   const calc=updateMarinadeCalc();
   if(!calc.rawKg){toast('請輸入生肉重量');return;}
   const date=document.getElementById('mar-date').value||todayStr();
   const note=document.getElementById('mar-note').value.trim();
-  if(calc.item!=='花枝丸'){
-    const rawItem=inventory.rawMeat.find(i=>i.name.includes(calc.item.replace('自製',''))||calc.item.includes(i.name));
-    if(rawItem){rawItem.qty=Math.max(0,Math.round((rawItem.qty-calc.rawKg)*100)/100);rawItem.lastUpdated=date;}
-  }
-  const recipe=RECIPES[calc.recipeId]||RECIPES['2'];
-  const ratio=calc.rawKg/recipe.perKg;
-  calc.details.forEach(d=>{
-    const it=inventory.marinade.find(i=>i.name===d.name);
-    if(it){it.qty=Math.max(0,Math.round((it.qty-d.g/1000*ratio)*10000)/10000);it.lastUpdated=date;}
-  });
-  inventory.diyBatches.push({id:uid(),name:calc.item,totalKg:calc.cookedKg,remaining:calc.cookedKg,date,rawKg:calc.rawKg,recipe:RECIPES[calc.recipeId].name});
+  const oldRec=editingMarinadeId?marinadeRecs.find(r=>r.id===editingMarinadeId):null;
+  const oldBatch=oldRec?batchForMarinade(oldRec):null;
+  if(oldRec&&!oldBatch){ toast('找不到原批次，為避免錯帳無法直接修改；請先備份資料後檢查庫存'); return; }
+  const consumed=oldRec?Math.max(0,(Number(oldRec.cookedKg)||0)-(oldBatch?Number(oldBatch.remaining)||0:0)):0;
+  if(oldRec&&calc.cookedKg+1e-6<consumed){ toast(`此批已有 ${consumed.toFixed(2)} 公斤用於出攤，醃製後重量不可低於此數量`); return; }
+  const shortage=marinationShortage(calc,oldRec);
+  if(shortage){ toast(shortage); return; }
+
+  // 真正的交易式編輯：先完整回沖舊投入，再扣除新投入，保留已出攤用量。
+  if(oldRec) restoreMarinationInputs(oldRec);
+  if(oldBatch) inventory.diyBatches=inventory.diyBatches.filter(b=>b!==oldBatch);
+  consumeMarinationInputs(calc,date);
+  const batchId=oldBatch?oldBatch.id:uid();
+  inventory.diyBatches.push({id:batchId,name:calc.item,totalKg:calc.cookedKg,remaining:Math.max(0,Math.round((calc.cookedKg-consumed)*100)/100),date,rawKg:calc.rawKg,recipe:RECIPES[calc.recipeId].name});
   saveInventory();
-  // 醃製成本不自動加月支出（進貨時已各自記錄）
-  saveMonthly();
-  marinadeRecs.push({id:uid(),date,item:calc.item,rawKg:calc.rawKg,cookedKg:calc.cookedKg,pieces:calc.pieces,meatCost:calc.meatCost,marinadeCost:calc.totalMarinadeCost,totalCost:calc.totalCost,recipeId:calc.recipeId,note});
+  const rec={id:editingMarinadeId||uid(),batchId,date,item:calc.item,rawKg:calc.rawKg,cookedKg:calc.cookedKg,pieces:calc.pieces,meatCost:calc.meatCost,marinadeCost:calc.totalMarinadeCost,totalCost:calc.totalCost,recipeId:calc.recipeId,note};
+  if(oldRec){ const i=marinadeRecs.findIndex(r=>r.id===oldRec.id); marinadeRecs[i]=rec; }
+  else marinadeRecs.push(rec);
   saveMarinade();
-  document.getElementById('mar-raw-kg').value='';
-  document.getElementById('mar-note').value='';
-  updateMarinadeCalc();renderMarinadeRecs();toast('已儲存醃製批次，庫存及月支出已更新');
+  resetMarinadeForm();renderMarinadeRecs();renderDiyBatches();toast(oldRec?'已更新醃製批次，庫存差額已同步':'已儲存醃製批次，原料與醃料庫存已同步');
 });
 
 function renderMarinadeRecs(){
@@ -2802,7 +3126,7 @@ function renderMarinadeRecs(){
       ${r.note?`<div style="font-size:11px;color:var(--faint);margin-top:4px;">${escH(r.note)}</div>`:''}
       <div class="rec-actions" style="margin-top:8px;">
         <button class="mar-view-btn">📋 查看配方</button>
-        <button class="mar-edit-load-btn">✏️ 載入編輯</button>
+        <button class="mar-edit-load-btn">✏️ 編輯批次</button>
         <button class="mar-del-btn danger">刪除</button>
       </div>
       <div class="mar-detail-panel" style="display:none;margin-top:10px;background:var(--bg2);border-radius:10px;padding:12px;">
@@ -2827,19 +3151,29 @@ function renderMarinadeRecs(){
       btn.textContent=show?'▲ 收起':'📋 查看配方';
     };
     card.querySelector('.mar-edit-load-btn').onclick=()=>{
-      // Load into form
+      editingMarinadeId=r.id;
       try{ document.getElementById('mar-item').value=r.item; }catch(e){}
       try{ document.getElementById('mar-recipe').value=r.recipeId||'3'; }catch(e){}
       try{ document.getElementById('mar-raw-kg').value=r.rawKg; }catch(e){}
       try{ document.getElementById('mar-note').value=r.note||''; }catch(e){}
+      try{ document.getElementById('mar-date').value=r.date; }catch(e){}
+      document.getElementById('mar-save-btn').textContent='儲存批次修改';
+      const cancel=document.getElementById('mar-cancel-btn'); if(cancel) cancel.style.display='block';
       updateMarinadeCalc();
       window.scrollTo({top:0,behavior:'smooth'});
-      toast('已載入「'+r.item+'」'+r.rawKg+'kg，修改後按儲存新增批次');
+      toast('編輯模式：儲存時只會調整庫存差額');
     };
     card.querySelector('.mar-del-btn').onclick=()=>{
-      if(!confirm('確定刪除？'))return;
+      const batch=batchForMarinade(r);
+      if(!batch){ toast('找不到對應成品批次，為避免錯帳無法刪除'); return; }
+      const consumed=Math.max(0,(Number(r.cookedKg)||0)-(Number(batch.remaining)||0));
+      if(consumed>.01){ toast(`此批已有 ${consumed.toFixed(2)} 公斤用於出攤，請先修正相關出攤記錄`); return; }
+      if(!confirm('確定刪除？\n生肉與醃料會回沖，成品批次會一併移除。'))return;
+      restoreMarinationInputs(r);
+      inventory.diyBatches=inventory.diyBatches.filter(b=>b!==batch);
+      saveInventory();
       marinadeRecs=marinadeRecs.filter(x=>x.id!==r.id);
-      saveMarinade();renderMarinadeRecs();toast('已刪除');
+      saveMarinade();renderMarinadeRecs();renderDiyBatches();toast('已刪除，原料與醃料已回沖');
     };
     el.appendChild(card);
   });
@@ -2943,6 +3277,36 @@ loadInventory();
 loadMonthly();
 loadMarinade();
 loadEquipment();
+reconcileMarinadeBatchLinks();
+
+const PAGE_META={
+  daily:['今日營運','出攤日記','記錄現金、平台收入與成本，立即掌握今日實際淨利。'],
+  purchase:['採購與成本','進貨管理','建立進貨單價並同步庫存，讓每一筆成本都有依據。'],
+  monthly:['固定開銷','月支出','整理非單次出攤的支出，還原更真實的月結盈餘。'],
+  marinate:['製程追蹤','醃製生產','依配方精準扣除生肉與醃料，追蹤每一批成品庫存。'],
+  equipment:['資產管理','生財器具','記錄器具投入並依營運淨利查看攤提進度。'],
+  inventory:['即時存量','庫存中心','查看成品、原料與耗材存量，提早發現補貨需求。'],
+  analysis:['經營決策','經營分析','從營收、淨利、時薪與地點效益找出更好的出攤策略。']
+};
+function setupPageHeadings(){
+  Object.entries(PAGE_META).forEach(([id,meta])=>{
+    const section=document.getElementById('s-'+id); if(!section||section.querySelector('.page-heading')) return;
+    const head=document.createElement('div'); head.className='page-heading';
+    head.innerHTML=`<div><div class="page-kicker">${meta[0]}</div><h2>${meta[1]}</h2><p>${meta[2]}</p></div><div class="page-date">${new Intl.DateTimeFormat('zh-TW',{month:'long',day:'numeric',weekday:'short'}).format(new Date())}</div>`;
+    section.insertBefore(head,section.firstChild);
+  });
+}
+setupPageHeadings();
+
+const themeToggle=document.getElementById('theme-toggle');
+function applyTheme(theme){
+  const light=theme==='light'; document.body.classList.toggle('light',light);
+  themeToggle.textContent=light?'☾':'☼';
+  themeToggle.setAttribute('aria-label',light?'切換深色模式':'切換明亮模式');
+  document.querySelector('meta[name="theme-color"]').setAttribute('content',light?'#f6f1e7':'#11100d');
+}
+applyTheme(localStorage.getItem('qy_theme')||'dark');
+themeToggle.addEventListener('click',()=>{ const next=document.body.classList.contains('light')?'dark':'light'; localStorage.setItem('qy_theme',next); applyTheme(next); });
 try{document.getElementById('mar-date').value=todayStr();}catch(e){}
 try{document.getElementById('eq-date').value=todayStr();}catch(e){}
 buildDenomGrid('float-grid');
