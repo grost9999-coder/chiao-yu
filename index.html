@@ -646,6 +646,7 @@ body.light .btn-primary{color:#fff7e9;background:linear-gradient(135deg,#e78b14,
       <button class="chip meat-daily-chip" data-list="diy-list" data-name="自製翅腿">自製翅腿</button>
       <button class="chip meat-daily-chip" data-list="diy-list" data-name="自製二節翅">自製二節翅</button>
       <button class="chip meat-daily-chip" data-list="diy-list" data-name="自製三節翅">自製三節翅</button>
+      <button class="chip meat-daily-chip" data-list="diy-list" data-name="檸檬雞">檸檬雞</button>
       <button class="chip" data-list="diy-list" data-name="醃料（攤算）">醃料攤算</button>
     </div>
     <div id="diy-list"></div>
@@ -854,6 +855,7 @@ body.light .btn-primary{color:#fff7e9;background:linear-gradient(135deg,#e78b14,
         <button class="chip p-raw-chip" data-name="翅腿">翅腿</button>
         <button class="chip p-raw-chip" data-name="二節翅">二節翅</button>
         <button class="chip p-raw-chip" data-name="三節翅">三節翅</button>
+        <button class="chip p-raw-chip" data-name="檸檬雞">檸檬雞</button>
       </div>
       <div id="p-raw-list"></div>
       <button class="add-btn p-raw-add">＋ 新增品項</button>
@@ -880,6 +882,9 @@ body.light .btn-primary{color:#fff7e9;background:linear-gradient(135deg,#e78b14,
         <button class="chip p-mar-chip" data-name="五香粉">五香粉</button>
         <button class="chip p-mar-chip" data-name="工研醋">工研醋</button>
         <button class="chip p-mar-chip" data-name="醃製沙拉油">醃製沙拉油</button>
+        <button class="chip p-mar-chip" data-name="檸檬酸">檸檬酸</button>
+        <button class="chip p-mar-chip" data-name="鹽">鹽</button>
+        <button class="chip p-mar-chip" data-name="磷酸三鈉">磷酸三鈉</button>
       </div>
       <div id="p-mar-list"></div>
       <button class="add-btn p-mar-add">＋ 新增醃料</button>
@@ -987,6 +992,7 @@ body.light .btn-primary{color:#fff7e9;background:linear-gradient(135deg,#e78b14,
           <option value="自製翅腿">自製翅腿</option>
           <option value="自製二節翅">自製二節翅</option>
           <option value="自製三節翅">自製三節翅</option>
+          <option value="檸檬雞">檸檬雞</option>
           <option value="花枝丸">花枝丸</option>
           <option value="鳳翅球">鳳翅球（外購）</option>
         </select>
@@ -994,7 +1000,9 @@ body.light .btn-primary{color:#fff7e9;background:linear-gradient(135deg,#e78b14,
     </div>
     <div class="field"><label>配方</label>
       <select id="mar-recipe" style="width:100%;background:var(--bg2);border:1px solid #38302660;border-radius:8px;color:var(--ink);font-size:15px;padding:10px 11px;">
-        <option value="3">配方3（B版本）</option>
+        <option value="lemon1">二哥・檸檬雞1（17kg）</option>
+        <option value="5">二哥・配方5（102kg）</option>
+        <option value="3" selected>配方3（B版本）</option>
         <option value="2">配方2（含甜菜根粉17g）</option>
         <option value="1">配方1（舊版）</option>
       </select>
@@ -1102,6 +1110,7 @@ body.light .btn-primary{color:#fff7e9;background:linear-gradient(135deg,#e78b14,
       <button class="chip inv-raw-chip" data-name="翅腿">翅腿</button>
       <button class="chip inv-raw-chip" data-name="二節翅">二節翅</button>
       <button class="chip inv-raw-chip" data-name="三節翅">三節翅</button>
+      <button class="chip inv-raw-chip" data-name="檸檬雞">檸檬雞</button>
     </div>
     <div id="inv-raw-list"></div>
     <button class="add-btn inv-raw-add">＋ 新增生肉品項</button>
@@ -1128,6 +1137,9 @@ body.light .btn-primary{color:#fff7e9;background:linear-gradient(135deg,#e78b14,
       <button class="chip inv-mar-chip" data-name="醃製沙拉油">醃製沙拉油</button>
       <button class="chip inv-mar-chip" data-name="磷酸鈉鹽">磷酸鈉鹽</button>
       <button class="chip inv-mar-chip" data-name="亞硝酸鈉">亞硝酸鈉</button>
+      <button class="chip inv-mar-chip" data-name="檸檬酸">檸檬酸</button>
+      <button class="chip inv-mar-chip" data-name="鹽">鹽</button>
+      <button class="chip inv-mar-chip" data-name="磷酸三鈉">磷酸三鈉</button>
     </div>
     <div id="inv-marinade-list"></div>
     <button class="add-btn inv-mar-add">＋ 新增醃料品項</button>
@@ -1369,6 +1381,21 @@ function load(){
     '自製翅腿':        55,
     '自製二節翅':      80,
     '自製三節翅':      45,
+    '檸檬雞':          55,
+    // 二哥配方最新原料成本（換算為每公斤單價）
+    '紅麴豆腐乳':      200,
+    '醬油':            50,      // $250 / 5L
+    '米酒':            Math.round(20/0.6*1000)/1000,
+    '白砂糖':          44,      // $110 / 2.5kg
+    '白胡椒粉':        250,     // $150 / 600g
+    '豆漿粉':          280,
+    '甜菜根粉':        1100,    // $110 / 100g
+    '蒜粉':            178,
+    '磷酸三鈉':        Math.round(125/0.06*1000)/1000,
+    '紅麴粉':          Math.round(200/0.12*1000)/1000,
+    '玉米粉':          50,
+    '地瓜粉':          50,
+    '中筋麵粉':        40,
     // 耗材每個單價（強制更新確保正確）
     '紙袋':            0.375,  // 2封150元 ÷ 400個 = $0.375/個
     '半斤塑膠袋':      Math.round(27/41*1000)/1000,   // 27元/封 ÷ 41個 ≈ $0.659/個
@@ -2606,7 +2633,6 @@ function loadInventory(){
   try{ const d=JSON.parse(localStorage.getItem(INV_KEY)||'{}'); if(d.diyBatches) Object.assign(inventory,d); }catch(e){}
   let addedIds=false;
   ['diyBatches','purchasedStock'].forEach(key=>(inventory[key]||[]).forEach(item=>{ if(!item.id){ item.id=uid(); addedIds=true; } }));
-  migrateMeatCategories();
   if(addedIds) saveInventory();
 }
 
@@ -2906,6 +2932,24 @@ function saveMarinade(){ localStorage.setItem(MAR_KEY,JSON.stringify(marinadeRec
 const KG_RAW_TO_COOKED = 9/8.5;
 
 const RECIPES = {
+  'lemon1': { name:'二哥・檸檬雞1（17kg）', perKg:17, yieldRate:9/8.5, ingredients:[
+    // 醃料
+    {name:'米酒',g:255},{name:'醬油',g:50},{name:'檸檬酸',g:51},
+    {name:'白砂糖',g:204},{name:'鹽',g:136},{name:'磷酸三鈉',g:0,note:'依標示',stock:false},
+    {name:'冰水',g:550,label:'冰水 ①',stock:false},
+    // 粉類
+    {name:'豆漿粉',g:85},{name:'蒜粉',g:51},{name:'白胡椒粉',g:17},
+    {name:'地瓜粉',g:340},{name:'玉米粉',g:170},{name:'中筋麵粉',g:85},
+    // 粉漿水
+    {name:'冰水',g:500,label:'冰水 ②',stock:false},
+  ]},
+  '5': { name:'二哥・配方5（102kg）', perKg:102, yieldRate:9/8.5, ingredients:[
+    {name:'紅麴豆腐乳',g:420},{name:'醬油',g:300},{name:'米酒',g:720},
+    {name:'白砂糖',g:600},{name:'白胡椒粉',g:120},{name:'豆漿粉',g:300},
+    {name:'甜菜根粉',g:60},{name:'蒜粉',g:216},{name:'磷酸三鈉',g:60},
+    {name:'紅麴粉',g:56},{name:'玉米粉',g:1080},{name:'地瓜粉',g:1440},
+    {name:'中筋麵粉',g:720},{name:'冰水',g:4200,stock:false},
+  ]},
   '1': { name:'配方1（舊版）', perKg:8.5, ingredients:[
     {name:'紅麴豆腐乳',g:25},{name:'米酒',g:60},{name:'白砂糖',g:50},
     {name:'紅麴粉',g:6},{name:'蒜粉',g:18},{name:'白胡椒粉',g:10},
@@ -2943,9 +2987,10 @@ function calcMarinadeDetail(rawKg, recipeId){
   let totalMarinadeCost=0;
   const details=recipe.ingredients.map(ing=>{
     const usedG=Math.round(ing.g*ratio*10)/10;
-    const cost=Math.round(usedG/1000*(unitPrices[ing.name]||0)*100)/100;
+    const stock=ing.stock!==false;
+    const cost=stock?Math.round(usedG/1000*(unitPrices[ing.name]||0)*100)/100:0;
     totalMarinadeCost+=cost;
-    return {name:ing.name,g:usedG,cost};
+    return {name:ing.name,label:ing.label||ing.name,g:usedG,cost,stock,note:ing.note||''};
   });
   return {details,totalMarinadeCost:Math.round(totalMarinadeCost*100)/100};
 }
@@ -2954,11 +2999,12 @@ function updateMarinadeCalc(){
   const rawKg=parseFloat(document.getElementById('mar-raw-kg').value)||0;
   const recipeId=document.getElementById('mar-recipe').value;
   const item=document.getElementById('mar-item').value;
+  const recipe=RECIPES[recipeId]||RECIPES['2'];
   const kgPerUnit = (item==='鳳翅球') ? 12 : KG_PER_BASKET;
   const pieces=Math.round(rawKg/kgPerUnit*10)/10;
-  const cookedKg=Math.round(rawKg*KG_RAW_TO_COOKED*100)/100;
+  const cookedKg=Math.round(rawKg*(recipe.yieldRate||KG_RAW_TO_COOKED)*100)/100;
   const {details,totalMarinadeCost}=calcMarinadeDetail(rawKg,recipeId);
-  const meatPriceMap={'自製翅腿':unitPrices['自製翅腿']||55,'自製二節翅':unitPrices['自製二節翅']||80,'自製三節翅':unitPrices['自製三節翅']||45,'花枝丸':Math.round(430/3*100)/100,'鳳翅球':unitPrices['鳳翅球']||50};
+  const meatPriceMap={'自製翅腿':unitPrices['自製翅腿']||55,'自製二節翅':unitPrices['自製二節翅']||80,'自製三節翅':unitPrices['自製三節翅']||45,'檸檬雞':unitPrices['檸檬雞']||unitPrices['自製翅腿']||55,'花枝丸':Math.round(430/3*100)/100,'鳳翅球':unitPrices['鳳翅球']||50};
   const meatCost=Math.round(rawKg*(meatPriceMap[item]||0));
   const totalCost=meatCost+Math.round(totalMarinadeCost);
   try{document.getElementById('mar-pieces').textContent=pieces+' 件（'+rawKg+'kg）';}catch(e){}
@@ -2973,18 +3019,22 @@ function updateMarinadeCalc(){
         details.map(d=>{
           const up=unitPrices[d.name]||0;
           const cost=d.cost;
-          const priceColor=up>0?'var(--green)':'var(--red)';
+          const priceColor=!d.stock?'var(--faint)':up>0?'var(--green)':'var(--red)';
           const safeName=d.name.replace(/'/g,"\\'");
-          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);">
-            <span style="flex:1.2">${escH(d.name)}</span>
-            <span style="color:var(--faint);margin:0 8px;min-width:50px;text-align:right;">${d.g}g</span>
-            <span style="color:${priceColor};font-size:11px;cursor:pointer;min-width:70px;text-align:right;" onclick="(function(){
+          const amountText=d.note||d.g+'g';
+          const costAction=!d.stock
+            ? `<span style="color:var(--faint);font-size:11px;min-width:70px;text-align:right;">${d.note?'依標示・未計':'不扣庫存'}</span>`
+            : `<span style="color:${priceColor};font-size:11px;cursor:pointer;min-width:70px;text-align:right;" onclick="(function(){
               const v=prompt('${safeName} 每公斤單價（目前$${up}）','${up}');
               if(v===null)return;
               unitPrices['${safeName}']=parseFloat(v)||0;
               localStorage.setItem('qy_prices_v2',JSON.stringify(unitPrices));
               updateMarinadeCalc();
-            })()">${up>0?fmt(cost)+'（$'+up+'/kg）':'未設定 ▶'}</span>
+            })()">${up>0?fmt(cost)+'（$'+up+'/kg）':'未設定 ▶'}</span>`;
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);">
+            <span style="flex:1.2">${escH(d.label)}</span>
+            <span style="color:var(--faint);margin:0 8px;min-width:50px;text-align:right;">${amountText}</span>
+            ${costAction}
           </div>`;
         }).join('');
     } else {
@@ -3001,7 +3051,7 @@ function rawStockFor(item){
 }
 
 function marinadeUsage(rawKg,recipeId){
-  return calcMarinadeDetail(rawKg,recipeId).details.map(d=>({name:d.name,kg:d.g/1000}));
+  return calcMarinadeDetail(rawKg,recipeId).details.filter(d=>d.stock&&d.g>0).map(d=>({name:d.name,kg:d.g/1000}));
 }
 
 function batchForMarinade(rec){
@@ -3028,7 +3078,7 @@ function reconcileMarinadeBatchLinks(){
 
 function marinationShortage(calc,oldRec){
   const raw=rawStockFor(calc.item);
-  if((calc.item||'').startsWith('自製')&&!raw) return `${calc.item.replace('自製','')} 尚未建立生肉庫存，請先到進貨管理新增`;
+  if(!['花枝丸','鳳翅球'].includes(calc.item)&&!raw) return `${calc.item.replace('自製','')} 尚未建立生肉庫存，請先到進貨管理新增`;
   const oldRaw=oldRec&&raw&&sameMeatName(oldRec.item,calc.item)?Number(oldRec.rawKg)||0:0;
   if(raw&&((Number(raw.qty)||0)+oldRaw+1e-6)<calc.rawKg) return `${raw.name} 庫存不足（可用 ${Math.round(((Number(raw.qty)||0)+oldRaw)*100)/100} 公斤）`;
   const oldUse={};
@@ -3072,7 +3122,7 @@ function resetMarinadeForm(){
 }
 
 try{document.getElementById('mar-raw-kg').oninput=updateMarinadeCalc;}catch(e){}
-try{document.getElementById('mar-recipe').onchange=updateMarinadeCalc;}catch(e){}
+try{document.getElementById('mar-recipe').onchange=()=>{ if(document.getElementById('mar-recipe').value==='lemon1') document.getElementById('mar-item').value='檸檬雞'; updateMarinadeCalc(); };}catch(e){}
 try{document.getElementById('mar-item').onchange=updateMarinadeCalc;}catch(e){}
 document.getElementById('mar-cancel-btn').addEventListener('click',()=>{ resetMarinadeForm(); toast('已取消編輯'); });
 
@@ -3118,7 +3168,7 @@ function renderMarinadeRecs(){
     const recipeObj=RECIPES[r.recipeId]||null;
     card.innerHTML=`
       <div class="rec-top">
-        <div><span class="rec-date">${r.date}</span><span class="rec-loc" style="color:var(--amber2);">配方${r.recipeId}</span></div>
+        <div><span class="rec-date">${r.date}</span><span class="rec-loc" style="color:var(--amber2);">${escH(recipeObj?recipeObj.name:'配方'+r.recipeId)}</span></div>
         <div class="rec-net-wrap"><span class="rec-net-lbl">總成本</span><div class="rec-net neg">${fmt(r.totalCost)}</div></div>
       </div>
       <div style="font-size:13px;color:var(--dim);margin-top:4px;">${escH(r.item)} ${r.rawKg}kg → <span style="color:var(--green)">${r.cookedKg}kg</span></div>
@@ -3135,11 +3185,13 @@ function renderMarinadeRecs(){
           const ratio=r.rawKg/recipeObj.perKg;
           const usedG=Math.round(ing.g*ratio*10)/10;
           const up=unitPrices[ing.name]||0;
-          const cost=Math.round(usedG/1000*up*100)/100;
+          const stock=ing.stock!==false;
+          const cost=stock?Math.round(usedG/1000*up*100)/100:0;
+          const amountText=ing.note||usedG+'g';
           return `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px;">
-            <span style="color:var(--ink)">${escH(ing.name)}</span>
-            <span style="color:var(--faint)">${usedG}g</span>
-            <span style="color:${up>0?'var(--amber2)':'var(--red)'}">${up>0?fmt(cost):'$?'}</span>
+            <span style="color:var(--ink)">${escH(ing.label||ing.name)}</span>
+            <span style="color:var(--faint)">${amountText}</span>
+            <span style="color:${!stock?'var(--faint)':up>0?'var(--amber2)':'var(--red)'}">${!stock?(ing.note?'依標示・未計':'不計'):up>0?fmt(cost):'$?'}</span>
           </div>`;
         }).join(''):'<div style="color:var(--faint)">配方資料不存在</div>'}
       </div>`;
