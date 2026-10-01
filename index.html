@@ -1,6 +1,27 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
-<head>
+<head><style>
+@font-face {
+  font-family: "Optimistic";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Optimistic Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
+}
+:where(html) {
+  font-family: "Optimistic", system-ui, sans-serif;
+}
+:where(code, pre, kbd, samp) {
+  font-family: "Optimistic Mono", ui-monospace, monospace;
+}
+</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="theme-color" content="#11100d">
@@ -1001,7 +1022,7 @@ body.light .btn-primary{color:#fff7e9;background:linear-gradient(135deg,#e78b14,
     <div class="field"><label>配方</label>
       <select id="mar-recipe" style="width:100%;background:var(--bg2);border:1px solid #38302660;border-radius:8px;color:var(--ink);font-size:15px;padding:10px 11px;">
         <option value="lemon1">二哥・檸檬雞1（17kg）</option>
-        <option value="5">二哥・配方5（102kg）</option>
+        <option value="5">二哥・配方5（17kg｜圖片版）</option>
         <option value="3" selected>配方3（B版本）</option>
         <option value="2">配方2（含甜菜根粉17g）</option>
         <option value="1">配方1（舊版）</option>
@@ -1023,6 +1044,52 @@ body.light .btn-primary{color:#fff7e9;background:linear-gradient(135deg,#e78b14,
     <button class="btn-primary" id="mar-save-btn" style="margin-top:12px;">＋ 新增自製批次（自動依配方扣醃料）</button>
     <button class="btn-ghost" id="mar-cancel-btn" style="display:none;">取消編輯</button>
   </div>
+
+  <div class="card" id="custom-recipe-card" style="border:1.5px dashed #f3a31b66;background:linear-gradient(145deg,#221b0d,#1a160f);">
+    <div class="card-title">🧪 自訂配方｜匯入圖片 / 文字</div>
+    <p class="backup-hint">支援三種方式：① 貼上文字 ② 上傳圖片對照 ③ 手動新增。儲存後會自動出現在上方配方選單。</p>
+
+    <div class="two">
+      <div class="field"><label>配方名稱</label><input type="text" id="cr-name" placeholder="例：二哥・配方6 測試版"></div>
+      <div class="field"><label>基準重量 (kg)</label><input type="number" id="cr-perkg" value="17" placeholder="17"></div>
+    </div>
+
+    <div class="field"><label>📋 從文字匯入（每行：名稱 + 重量）</label>
+      <textarea id="cr-text" rows="6" placeholder="貼上例如：&#10;紅麴豆乳醬 70g&#10;醬油 50g&#10;米酒 120g&#10;砂糖 60.8g&#10;地瓜粉 240g&#10;水 600g&#10;&#10;系統會自動抓取 名稱+數字+g" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:11px;color:var(--ink);padding:10px 11px;font-size:13px;"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn-ghost" id="cr-parse-text" style="flex:1;min-height:38px">🔍 解析文字</button>
+        <button class="btn-ghost" id="cr-clear-text" style="min-height:38px">清空</button>
+      </div>
+    </div>
+
+    <div class="field"><label>🖼️ 從圖片匯入（上傳截圖對照）</label>
+      <input type="file" id="cr-image" accept="image/*" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:9px;color:var(--ink);font-size:13px;">
+      <div id="cr-image-preview" style="margin-top:10px;display:none;">
+        <div style="position:relative;display:inline-block;max-width:100%">
+          <img id="cr-img-el" style="max-width:100%;max-height:260px;border-radius:10px;border:1px solid var(--border)">
+        </div>
+        <div style="font-size:11px;color:var(--faint);margin-top:6px">圖片僅作對照，請手動輸入或用文字解析。之後會加入自動 OCR。</div>
+      </div>
+    </div>
+
+    <div class="field"><label>🧂 成分清單（可手動增刪）</label>
+      <div id="cr-ing-list" style="background:var(--bg2);border-radius:11px;padding:8px;border:1px solid var(--border);min-height:80px"></div>
+      <div class="two" style="margin-top:8px">
+        <input type="text" id="cr-ing-name" placeholder="成分名 例：蒜粉" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px;color:var(--ink);font-size:13px">
+        <div style="display:flex;gap:6px">
+          <input type="number" id="cr-ing-g" placeholder="g數" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px;color:var(--ink);font-size:13px">
+          <button class="btn-ghost" id="cr-ing-add" style="min-height:40px;padding:0 14px">＋</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn-primary" id="cr-save" style="flex:1">💾 儲存為新配方</button>
+      <button class="btn-ghost" id="cr-reset" style="min-width:80px">重置</button>
+    </div>
+    <div id="cr-status" style="font-size:12px;color:var(--faint);margin-top:8px"></div>
+  </div>
+
   <div class="card">
     <div class="card-title">醃製批次記錄</div>
     <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
@@ -2943,12 +3010,24 @@ const RECIPES = {
     // 粉漿水
     {name:'冰水',g:500,label:'冰水 ②',stock:false},
   ]},
-  '5': { name:'二哥・配方5（102kg）', perKg:102, yieldRate:9/8.5, ingredients:[
-    {name:'紅麴豆腐乳',g:420},{name:'醬油',g:300},{name:'米酒',g:720},
-    {name:'白砂糖',g:600},{name:'白胡椒粉',g:120},{name:'豆漿粉',g:300},
-    {name:'甜菜根粉',g:60},{name:'蒜粉',g:216},{name:'磷酸三鈉',g:60},
-    {name:'紅麴粉',g:56},{name:'玉米粉',g:1080},{name:'地瓜粉',g:1440},
-    {name:'中筋麵粉',g:720},{name:'冰水',g:4200,stock:false},
+  '5': { name:'二哥・配方5（17kg｜圖片校正版）', perKg:17, yieldRate:9/8.5, ingredients:[
+    // 醃料 - 來自圖片 每17kg
+    {name:'紅麴豆腐乳',g:70,label:'紅麴豆乳醬'},
+    {name:'醬油',g:50},
+    {name:'米酒',g:120},
+    {name:'白砂糖',g:60.8,label:'砂糖'},
+    {name:'蒜粉',g:36},
+    {name:'白胡椒粉',g:20},
+    {name:'豆漿粉',g:50},
+    {name:'甜菜根粉',g:5},
+    {name:'紅麴粉',g:9.35},
+    {name:'磷寶粉 X',g:10,label:'磷寶粉 X / 磷酸三鈉'},
+    // 粉漿
+    {name:'地瓜粉',g:240},
+    {name:'玉米粉',g:180},
+    {name:'中筋麵粉',g:120},
+    {name:'CMC F-135',g:5},
+    {name:'水',g:600,label:'水 / 冰水',stock:false},
   ]},
   '1': { name:'配方1（舊版）', perKg:8.5, ingredients:[
     {name:'紅麴豆腐乳',g:25},{name:'米酒',g:60},{name:'白砂糖',g:50},
@@ -2979,7 +3058,187 @@ const RECIPES = {
     {name:'玉米粉',g:510},
     {name:'中筋麵粉',g:283},
   ]},
+
 };
+
+// ── CUSTOM RECIPES (user-created) ──
+const CUSTOM_KEY='qy_custom_recipes_v1';
+function loadCustomRecipes(){
+  try{
+    const arr=JSON.parse(localStorage.getItem(CUSTOM_KEY)||'[]');
+    arr.forEach(c=>{
+      RECIPES[c.id]={
+        name:c.name,
+        perKg:c.perKg,
+        yieldRate:c.yieldRate||9/8.5,
+        ingredients:c.ingredients,
+        custom:true,
+        createdAt:c.createdAt
+      };
+    });
+    return arr;
+  }catch(e){ return []; }
+}
+function saveCustomRecipes(arr){
+  localStorage.setItem(CUSTOM_KEY, JSON.stringify(arr));
+}
+function refreshRecipeSelect(){
+  const sel=document.getElementById('mar-recipe');
+  if(!sel) return;
+  const cur=sel.value;
+  // keep built-in first, then custom
+  const builtIn=['lemon1','5','3','2','1'];
+  // rebuild
+  sel.innerHTML='';
+  builtIn.forEach(id=>{
+    if(RECIPES[id]){
+      const o=document.createElement('option');
+      o.value=id; o.textContent=RECIPES[id].name;
+      sel.appendChild(o);
+    }
+  });
+  // custom
+  const customs=JSON.parse(localStorage.getItem(CUSTOM_KEY)||'[]');
+  if(customs.length){
+    const g=document.createElement('optgroup');
+    g.label='── 自訂配方 ──';
+    customs.forEach(c=>{
+      const o=document.createElement('option');
+      o.value=c.id; o.textContent=c.name+'（'+c.perKg+'kg）✏️';
+      g.appendChild(o);
+    });
+    sel.appendChild(g);
+  }
+  if(cur) sel.value=cur;
+  if(!sel.value && sel.options.length) sel.selectedIndex=0;
+}
+let customIngredients=[];
+
+function renderCustomIngList(){
+  const el=document.getElementById('cr-ing-list');
+  if(!el) return;
+  if(!customIngredients.length){ el.innerHTML='<div style="color:var(--faint);font-size:12px;padding:8px">尚未加入成分，貼上文字後按「解析文字」或手動新增</div>'; return; }
+  el.innerHTML=customIngredients.map((ing,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+      <span style="flex:1;font-size:13px">${escH(ing.name)}${ing.label&&ing.label!==ing.name?' <span style="color:var(--faint);font-size:11px">('+escH(ing.label)+')</span>':''}</span>
+      <span style="color:var(--amber2);font-size:13px">${ing.g}g</span>
+      <span style="color:var(--faint);font-size:11px">${ing.stock===false?'不扣庫存':''}</span>
+      <button data-i="${i}" class="cr-del" style="background:none;border:1px solid var(--border);color:var(--faint);border-radius:8px;padding:2px 8px;font-size:12px">✕</button>
+    </div>
+  `).join('');
+  el.querySelectorAll('.cr-del').forEach(b=>b.onclick=()=>{ customIngredients.splice(parseInt(b.dataset.i),1); renderCustomIngList(); });
+}
+
+function parseRecipeText(txt){
+  const lines=txt.split(/\n/).map(s=>s.trim()).filter(Boolean);
+  const out=[];
+  const re=/([\u4e00-\u9fa5A-Za-z0-9_\-\s·\.\(\)（）]+?)\s*([0-9]+\.?[0-9]*)\s*g/i;
+  const re2=/([\u4e00-\u9fa5A-Za-z0-9_\-]+)\s+([0-9\.]+)/;
+  lines.forEach(line=>{
+    // ignore header lines
+    if(/類別|成分|每17kg|每1kg|醃料|粉漿/.test(line)) return;
+    let m=line.match(re);
+    if(!m) m=line.match(re2);
+    if(m){
+      let name=m[1].trim().replace(/[:：]/g,'').replace(/\s+/g,' ');
+      let g=parseFloat(m[2]);
+      if(!name || isNaN(g)) return;
+      // normalize
+      if(/紅麴豆乳/.test(name)) name='紅麴豆腐乳';
+      if(name==='砂糖') name='白砂糖';
+      if(/水/.test(name) && g>100) { out.push({name:'水',g:g,label:'水 / 冰水',stock:false}); return; }
+      let isWater=/水|ice/i.test(name);
+      out.push({name:name,g:g,stock:isWater?false:true});
+    }
+  });
+  return out;
+}
+
+function initCustomRecipeUI(){
+  loadCustomRecipes();
+  refreshRecipeSelect();
+  const txtEl=document.getElementById('cr-text');
+  const statusEl=document.getElementById('cr-status');
+  const nameEl=document.getElementById('cr-name');
+  const perEl=document.getElementById('cr-perkg');
+
+  document.getElementById('cr-parse-text')?.addEventListener('click',()=>{
+    const t=txtEl.value;
+    if(!t.trim()){ toast('請先貼上配方文字'); return; }
+    const parsed=parseRecipeText(t);
+    if(!parsed.length){ statusEl.textContent='解析不到成分，請確認格式為「名稱 數字g」'; statusEl.style.color='var(--red)'; return; }
+    customIngredients=parsed;
+    renderCustomIngList();
+    statusEl.textContent='已解析 '+parsed.length+' 項成分';
+    statusEl.style.color='var(--green)';
+    // auto guess perKg from text like "每17kg"
+    const mkg=t.match(/每\s*([0-9]+)kg/i);
+    if(mkg) perEl.value=mkg[1];
+  });
+  document.getElementById('cr-clear-text')?.addEventListener('click',()=>{ txtEl.value=''; statusEl.textContent=''; });
+
+  document.getElementById('cr-image')?.addEventListener('change',e=>{
+    const f=e.target.files[0];
+    if(!f) return;
+    const img=document.getElementById('cr-img-el');
+    const prev=document.getElementById('cr-image-preview');
+    img.src=URL.createObjectURL(f);
+    prev.style.display='block';
+    statusEl.textContent='圖片已載入，請對照手動輸入或先貼上文字解析';
+    statusEl.style.color='var(--dim)';
+  });
+
+  document.getElementById('cr-ing-add')?.addEventListener('click',()=>{
+    const n=document.getElementById('cr-ing-name').value.trim();
+    const g=parseFloat(document.getElementById('cr-ing-g').value);
+    if(!n||isNaN(g)){ toast('請輸入名稱和克數'); return; }
+    customIngredients.push({name:n,g:g,stock:/水/.test(n)?false:true});
+    document.getElementById('cr-ing-name').value=''; document.getElementById('cr-ing-g').value='';
+    renderCustomIngList();
+  });
+
+  document.getElementById('cr-reset')?.addEventListener('click',()=>{
+    customIngredients=[]; renderCustomIngList();
+    nameEl.value=''; txtEl.value=''; statusEl.textContent='已重置';
+    document.getElementById('cr-image').value='';
+    document.getElementById('cr-image-preview').style.display='none';
+  });
+
+  document.getElementById('cr-save')?.addEventListener('click',()=>{
+    const name=nameEl.value.trim()||'自訂配方';
+    const perKg=parseFloat(perEl.value)||17;
+    if(customIngredients.length===0){ toast('成分清單是空的'); return; }
+    const id='custom_'+Date.now();
+    const arr=JSON.parse(localStorage.getItem(CUSTOM_KEY)||'[]');
+    arr.push({id,name,perKg,yieldRate:9/8.5,ingredients:customIngredients,createdAt:new Date().toISOString()});
+    saveCustomRecipes(arr);
+    RECIPES[id]={name:name+'（'+perKg+'kg）',perKg,yieldRate:9/8.5,ingredients:customIngredients,custom:true};
+    refreshRecipeSelect();
+    document.getElementById('mar-recipe').value=id;
+    updateMarinadeCalc();
+    toast('已儲存：'+name);
+    statusEl.textContent='已儲存到配方選單，可直接使用';
+    statusEl.style.color='var(--amber)';
+    // add delete button in status
+    statusEl.innerHTML+=' <button id="cr-del-last" style="margin-left:8px;padding:2px 8px;border-radius:8px;border:1px solid var(--red);background:none;color:var(--red);font-size:11px">刪除此配方</button>';
+    document.getElementById('cr-del-last').onclick=()=>{
+      if(!confirm('刪除剛儲存的配方？')) return;
+      const arr2=JSON.parse(localStorage.getItem(CUSTOM_KEY)||'[]').filter(c=>c.id!==id);
+      saveCustomRecipes(arr2);
+      delete RECIPES[id];
+      refreshRecipeSelect();
+      toast('已刪除');
+      statusEl.textContent='';
+    };
+  });
+
+  renderCustomIngList();
+}
+
+// call after DOM ready
+setTimeout(initCustomRecipeUI,300);
+
+
 
 function calcMarinadeDetail(rawKg, recipeId){
   const recipe=RECIPES[recipeId]||RECIPES['2'];
@@ -3397,5 +3656,5 @@ renderRecentRecs();
 
 })();
 </script>
-</body>
+<script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script></body>
 </html>
