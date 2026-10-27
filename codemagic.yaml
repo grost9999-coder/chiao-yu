@@ -3,6 +3,8 @@ workflows:
     name: 攤商記帳王PRO - 簽章 IPA
     instance_type: mac_mini_m2
     max_build_duration: 60
+    integrations:
+      app_store_connect: Codemagic-ClearPocket
     environment:
       xcode: latest
       ios_signing:
@@ -34,8 +36,8 @@ workflows:
     artifacts:
       - ios/build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
-# This workflow generates an IPA only.
-# Configure an Apple Distribution certificate and the App Store profile for
-# com.qiaoyu.vendorbookpro in this Codemagic team's Code signing identities.
-# App Store Connect upload will be configured after the API integration name
-# is verified. No private keys or credentials belong in this repository.
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: false
+        submit_to_app_store: false
