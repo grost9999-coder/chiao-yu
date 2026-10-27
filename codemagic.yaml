@@ -1,0 +1,41 @@
+workflows:
+  vendorledger-appstore:
+    name: 攤商記帳王PRO - 簽章 IPA
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.qiaoyu.vendorbookpro
+      vars:
+        BUNDLE_ID: com.qiaoyu.vendorbookpro
+        APP_STORE_APPLE_ID: "6817730804"
+    scripts:
+      - name: Install XcodeGen
+        script: |
+          set -eu
+          brew install xcodegen
+      - name: Generate iOS project
+        script: |
+          set -eu
+          cd "$CM_BUILD_DIR/ios"
+          xcodegen generate
+      - name: Apply Apple signing profiles
+        script: |
+          set -eu
+          cd "$CM_BUILD_DIR/ios"
+          xcode-project use-profiles
+      - name: Build signed IPA
+        script: |
+          set -eu
+          cd "$CM_BUILD_DIR/ios"
+          xcode-project build-ipa --project VendorLedger.xcodeproj --scheme VendorLedger
+    artifacts:
+      - ios/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+# This workflow generates an IPA only.
+# Configure an Apple Distribution certificate and the App Store profile for
+# com.qiaoyu.vendorbookpro in this Codemagic team's Code signing identities.
+# App Store Connect upload will be configured after the API integration name
+# is verified. No private keys or credentials belong in this repository.
