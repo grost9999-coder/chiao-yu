@@ -23,6 +23,11 @@ workflows:
           set -eu
           cd "$CM_BUILD_DIR/ios"
           xcodegen generate
+      - name: Set unique build number
+        script: |
+          set -eu
+          cd "$CM_BUILD_DIR/ios"
+          agvtool new-version -all "$((PROJECT_BUILD_NUMBER + 1))"
       - name: Apply Apple signing profiles
         script: |
           set -eu
