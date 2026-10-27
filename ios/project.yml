@@ -13,7 +13,6 @@ settings:
     INFOPLIST_KEY_CFBundleDisplayName: 攤商記帳王PRO
     INFOPLIST_KEY_UILaunchScreen_Generation: YES
     INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
-    INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
     INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
     PRODUCT_BUNDLE_IDENTIFIER: com.qiaoyu.vendorbookpro
     CODE_SIGN_STYLE: Automatic
@@ -22,6 +21,16 @@ targets:
   VendorLedger:
     type: application
     platform: iOS
+    info:
+      path: VendorLedger/Info.plist
+      properties:
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        "UISupportedInterfaceOrientations~ipad":
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
     sources:
       - path: VendorLedger/Sources
       - path: VendorLedger/Web
