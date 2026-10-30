@@ -8,7 +8,7 @@ Native SwiftUI app, iOS 17+. Bundle ID: `com.grost9999.yingwen`. Apple Developer
 - Gemini key is entered by the owner, tested, then stored in Keychain. Supports opaque auth keys, including `AQ.`. No API key is committed or shared with the web app.
 - AI speech generation and importing personal narration.
 - PhotosPicker, local H.264 MP4 generation through AVAssetWriter, timed captions, optional narration, portrait/square/landscape, native share sheet and save-to-Photos.
-- Video import, preview, trim, optional original audio and Core Animation burned-in subtitles.
+- Video import, preview, trim, optional original audio and frame-based burned-in subtitles.
 - Gemini video transcription and highlight suggestions, with explicit upload notice and temporary-file cleanup.
 - Device-local text drafts and previously exported MP4 files.
 

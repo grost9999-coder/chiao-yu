@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import AVFoundation
 import Photos
+import CoreImage
 
 struct MovieSettings {
     var ratio: AspectRatio = .portrait
@@ -83,7 +84,7 @@ enum VideoMaker {
         }
         return buffer
     }
-    private static func addAudio(video: URL, audio: URL) async throws -> URL {
+    private static func addAudio(video: URL, audio: URL, audioStart: Double = 0) async throws -> URL {
         let asset = AVURLAsset(url: video), audioAsset = AVURLAsset(url: audio)
         let composition = AVMutableComposition()
         let duration = try await asset.load(.duration)
@@ -91,7 +92,9 @@ enum VideoMaker {
         try videoTrack.insertTimeRange(CMTimeRange(start: .zero, duration: duration), of: sourceVideo, at: .zero)
         guard let sourceAudio = try await audioAsset.loadTracks(withMediaType: .audio).first, let audioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else { throw StudioError.message("配音檔案沒有可用的音訊。") }
         let audioDuration = try await audioAsset.load(.duration)
-        try audioTrack.insertTimeRange(CMTimeRange(start: .zero, duration: CMTimeMinimum(duration, audioDuration)), of: sourceAudio, at: .zero)
+        let offset = CMTime(seconds: audioStart, preferredTimescale: 600)
+        let remaining = CMTimeSubtract(audioDuration, offset)
+        if remaining.seconds > 0 { try audioTrack.insertTimeRange(CMTimeRange(start: offset, duration: CMTimeMinimum(duration, remaining)), of: sourceAudio, at: .zero) }
         return try await export(composition: composition, videoComposition: nil)
     }
     static func trim(video: URL, start: Double, end: Double, ratio: AspectRatio, fill: Bool, keepAudio: Bool, captions: [Caption]) async throws -> URL {
@@ -99,38 +102,61 @@ enum VideoMaker {
         let originalDuration = try await asset.load(.duration).seconds
         guard start >= 0, end > start, end <= originalDuration + 0.05, end - start <= 90 else { throw StudioError.message("裁切區間無效，且單次輸出最多90秒。") }
         guard let source = try await asset.loadTracks(withMediaType: .video).first else { throw StudioError.message("影片沒有可用的畫面。") }
-        let composition = AVMutableComposition()
-        guard let track = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else { throw StudioError.message("無法建立剪輯軌道。") }
-        let range = CMTimeRange(start: CMTime(seconds: start, preferredTimescale: 600), duration: CMTime(seconds: end - start, preferredTimescale: 600))
-        try track.insertTimeRange(range, of: source, at: .zero)
-        if keepAudio, let sourceAudio = try await asset.loadTracks(withMediaType: .audio).first, let audio = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) { try audio.insertTimeRange(range, of: sourceAudio, at: .zero) }
-        let natural = try await source.load(.naturalSize), preferred = try await source.load(.preferredTransform)
-        let rect = CGRect(origin: .zero, size: natural).applying(preferred)
+        let preferred = try await source.load(.preferredTransform)
+        let reader = try AVAssetReader(asset: asset)
+        let output = AVAssetReaderTrackOutput(track: source, outputSettings: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA])
+        output.alwaysCopiesSampleData = false
+        guard reader.canAdd(output) else { throw StudioError.message("無法讀取影片畫面。") }
+        reader.add(output)
+        reader.timeRange = CMTimeRange(start: CMTime(seconds: start, preferredTimescale: 600), duration: CMTime(seconds: end - start, preferredTimescale: 600))
+        let url = try outputURL("映文剪輯")
+        let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
+        let input = AVAssetWriterInput(mediaType: .video, outputSettings: [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: ratio.width, AVVideoHeightKey: ratio.height])
+        let attributes: [String: Any] = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32ARGB, kCVPixelBufferWidthKey as String: ratio.width, kCVPixelBufferHeightKey as String: ratio.height, kCVPixelBufferCGImageCompatibilityKey as String: true, kCVPixelBufferCGBitmapContextCompatibilityKey as String: true]
+        let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: attributes)
+        guard writer.canAdd(input) else { throw StudioError.message("無法建立剪輯編碼器。") }
+        writer.add(input)
+        guard reader.startReading(), writer.startWriting() else { throw reader.error ?? writer.error ?? StudioError.message("無法開始剪輯。") }
+        writer.startSession(atSourceTime: .zero)
+        let context = CIContext(options: [.useSoftwareRenderer: true])
         let size = CGSize(width: ratio.width, height: ratio.height)
-        let scale = fill ? max(size.width / abs(rect.width), size.height / abs(rect.height)) : min(size.width / abs(rect.width), size.height / abs(rect.height))
-        let transform = preferred.concatenating(CGAffineTransform(translationX: -rect.minX, y: -rect.minY)).concatenating(CGAffineTransform(scaleX: scale, y: scale)).concatenating(CGAffineTransform(translationX: (size.width - abs(rect.width) * scale) / 2, y: (size.height - abs(rect.height) * scale) / 2))
-        let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: track)
-        layerInstruction.setTransform(transform, at: .zero)
-        let instruction = AVMutableVideoCompositionInstruction(); instruction.timeRange = CMTimeRange(start: .zero, duration: range.duration); instruction.layerInstructions = [layerInstruction]
-        let videoComposition = AVMutableVideoComposition(); videoComposition.instructions = [instruction]; videoComposition.renderSize = size; videoComposition.frameDuration = CMTime(value: 1, timescale: 30)
+        let settings = MovieSettings(ratio: ratio, duration: end - start, fill: fill)
         let clipped = SubtitleFormat.clipped(captions, start: start, end: end)
-        if !clipped.isEmpty {
-            let parent = CALayer(); parent.frame = CGRect(origin: .zero, size: size)
-            let videoLayer = CALayer(); videoLayer.frame = parent.bounds; parent.addSublayer(videoLayer)
-            for caption in clipped {
-                let layer = CATextLayer(); layer.string = caption.text; layer.fontSize = size.width * 0.048; layer.font = CGFont("Helvetica-Bold" as CFString)
-                layer.foregroundColor = UIColor.white.cgColor; layer.backgroundColor = UIColor.black.withAlphaComponent(0.62).cgColor
-                layer.alignmentMode = .center; layer.isWrapped = true; layer.contentsScale = 2
-                layer.frame = CGRect(x: size.width * 0.06, y: size.height * 0.11, width: size.width * 0.88, height: size.height * 0.16)
-                layer.opacity = 0
-                let animation = CABasicAnimation(keyPath: "opacity"); animation.fromValue = 1; animation.toValue = 1
-                animation.beginTime = AVCoreAnimationBeginTimeAtZero + caption.start; animation.duration = caption.end - caption.start
-                animation.isRemovedOnCompletion = true; animation.fillMode = .removed
-                layer.add(animation, forKey: "caption"); parent.addSublayer(layer)
+        var frameCount = 0
+        do {
+            while let sample = output.copyNextSampleBuffer() {
+                try Task.checkCancellation()
+                let t = max(0, CMSampleBufferGetPresentationTimeStamp(sample).seconds - start)
+                guard t < end - start else { break }
+                while !input.isReadyForMoreMediaData {
+                    guard writer.status == .writing else { throw writer.error ?? StudioError.message("剪輯編碼中斷。") }
+                    try await Task.sleep(nanoseconds: 2_000_000)
+                }
+                let buffer: CVPixelBuffer = try autoreleasepool {
+                    guard let sourceBuffer = CMSampleBufferGetImageBuffer(sample) else { throw StudioError.message("無法解碼影片畫面。") }
+                    let image = CIImage(cvPixelBuffer: sourceBuffer).transformed(by: preferred)
+                    guard let cg = context.createCGImage(image, from: image.extent) else { throw StudioError.message("無法轉換影片方向。") }
+                    let text = clipped.first { t >= $0.start && t < $0.end }?.text ?? ""
+                    return try pixelBuffer(image: UIImage(cgImage: cg), caption: text, settings: settings, size: size, attributes: attributes)
+                }
+                guard adaptor.append(buffer, withPresentationTime: CMTime(seconds: t, preferredTimescale: 60000)) else { throw writer.error ?? StudioError.message("無法寫入剪輯畫面。") }
+                frameCount += 1
             }
-            videoComposition.animationTool = AVVideoCompositionCoreAnimationTool(postProcessingAsVideoLayer: videoLayer, in: parent)
+            guard reader.status != .failed, frameCount > 0 else { throw reader.error ?? StudioError.message("選取區間沒有可用的影片畫面。") }
+            reader.cancelReading()
+            input.markAsFinished()
+            writer.endSession(atSourceTime: CMTime(seconds: end - start, preferredTimescale: 60000))
+            await writer.finishWriting()
+            guard writer.status == .completed else { throw writer.error ?? StudioError.message("剪輯未完整輸出。") }
+            if keepAudio, !(try await asset.loadTracks(withMediaType: .audio)).isEmpty {
+                let mixed = try await addAudio(video: url, audio: video, audioStart: start)
+                try? FileManager.default.removeItem(at: url)
+                return mixed
+            }
+            return url
+        } catch {
+            reader.cancelReading(); writer.cancelWriting(); try? FileManager.default.removeItem(at: url); throw error
         }
-        return try await export(composition: composition, videoComposition: videoComposition)
     }
     private static func export(composition: AVMutableComposition, videoComposition: AVMutableVideoComposition?) async throws -> URL {
         let url = try outputURL("映文剪輯")

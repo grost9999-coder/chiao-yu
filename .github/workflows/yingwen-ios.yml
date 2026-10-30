@@ -45,6 +45,7 @@ jobs:
             -derivedDataPath build -resultBundlePath TestResults.xcresult \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild.log
       - name: Capture iPhone preview
+        if: always()
         working-directory: apps/yingwen-ios
         run: |
           xcrun simctl install "$IPHONE_UDID" build/Build/Products/Debug-iphonesimulator/YingwenStudio.app
