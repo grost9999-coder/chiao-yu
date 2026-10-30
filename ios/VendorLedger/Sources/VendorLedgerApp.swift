@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 @main
 struct VendorLedgerApp: App {
     var body: some Scene {
-        WindowGroup { LedgerView().preferredColorScheme(.light) }
+        WindowGroup { SubscriptionRootView().preferredColorScheme(.light) }
     }
 }
 
