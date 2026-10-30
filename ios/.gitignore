@@ -1,0 +1,7 @@
+build/
+*.xcodeproj/
+*.xcworkspace/
+*.p12
+*.p8
+*.mobileprovision
+.DS_Store

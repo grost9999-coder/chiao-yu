@@ -1,0 +1,35 @@
+name: iOS simulator compile
+on:
+  pull_request:
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios-check.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ios-check-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  compile:
+    runs-on: macos-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install project generator
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+      - name: Compile for iPhone simulator
+        working-directory: ios
+        run: >-
+          xcodebuild -project VendorLedger.xcodeproj -scheme VendorLedger
+          -configuration Debug -sdk iphonesimulator
+          -destination 'generic/platform=iOS Simulator'
+          -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VendorLedger-simulator-app
+          path: ios/build/Build/Products/Debug-iphonesimulator/VendorLedger.app
+          if-no-files-found: error

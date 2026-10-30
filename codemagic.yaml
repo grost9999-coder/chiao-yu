@@ -1,0 +1,48 @@
+workflows:
+  vendorledger-appstore:
+    name: 攤商記帳王PRO - 簽章 IPA
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: Codemagic-ClearPocket
+    environment:
+      xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.qiaoyu.vendorbookpro
+      vars:
+        BUNDLE_ID: com.qiaoyu.vendorbookpro
+        APP_STORE_APPLE_ID: "6817730804"
+    scripts:
+      - name: Install XcodeGen
+        script: |
+          set -eu
+          brew install xcodegen
+      - name: Generate iOS project
+        script: |
+          set -eu
+          cd "$CM_BUILD_DIR/ios"
+          xcodegen generate
+      - name: Set unique build number
+        script: |
+          set -eu
+          cd "$CM_BUILD_DIR/ios"
+          agvtool new-version -all "$((PROJECT_BUILD_NUMBER + 1))"
+      - name: Apply Apple signing profiles
+        script: |
+          set -eu
+          cd "$CM_BUILD_DIR/ios"
+          xcode-project use-profiles
+      - name: Build signed IPA
+        script: |
+          set -eu
+          cd "$CM_BUILD_DIR/ios"
+          xcode-project build-ipa --project VendorLedger.xcodeproj --scheme VendorLedger
+    artifacts:
+      - ios/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: false
+        submit_to_app_store: false

@@ -1,0 +1,24 @@
+name: Ledger catalog and accounting regression
+on:
+  push:
+    branches: ['codex/vendor-ledger-ios']
+    paths: ['ios/**', '.github/workflows/catalog-check.yml']
+  pull_request:
+    paths: ['ios/**', '.github/workflows/catalog-check.yml']
+permissions:
+  contents: read
+jobs:
+  regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify catalog and existing accounting features
+        run: |
+          node ios/tests/i18n.test.cjs
+          node ios/tests/catalog.test.cjs
+          node ios/tests/profit.test.cjs
+          node ios/tests/inventory.test.cjs
+          node ios/tests/subscription-recovery.test.cjs

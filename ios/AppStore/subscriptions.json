@@ -1,0 +1,39 @@
+{
+  "configurationStatus": "prepared_not_created_in_app_store_connect",
+  "appName": "攤商記帳王PRO",
+  "appleAppID": "6817730804",
+  "bundleID": "com.qiaoyu.vendorbookpro",
+  "appDownloadPrice": "free",
+  "baseTerritory": "TWN",
+  "currency": "TWD",
+  "subscriptionGroupReferenceName": "攤商記帳王 PRO",
+  "products": [
+    {
+      "productID": "com.qiaoyu.vendorbookpro.pro.monthly",
+      "referenceName": "PRO 月繳",
+      "displayNameZhHant": "攤商記帳 PRO 月繳",
+      "descriptionZhHant": "解鎖每日記帳、進貨、庫存、資產與營運分析。",
+      "duration": "ONE_MONTH",
+      "requestedPrice": "99.00",
+      "level": 1,
+      "introductoryOffer": {"mode": "FREE_TRIAL", "duration": "ONE_MONTH", "periods": 1}
+    },
+    {
+      "productID": "com.qiaoyu.vendorbookpro.pro.annual",
+      "referenceName": "PRO 年繳",
+      "displayNameZhHant": "攤商記帳 PRO 年繳",
+      "descriptionZhHant": "一年使用每日記帳、進貨、庫存、資產與營運分析。",
+      "duration": "ONE_YEAR",
+      "requestedPrice": "1089.00",
+      "level": 1,
+      "introductoryOffer": {"mode": "FREE_TRIAL", "duration": "ONE_MONTH", "periods": 1}
+    }
+  ],
+  "notes": [
+    "Both products must belong to the SAME subscription group and entitlement level.",
+    "Only one introductory offer is available per eligible Apple Account per subscription group.",
+    "Use the exact requested Taiwan price points if App Store Connect supports them; do not silently substitute another price.",
+    "Other storefront prices, taxes and currencies are displayed by StoreKit, not hardcoded in the app.",
+    "Do not enable Family Sharing or add paid tiers without a separate product decision."
+  ]
+}
