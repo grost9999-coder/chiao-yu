@@ -22,13 +22,14 @@ struct SettingsView: View {
                 Section {
                     Text("照片成片、手動文案、裁切與字幕在手機處理，不需AI額度。可上傳自己的配音，再將MP4儲存到相簿或分享。")
                     Text("AI 文案、配音與字幕辨識直接使用你的 Gemini 帳戶。傳送給 Google 的內容依其服務與免費層條款處理。")
+                    Text("免費文生影片會在你同意並按下生成時，把畫面描述傳給 Hugging Face 社群服務；權杖只用於該服務的帳號驗證。")
                     Link("Google Gemini 條款", destination: URL(string: "https://ai.google.dev/gemini-api/terms")!)
                 } header: { Text("資料與隱私") }
                 Section {
                     Link("開啟映文網頁工作室", destination: URL(string: "https://hanben-creative-studio.grost9999.chatgpt.site")!)
                     NavigationLink("隱私政策") { PrivacyView() }
                     Text("映文 1.0.0・iPhone 安裝版").foregroundStyle(.secondary)
-                    Text("此版本沒有訂閱與內購。全新 AI 動態畫面生成尚未連接，提供可複製的影片提示詞。")
+                    Text("此版本沒有訂閱與內購。文案頁提供免費文生影片實驗版，使用 Hugging Face 社群服務，需排隊並受免費額度限制。")
                 } header: { Text("關於映文") }
             }.navigationTitle("設定").navigationBarTitleDisplayMode(.inline)
         }
@@ -43,6 +44,9 @@ struct PrivacyView: View {
                 Text("映文的草稿、匯入照片、影片與輸出作品儲存在你的手機。App沒有自建使用者帳號、廣告或追蹤分析SDK。刪除App時，這些本機資料可能一併移除，請先將需要的作品分享或另存檔案。")
                 Text("Gemini金鑰以iPhone鑰匙圈保存。App只在你點選AI生成、連接測試或辨識時，將必要的文字、錄音／影片及金鑰傳送給Google Gemini。照片成片與手動剪輯不會把照片或影片送到我們的伺服器。")
                 Text("使用AI辨識時，影片暫存上傳到Google Files；App會在辨識成功或失敗後嘗試刪除暫存檔，若網路中斷則仍受Google的檔案保存政策約束。Google依其條款處理資料，免費層內容可能用於改善產品。")
+                Text("免費文生影片由 Hugging Face 的 KingNish/wan2-2-fast 社群 Space 提供。你同意並開始生成後，App會將畫面描述及選填的 Hugging Face 權杖傳給該服務。權杖存於這台手機的鑰匙圈，不會傳給 Google。免費服務可能排隊、停機或額度不足；App不會自動改用付費生成。請勿在描述中輸入私人資料，雲端資料依 Hugging Face 及服務維護者政策處理。")
+                Link("Hugging Face 隱私政策", destination: URL(string: "https://huggingface.co/privacy")!)
+                Text("你可以在免費文生影片頁移除權杖，並在 Hugging Face 帳號設定撤銷權杖。")
                 Text("相簿存取採系統選取器，只讀取你選擇的素材。只有按下「存到相簿」時，才會要求新增影片的權限。你也可以不開啟此權限，改用分享或檔案App保存。")
                 Text("你可以在設定移除金鑰，並在Google AI Studio撤銷金鑰。如需支援，可透過映文專案的支援頁回報問題，請勿公開金鑰或私人素材。")
             }.padding()

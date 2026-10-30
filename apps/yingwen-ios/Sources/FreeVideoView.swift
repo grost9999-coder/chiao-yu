@@ -54,7 +54,7 @@ struct FreeVideoView: View {
                 }
                 StudioCard("免費帳號連接（選填）", icon: "key") {
                     Text("可先不填。如果服務要求登入或匿名額度不足，再到 Hugging Face 建立免費帳號與唯讀權杖。請勿開啟付費帳務。權杖只存於這台手機的鑰匙圈。").font(.footnote).foregroundStyle(.secondary)
-                    SecureField("貼上 hf_ 開頭的唯讀權杖", text: $token).textInputAutocapitalization(.never).autocorrectionDisabled().textFieldStyle(.roundedBorder)
+                    SecureField("貼上 hf_ 開頭的唯讀權杖", text: $token).textInputAutocapitalization(.never).autocorrectionDisabled().privacySensitive().textFieldStyle(.roundedBorder)
                     HStack {
                         Button("儲存權杖") { saveToken() }
                         Button("移除", role: .destructive) { SecureKey.remove(account: "huggingface-free"); token = ""; store.message = "已移除 Hugging Face 權杖。" }

@@ -47,7 +47,7 @@ struct FreeVideoService {
                           (http.mimeType?.hasPrefix("video/") == true || http.mimeType == "application/octet-stream") else {
                         throw StudioError.message("免費服務未傳回可播放的影片。")
                     }
-                    let root = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("GeneratedVideos")
+                    let root = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("Exports")
                     try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
                     let destination = root.appendingPathComponent(UUID().uuidString + ".mp4")
                     try FileManager.default.moveItem(at: temp, to: destination)
