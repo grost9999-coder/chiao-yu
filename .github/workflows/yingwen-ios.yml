@@ -48,6 +48,8 @@ jobs:
         if: always()
         working-directory: apps/yingwen-ios
         run: |
+          xcrun simctl boot "$IPHONE_UDID" || true
+          xcrun simctl bootstatus "$IPHONE_UDID" -b
           xcrun simctl install "$IPHONE_UDID" build/Build/Products/Debug-iphonesimulator/YingwenStudio.app
           xcrun simctl launch "$IPHONE_UDID" com.grost9999.yingwen
           sleep 3
