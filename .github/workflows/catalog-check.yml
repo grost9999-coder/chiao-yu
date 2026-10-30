@@ -17,6 +17,7 @@ jobs:
           node-version: '22'
       - name: Verify catalog and existing accounting features
         run: |
+          node ios/tests/i18n.test.cjs
           node ios/tests/catalog.test.cjs
           node ios/tests/profit.test.cjs
           node ios/tests/inventory.test.cjs

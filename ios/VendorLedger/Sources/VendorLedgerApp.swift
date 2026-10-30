@@ -36,7 +36,9 @@ struct LedgerView: UIViewRepresentable {
         web.backgroundColor = .systemBackground
         context.coordinator.webView = web
         if let url = Bundle.main.url(forResource: "index", withExtension: "html", subdirectory: "Web") {
-            web.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+            var components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
+            components.queryItems = [URLQueryItem(name: "language", value: LedgerLanguage.resolved(UserDefaults.standard.string(forKey: "ledger.language") ?? "system"))]
+            web.loadFileURL(components.url ?? url, allowingReadAccessTo: url.deletingLastPathComponent())
         }
         return web
     }
@@ -77,30 +79,30 @@ struct LedgerView: UIViewRepresentable {
                 }
                 vc.present(sheet, animated: true)
             } catch {
-                let alert = UIAlertController(title: "備份失敗", message: error.localizedDescription, preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "確定", style: .default))
+                let alert = UIAlertController(title: ledgerLocalized("備份失敗"), message: error.localizedDescription, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: ledgerLocalized("確定"), style: .default))
                 vc.present(alert, animated: true)
             }
         }
         func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
             guard let vc = presenter() else { completionHandler(); return }
-            let alert = UIAlertController(title: "攤商記帳", message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "確定", style: .default) { _ in completionHandler() })
+            let alert = UIAlertController(title: ledgerLocalized("攤商記帳"), message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: ledgerLocalized("確定"), style: .default) { _ in completionHandler() })
             vc.present(alert, animated: true)
         }
         func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
             guard let vc = presenter() else { completionHandler(false); return }
-            let alert = UIAlertController(title: "確認操作", message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "取消", style: .cancel) { _ in completionHandler(false) })
-            alert.addAction(UIAlertAction(title: "確定", style: .default) { _ in completionHandler(true) })
+            let alert = UIAlertController(title: ledgerLocalized("確認操作"), message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: ledgerLocalized("取消"), style: .cancel) { _ in completionHandler(false) })
+            alert.addAction(UIAlertAction(title: ledgerLocalized("確定"), style: .default) { _ in completionHandler(true) })
             vc.present(alert, animated: true)
         }
         func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
             guard let vc = presenter() else { completionHandler(nil); return }
-            let alert = UIAlertController(title: "輸入資料", message: prompt, preferredStyle: .alert)
+            let alert = UIAlertController(title: ledgerLocalized("輸入資料"), message: prompt, preferredStyle: .alert)
             alert.addTextField { $0.text = defaultText }
-            alert.addAction(UIAlertAction(title: "取消", style: .cancel) { _ in completionHandler(nil) })
-            alert.addAction(UIAlertAction(title: "確定", style: .default) { _ in completionHandler(alert.textFields?.first?.text) })
+            alert.addAction(UIAlertAction(title: ledgerLocalized("取消"), style: .cancel) { _ in completionHandler(nil) })
+            alert.addAction(UIAlertAction(title: ledgerLocalized("確定"), style: .default) { _ in completionHandler(alert.textFields?.first?.text) })
             vc.present(alert, animated: true)
         }
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {

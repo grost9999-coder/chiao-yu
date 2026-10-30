@@ -15,7 +15,7 @@ struct LedgerRecoveryExport: Identifiable {
 @MainActor
 final class LedgerRecoveryModel: ObservableObject {
     @Published var profiles: [LedgerRecoveryProfile] = []
-    @Published var message = "正在讀取此裝置的帳本…"
+    @Published var message = ledgerLocalized("正在讀取此裝置的帳本…")
     @Published var exported: LedgerRecoveryExport?
     @Published var isExporting = false
     weak var webView: WKWebView?
@@ -26,16 +26,16 @@ final class LedgerRecoveryModel: ObservableObject {
             let value = try await web.evaluateJavaScript(LedgerRecoveryScripts.profiles)
             guard let json = value as? String, let data = json.data(using: .utf8),
                   let rows = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-                message = "無法讀取帳本清單，請重新開啟備份頁。"
+                message = ledgerLocalized("無法讀取帳本清單，請重新開啟備份頁。")
                 return
             }
             profiles = rows.compactMap { row in
                 guard let id = row["id"] as? String else { return nil }
                 return LedgerRecoveryProfile(id: id, name: row["name"] as? String ?? id, count: row["count"] as? Int ?? 0)
             }
-            message = profiles.isEmpty ? "此裝置沒有可匯出的帳本。" : "選擇攤商即可匯出，無需有效訂閱。"
+            message = profiles.isEmpty ? ledgerLocalized("此裝置沒有可匯出的帳本。") : ledgerLocalized("選擇攤商即可匯出，無需有效訂閱。")
         } catch {
-            message = "讀取帳本失敗，請重新開啟備份頁。"
+            message = ledgerLocalized("讀取帳本失敗，請重新開啟備份頁。")
         }
     }
 
@@ -50,16 +50,16 @@ final class LedgerRecoveryModel: ObservableObject {
             let script = "(function(){ const id = \(literal)[0]; " + LedgerRecoveryScripts.exportBody + " })()"
             guard let text = try await web.evaluateJavaScript(script) as? String,
                   let data = text.data(using: .utf8), data.count < 25_000_000 else {
-                message = "備份資料無法讀取或檔案過大。"
+                message = ledgerLocalized("備份資料無法讀取或檔案過大。")
                 return
             }
             _ = try JSONSerialization.jsonObject(with: data)
             let url = FileManager.default.temporaryDirectory.appendingPathComponent("攤商備份-\(UUID().uuidString).json")
             try data.write(to: url, options: .atomic)
             exported = LedgerRecoveryExport(url: url)
-            message = "備份已準備完成，請選擇儲存或分享位置。"
+            message = ledgerLocalized("備份已準備完成，請選擇儲存或分享位置。")
         } catch {
-            message = "備份未完成，請重新開啟後重試。"
+            message = ledgerLocalized("備份未完成，請重新開啟後重試。")
         }
     }
 }
@@ -105,7 +105,7 @@ struct LedgerRecoveryView: View {
                         HStack {
                             VStack(alignment: .leading) {
                                 Text(profile.name).font(.headline)
-                                Text("\(profile.count) 筆資料").font(.caption).foregroundStyle(.secondary)
+                                Text("\(profile.count) " + ledgerLocalized("筆資料")).font(.caption).foregroundStyle(.secondary)
                             }
                             Spacer()
                             Image(systemName: "square.and.arrow.up")
@@ -117,9 +117,9 @@ struct LedgerRecoveryView: View {
                 LedgerRecoveryWebView(model: model).frame(height: 1).opacity(0)
                     .accessibilityHidden(true).allowsHitTesting(false)
             }
-            .navigationTitle("匯出既有帳本")
+            .navigationTitle(ledgerLocalized("匯出既有帳本"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("完成") { dismiss() } } }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button(ledgerLocalized("完成")) { dismiss() } } }
             .sheet(item: $model.exported) { item in LedgerBackupShareSheet(url: item.url) }
         }
     }

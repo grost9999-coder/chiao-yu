@@ -1,0 +1,11 @@
+# Language selection
+
+The native app offers System default, Traditional Chinese, Simplified Chinese, English and Japanese above both the subscription gate and ledger. The choice is stored in `ledger.language` in UserDefaults. Unsupported system languages fall back to Traditional Chinese. Changing language asks for confirmation because the ledger web view reloads and unsaved drafts are discarded; committed entries stay in the same persistent WebKit store.
+
+`LedgerLanguage.swift` resolves the device preference. The root passes that locale to SwiftUI/StoreKit and app-owned native subscription, privacy, recovery and alert strings use localized bundles. The web view receives a `language` query parameter on the existing bundled file URL. `Web/i18n.js` provides offline dictionaries; only explicit display literals and navigation captions in the bundled app have translation calls. Entered item names, prices, units, stored category identifiers, JSON keys, historical records and accounting calculations are never translated or converted. Language choice does not change currency, tax rules, unit conversions or decimal input conventions.
+
+Coverage in this iteration: primary navigation, common form controls, inventory/stocktake, catalog actions, analysis headings, subscription copy, privacy policy and recovery UI. Some advanced import/accounting descriptions, validation messages, dynamic labels and business-template contents retain their original Chinese wording. Translation completeness and human review are still required before advertising a fully localized release. Adding a language requires a native bundle, web dictionary, resolver option and tests.
+
+Apple owns product display names, subscription descriptions, confirmation sheets, localized prices and trial eligibility. Add matching product localizations in App Store Connect; declaring an app language does not translate App Store metadata or create free-trial offers. Trial dates and billing remain unchanged.
+
+Validation: `node ios/tests/i18n.test.cjs` plus existing catalog/accounting/inventory/recovery scripts. CI separately compiles the iOS simulator target. Release requires a signed build, device language-switch testing (including backup recovery and cancellation of a language switch), and App Store subscription sandbox testing.
