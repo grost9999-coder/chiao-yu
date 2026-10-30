@@ -13,6 +13,7 @@ struct CopyStudioView: View {
                         Text("一段商品介紹，延伸出文案、配音與短影音。").foregroundStyle(.secondary)
                         Button { store.selectedTab = 4 } label: { Label(store.connected ? "Gemini 已連接・免費優先" : "先連接 Gemini，或直接手動創作", systemImage: store.connected ? "checkmark.shield" : "key") }.font(.subheadline)
                     }.padding(.vertical, 8)
+                    NavigationLink { FreeVideoView() } label: { Label("免費文生影片", systemImage: "video.badge.waveform").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12) }.buttonStyle(.borderedProminent)
                     StudioCard("認識你的商品", icon: "square.and.pencil") {
                         Button("帶入豆乳雞範例") { store.example() }.font(.subheadline)
                         StudioField(title: "品牌名稱", text: $store.brief.brand)
@@ -49,7 +50,7 @@ struct CopyStudioView: View {
                         }
                         Button("帶去照片成片", systemImage: "arrow.right.circle") { store.selectedTab = 1 }.buttonStyle(.borderedProminent)
                         if let prompt = store.result?.videoPrompt {
-                            DisclosureGroup("AI 動態影片提示詞") { VStack(alignment: .leading, spacing: 12) { Text(prompt).font(.subheadline).textSelection(.enabled); ShareLink(item: prompt) { Label("分享提示詞", systemImage: "square.and.arrow.up") }; Text("全新動態畫面需另接影片生成服務。現階段可先用照片、字幕與配音製作影片。").font(.footnote).foregroundStyle(.secondary) }.padding(.top, 8) }
+                            DisclosureGroup("AI 動態影片提示詞") { VStack(alignment: .leading, spacing: 12) { Text(prompt).font(.subheadline).textSelection(.enabled); ShareLink(item: prompt) { Label("分享提示詞", systemImage: "square.and.arrow.up") }; Text("可從本頁上方的「免費文生影片」帶入提示詞生成短片，依免費服務額度排隊。").font(.footnote).foregroundStyle(.secondary) }.padding(.top, 8) }
                         }
                     }
                 }.padding()
