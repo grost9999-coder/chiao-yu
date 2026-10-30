@@ -19,6 +19,9 @@ targets:
   VendorLedger:
     type: application
     platform: iOS
+    settings:
+      base:
+        TARGETED_DEVICE_FAMILY: '1'
     sources:
       - path: VendorLedger/Sources
       - path: VendorLedger/Web
