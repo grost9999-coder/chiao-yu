@@ -189,7 +189,7 @@ struct LedgerSubscriptionPlans: View {
                         .padding(12).background(.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
                 }
                 if !access.products.isEmpty {
-                    SubscriptionStoreView(access.products)
+                    SubscriptionStoreView(subscriptions: access.products)
                         .subscriptionStoreControlStyle(.prominentPicker)
                         .storeButton(.hidden, for: .cancellation)
                         .storeButton(.visible, for: .restorePurchases)
