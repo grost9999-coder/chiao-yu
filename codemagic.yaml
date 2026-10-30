@@ -38,6 +38,10 @@ workflows:
           set -eu
           cd "$CM_BUILD_DIR/ios"
           xcode-project build-ipa --project VendorLedger.xcodeproj --scheme VendorLedger
+      - name: Validate exported IPA before upload
+        script: |
+          set -eu
+          python3 "$CM_BUILD_DIR/ios/scripts/validate_bundle.py" --ipa-dir "$CM_BUILD_DIR/ios/build/ios/ipa"
     artifacts:
       - ios/build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
