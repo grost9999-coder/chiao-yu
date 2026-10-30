@@ -1,0 +1,63 @@
+name: Yingwen iPhone build and media tests
+on:
+  pull_request:
+    paths:
+      - 'apps/yingwen-ios/**'
+      - '.github/workflows/yingwen-ios.yml'
+      - 'codemagic.yaml'
+  push:
+    branches: ['codex/yingwen-ios']
+    paths:
+      - 'apps/yingwen-ios/**'
+      - '.github/workflows/yingwen-ios.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: yingwen-ios-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+jobs:
+  iphone-check:
+    runs-on: macos-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        working-directory: apps/yingwen-ios
+        run: xcodegen generate
+      - name: Select iPhone simulator
+        run: |
+          python3 - <<'PY'
+          import json,subprocess,os
+          data=json.loads(subprocess.check_output(['xcrun','simctl','list','devices','available','-j']))
+          phones=[d for runtime,devices in data['devices'].items() if 'iOS' in runtime for d in devices if d['name'].startswith('iPhone')]
+          if not phones: raise RuntimeError('No available iPhone simulator')
+          with open(os.environ['GITHUB_ENV'],'a') as f: f.write('IPHONE_UDID='+phones[0]['udid']+'\n')
+          PY
+      - name: Compile and test native video export
+        working-directory: apps/yingwen-ios
+        run: |
+          set -o pipefail
+          xcodebuild test -project YingwenStudio.xcodeproj -scheme YingwenStudio \
+            -configuration Debug -sdk iphonesimulator -destination "id=$IPHONE_UDID" \
+            -derivedDataPath build -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild.log
+      - name: Capture iPhone preview
+        working-directory: apps/yingwen-ios
+        run: |
+          xcrun simctl install "$IPHONE_UDID" build/Build/Products/Debug-iphonesimulator/YingwenStudio.app
+          xcrun simctl launch "$IPHONE_UDID" com.grost9999.yingwen
+          sleep 3
+          xcrun simctl io "$IPHONE_UDID" screenshot iphone-preview.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Yingwen-iPhone-build-and-tests
+          path: |
+            apps/yingwen-ios/build/Build/Products/Debug-iphonesimulator/YingwenStudio.app
+            apps/yingwen-ios/iphone-preview.png
+            apps/yingwen-ios/xcodebuild.log
+            apps/yingwen-ios/TestResults.xcresult
+          if-no-files-found: warn
