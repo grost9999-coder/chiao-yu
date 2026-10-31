@@ -6,13 +6,14 @@ const enc=s=>String(s).replace(/%/g,'%25').replace(/\r/g,'%0D').replace(/\n/g,'%
 const gh=(level,title,msg)=>console.log('::'+level+' title='+title+'::'+enc(msg).slice(0,3500));
 // Diagnostic: tell apart "event never reaches React" from "React handler runs but the dialog stays".
 const probe=async(page,button)=>{
- const info=await page.evaluate(()=>{window.__probe=[];const root=document.getElementById('root');
-  for(const t of ['click','touchend'])for(const el of [document.documentElement,root,document.querySelector('dialog')])el&&el.addEventListener(t,e=>window.__probe.push(t+'@'+(e.currentTarget.id||e.currentTarget.tagName)+':'+(e.target.textContent||'').slice(0,6)+':prevented='+e.defaultPrevented));
-  return {dialogInsideRoot:!!root?.querySelector('dialog'),reactRootKeys:root?Object.keys(root).filter(k=>k.startsWith('_react')).length:-1,dialogOpenAttr:document.querySelector('dialog')?.open}});
+ await page.evaluate(()=>{const root=document.getElementById('root');window.__mut=[];
+  new MutationObserver(l=>l.forEach(r=>{r.addedNodes.forEach(n=>window.__mut.push('+'+n.nodeName));r.removedNodes.forEach(n=>window.__mut.push('-'+n.nodeName))})).observe(root,{childList:true,subtree:true});
+  window.__lx=()=>{const d=document.querySelector('dialog');if(!d)return 'no dialog';const fk=Object.keys(d).find(k=>k.startsWith('__reactFiber'));let f=fk&&d[fk];while(f&&!(f.type&&f.type.name==='LX'))f=f.return;if(!f)return 'no LX fiber';const out=[];let h=f.memoizedState;for(let i=0;h&&i<4;i++,h=h.next){const v=h.memoizedState;out.push(v&&typeof v==='object'?'{obj}':String(v))}return out.join('|')};});
+ const before=await page.evaluate(()=>window.__lx());
  await button('取消').click();await page.waitForTimeout(700);
- const afterClick=await page.evaluate(()=>({events:window.__probe,dialogs:document.querySelectorAll('dialog[open]').length}));
- const direct=await page.evaluate(async()=>{const b=[...document.querySelectorAll('dialog button')].find(x=>x.textContent==='取消');if(!b)return 'no button';const k=Object.keys(b).find(x=>x.startsWith('__reactProps'));let r='called';try{b[k].onClick({detail:0})}catch(e){r='threw '+e.message}await new Promise(r=>setTimeout(r,700));return r+'; dialogs now '+document.querySelectorAll('dialog[open]').length});
- gh('notice','probe',JSON.stringify({info,afterClick,direct}));
+ const afterClick=await page.evaluate(()=>({lx:window.__lx(),mut:window.__mut.splice(0),dialogs:document.querySelectorAll('dialog[open]').length}));
+ const direct=await page.evaluate(async()=>{const b=[...document.querySelectorAll('dialog button')].find(x=>x.textContent==='取消');if(!b)return 'no button';const k=Object.keys(b).find(x=>x.startsWith('__reactProps'));let r='called';try{b[k].onClick({detail:0})}catch(e){r='threw '+e.message}await new Promise(r=>setTimeout(r,700));return r+'; dialogs='+document.querySelectorAll('dialog[open]').length+'; lx='+window.__lx()+'; mut='+JSON.stringify(window.__mut.splice(0))});
+ gh('notice','probe2',JSON.stringify({lxBefore:before,afterClick,direct}));
 };
 (async()=>{
 const server=http.createServer((req,res)=>{const name=req.url.split('?')[0].endsWith('i18n.js')?'i18n.js':'index.html';res.setHeader('Content-Type',name.endsWith('.js')?'text/javascript':'text/html');res.end(fs.readFileSync(path.join(web,name)))});
