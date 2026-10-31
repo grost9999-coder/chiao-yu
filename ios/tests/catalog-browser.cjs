@@ -1,6 +1,9 @@
 const {webkit,devices}=require('playwright');
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const web=path.join(__dirname,'../VendorLedger/Web');
+// Surface failure details as GitHub annotations so they are readable from the checks API, not only the raw job log.
+const enc=s=>String(s).replace(/%/g,'%25').replace(/\r/g,'%0D').replace(/\n/g,'%0A');
+const gh=(level,title,msg)=>console.log('::'+level+' title='+title+'::'+enc(msg).slice(0,3500));
 (async()=>{
 const server=http.createServer((req,res)=>{const name=req.url.split('?')[0].endsWith('i18n.js')?'i18n.js':'index.html';res.setHeader('Content-Type',name.endsWith('.js')?'text/javascript':'text/html');res.end(fs.readFileSync(path.join(web,name)))});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;
@@ -10,7 +13,7 @@ try{
  const open=async()=>{await page.getByRole('button',{name:'業別／品項',exact:true}).tap();await page.locator('dialog:modal').waitFor();};
  const button=name=>page.getByRole('dialog').getByRole('button',{name,exact:true});
  await open();assert.equal(await page.getByLabel('攤商業別',{exact:true}).locator('option').count(),21);
- await page.evaluate(()=>{window.__catalogEvents=[];for(const type of ['touchstart','touchend','pointerdown','pointerup','click'])document.addEventListener(type,e=>window.__catalogEvents.push({type,target:e.target.textContent?.slice(0,30)}),true)});await button('取消').tap();console.log('DIAGNOSTIC',await page.evaluate(()=>({events:window.__catalogEvents,buttons:[...document.querySelectorAll('dialog button')].map(el=>({text:el.textContent,props:Object.keys(el).filter(k=>k.startsWith('__reactProps')).map(k=>Object.keys(el[k]))}))})));await page.locator('dialog:modal').waitFor({state:'detached'});assert.equal(await page.locator('dialog:modal').count(),0);
+ await page.evaluate(()=>{window.__catalogEvents=[];for(const type of ['touchstart','touchend','pointerdown','pointerup','click'])document.addEventListener(type,e=>window.__catalogEvents.push({type,target:e.target.textContent?.slice(0,30)}),true)});await button('取消').tap();gh('notice','DIAGNOSTIC after tapping Cancel',JSON.stringify(await page.evaluate(()=>({events:window.__catalogEvents,buttons:[...document.querySelectorAll('dialog button')].map(el=>({text:el.textContent,props:Object.keys(el).filter(k=>k.startsWith('__reactProps')).map(k=>Object.keys(el[k]))}))}))));await page.locator('dialog:modal').waitFor({state:'detached'});assert.equal(await page.locator('dialog:modal').count(),0);
  await open();await button('關閉').tap();await page.locator('dialog:modal').waitFor({state:'detached'});assert.equal(await page.locator('dialog:modal').count(),0);
  await open();await page.getByLabel('攤商業別',{exact:true}).selectOption('drink');await button('加入此業別範本').tap();await page.getByRole('status').filter({hasText:'已帶入'}).waitFor();
  for(const [kind,label,name,unit]of [['sale','銷售商品／服務','測試紅茶','杯'],['purchase','進貨／原料','測試茶葉','公斤'],['fixed','支出項目','測試電費','月'],['asset','資產設備','測試封口機','台']]){
@@ -31,4 +34,4 @@ try{
  for(const industry of industries){await open();await page.getByLabel('攤商業別',{exact:true}).selectOption(industry);await button('加入此業別範本').tap();await button('儲存本攤設定').tap();await page.reload();await open();assert.equal(await page.getByLabel('攤商業別',{exact:true}).inputValue(),industry);await button('取消').tap();}
  assert.deepEqual(errors,[]);console.log('PASS: iPhone WebKit touch actions, cancel/close, all four item types, draft save, reload persistence, isolation and 20 industry templates');
 }finally{await browser?.close();await new Promise(r=>server.close(r));}
-})().catch(e=>{console.error(e);process.exitCode=1});
+})().catch(e=>{console.error(e);gh('error','catalog-browser failed',(e&&e.stack)||e);process.exitCode=1});
