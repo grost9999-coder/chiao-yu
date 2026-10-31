@@ -10,6 +10,11 @@ for(const industry of Object.keys(cat.templates)){
  const settings=cat.apply(base,industry,id);eq(settings.industry,industry);eq(settings.items.length,cat.templates[industry].items.length);eq(cat.apply(settings,industry,id).items.length,settings.items.length);
  eq(settings.items.every(x=>x.unitPrice===0),true);
 }
+const toyCatalog=cat.apply(base,'toys',id),switchedCatalog=cat.apply(toyCatalog,'drink',id),switchedSales=switchedCatalog.items.filter(x=>x.kind==='sale').map(x=>x.name);
+eq(switchedSales.includes('飲料'),true);eq(switchedSales.includes('甜點'),true);eq(switchedSales.includes('玩具'),false);eq(switchedSales.includes('文具'),false);
+const editedToy=cat.put(toyCatalog,{...toyCatalog.items.find(x=>x.name==='玩具'),unitPrice:25});eq(cat.apply(editedToy,'drink',id).items.some(x=>x.name==='玩具'&&x.unitPrice===25),true);
+const customToy=cat.put(toyCatalog,{id:id(),kind:'sale',name:'限定收藏',unit:'件',category:'自訂',qty:1,unitPrice:5});eq(cat.apply(customToy,'drink',id).items.some(x=>x.name==='限定收藏'),true);
+const legacyToy={...toyCatalog,items:toyCatalog.items.map(({templateIndustry,...x})=>x)};eq(cat.apply(legacyToy,'drink',id).items.some(x=>x.name==='玩具'),false);
 let item={id:id(),kind:'sale',name:'冰紅茶',unit:'杯',category:'飲料',qty:1.5,unitPrice:20.1};
 let catalog=cat.put(base,item);eq(catalog.items[0].qty,1.5);eq(cat.total(1.5,20.1),30.15);eq(cat.total(0.1,0.2),0.02);eq(cat.total(0,99),0);
 const historical=cat.sale(catalog.items[0]);catalog=cat.put(catalog,{...item,unitPrice:30});eq(historical.amount,30.15);eq(cat.sale(catalog.items[0]).amount,45);eq(historical.unit,'杯');
@@ -31,5 +36,8 @@ function button(label){const t=nodes(render()).find(x=>x.tag==='button'&&x.props
 function input(label,value){const n=nodes(render()).find(x=>x.props?.['aria-label']===label);assert.ok(n,label);n.props.onChange({target:{value}})}
 input('攤商業別','service');button('加入此業別範本').props.onClick();eq(saved,null);
 button('＋新增銷售商品／服務').props.onClick();input('品項name','按摩');input('品項unit','小時');input('品項qty','0.5');input('品項unitPrice','200');button('確認品項').props.onClick();eq(saved,null);failed=true;button('儲存本攤設定').props.onClick();eq(saved,null);eq(nodes(render()).some(x=>x.props?.role==='alert'),true);failed=false;button('儲存本攤設定').props.onClick();eq(saved.industry,'service');eq(saved.items.find(x=>x.name==='按摩').qty,0.5);
+slots=[];saved=null;
+function chooseIndustry(value){const select=nodes(render()).find(x=>x.tag==='select'&&x.props['aria-label']==='攤商業別');assert.ok(select);select.props.onChange({target:{value}})}
+chooseIndustry('toys');button('加入此業別範本').props.onClick();render();let sales=slots[0].items.filter(x=>x.kind==='sale').map(x=>x.name);assert.ok(sales.includes('玩具')&&sales.includes('文具'));checks++;
+chooseIndustry('drink');button('加入此業別範本').props.onClick();render();sales=slots[0].items.filter(x=>x.kind==='sale').map(x=>x.name);assert.ok(sales.includes('飲料')&&sales.includes('甜點'));assert.ok(!sales.includes('玩具')&&!sales.includes('文具'));checks++;
 console.log(JSON.stringify({checks,status:'passed',scope:'catalog validation, templates, vendor isolation, UI persistence and historical totals'}));
-
