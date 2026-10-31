@@ -5,8 +5,8 @@ const web=path.join(__dirname,'../VendorLedger/Web');
 const server=http.createServer((req,res)=>{const name=req.url.split('?')[0].endsWith('i18n.js')?'i18n.js':'index.html';res.setHeader('Content-Type',name.endsWith('.js')?'text/javascript':'text/html');res.end(fs.readFileSync(path.join(web,name)))});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;
 try{
- browser=await webkit.launch({headless:true});const page=await browser.newPage({...devices['iPhone 13']});const errors=[];page.on('pageerror',e=>errors.push(e.message));
- const url='http://127.0.0.1:'+server.address().port;await page.goto(url);
+ browser=await webkit.launch({headless:true});const page=await browser.newPage({...devices['iPhone 13']});const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.error('Browser error:',e.message)});
+ const url='http://127.0.0.1:'+server.address().port+'/?language=zh-Hant';await page.goto(url);
  const open=async()=>{await page.getByRole('button',{name:'業別／品項',exact:true}).tap();await page.locator('dialog:modal').waitFor();};
  const button=name=>page.getByRole('dialog').getByRole('button',{name,exact:true});
  await open();assert.equal(await page.getByLabel('攤商業別',{exact:true}).locator('option').count(),21);
