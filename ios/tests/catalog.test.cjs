@@ -24,12 +24,12 @@ throws(()=>cat.restore(restored,'b',cat.put(catalog,{...item,unitPrice:42})));eq
 const scripts=[...html.matchAll(/<script\b(?![^>]*type="application\/json")[^>]*>([\s\S]*?)<\/script>/g)].map(m=>m[1]);scripts.forEach(code=>new vm.Script(code));checks++;
 // Render and exercise the actual dialog, including draft confirmation and saved profile.
 let slots=[],cursor=0,saved=null,failed=false;ctx.C=(tag,props,key)=>({tag,props,key});ctx.m=ctx.C;ctx.M0=id;
-ctx.Q0={useState:init=>{const i=cursor++;if(!(i in slots))slots[i]=typeof init==='function'?init():init;return [slots[i],value=>slots[i]=typeof value==='function'?value(slots[i]):value]}};
+ctx.Q0={useRef:init=>({current:init}),useEffect:()=>{},useState:init=>{const i=cursor++;if(!(i in slots))slots[i]=typeof init==='function'?init():init;return [slots[i],value=>slots[i]=typeof value==='function'?value(slots[i]):value]}};
 function render(){cursor=0;return ctx.CatalogSettings({profile:profiles[1],onSave:value=>{if(failed)return '儲存失敗';saved=value},onClose:()=>{}})}
 function nodes(t){return !t||typeof t!=='object'?[]:[t,...[t.props?.children].flat(Infinity).flatMap(nodes)]}
 function button(label){const t=nodes(render()).find(x=>x.tag==='button'&&x.props.children===label);assert.ok(t,label);return t}
 function input(label,value){const n=nodes(render()).find(x=>x.props?.['aria-label']===label);assert.ok(n,label);n.props.onChange({target:{value}})}
 input('攤商業別','service');button('加入此業別範本').props.onClick();eq(saved,null);
-button('＋新增銷售商品／服務').props.onClick();input('品項name','按摩');input('品項unit','小時');input('品項qty','0.5');input('品項unitPrice','200');button('儲存本攤設定').props.onClick();eq(saved,null);
-nodes(render()).find(x=>x.tag==='form').props.onSubmit({preventDefault(){}});failed=true;button('儲存本攤設定').props.onClick();eq(saved,null);eq(nodes(render()).some(x=>x.props?.role==='alert'),true);failed=false;button('儲存本攤設定').props.onClick();eq(saved.industry,'service');eq(saved.items.find(x=>x.name==='按摩').qty,0.5);
+button('＋新增銷售商品／服務').props.onClick();input('品項name','按摩');input('品項unit','小時');input('品項qty','0.5');input('品項unitPrice','200');button('確認品項').props.onClick();eq(saved,null);failed=true;button('儲存本攤設定').props.onClick();eq(saved,null);eq(nodes(render()).some(x=>x.props?.role==='alert'),true);failed=false;button('儲存本攤設定').props.onClick();eq(saved.industry,'service');eq(saved.items.find(x=>x.name==='按摩').qty,0.5);
 console.log(JSON.stringify({checks,status:'passed',scope:'catalog validation, templates, vendor isolation, UI persistence and historical totals'}));
+
