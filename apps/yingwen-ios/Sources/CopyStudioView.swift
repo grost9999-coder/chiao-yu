@@ -55,7 +55,7 @@ struct CopyStudioView: View {
                     }
                 }.padding()
             }.background(Color.studioBackground).scrollDismissesKeyboard(.interactively)
-                .navigationTitle("映文・創作工作室").navigationBarTitleDisplayMode(.inline)
+                .navigationTitle("映文・創作工作室").navigationBarTitleDisplayMode(.inline).studioKeyboardControls()
                 .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("存草稿", systemImage: "square.and.arrow.down") { store.saveDraft() } } }
         }
     }

@@ -63,7 +63,7 @@ struct FreeVideoView: View {
                 }.disabled(busy)
             }.padding()
         }.background(Color.studioBackground).scrollDismissesKeyboard(.interactively)
-            .navigationTitle("文生影片").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("文生影片").navigationBarTitleDisplayMode(.inline).studioKeyboardControls()
             .onDisappear { player?.pause() }
     }
     private func saveToken() {

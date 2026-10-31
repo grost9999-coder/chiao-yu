@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 @main struct YingwenStudioApp: App {
     @StateObject private var store = StudioStore()
@@ -18,6 +19,7 @@ struct StudioRoot: View {
             DraftsView().tabItem { Label("草稿", systemImage: "tray.full") }.tag(3)
             SettingsView().tabItem { Label("設定", systemImage: "gearshape") }.tag(4)
         }
+        .onChange(of: store.selectedTab) { _, _ in StudioKeyboard.dismiss() }
         .alert("映文", isPresented: Binding(get: { store.message != nil }, set: { if !$0 { store.message = nil } })) {
             Button("知道了", role: .cancel) { store.message = nil }
         } message: { Text(store.message ?? "") }
@@ -39,11 +41,15 @@ struct StudioField: View {
     let title: String
     @Binding var text: String
     var multiline = false
+    @FocusState private var isFocused: Bool
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
             Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
-            if multiline { TextEditor(text: $text).frame(minHeight: 110).padding(8).background(Color.studioBackground, in: RoundedRectangle(cornerRadius: 10)).scrollContentBackground(.hidden) }
-            else { TextField(title, text: $text).textFieldStyle(.roundedBorder) }
+            if multiline { TextEditor(text: $text).focused($isFocused).frame(minHeight: 110).padding(8).background(Color.studioBackground, in: RoundedRectangle(cornerRadius: 10)).scrollContentBackground(.hidden) }
+            else { TextField(title, text: $text).focused($isFocused).textFieldStyle(.roundedBorder) }
+            if multiline && isFocused {
+                HStack { Spacer(); Button("完成輸入", systemImage: "keyboard.chevron.compact.down") { isFocused = false }.font(.subheadline) }
+            }
         }
     }
 }
@@ -54,5 +60,21 @@ struct BusyButton: View {
     var body: some View {
         Button(action: action) { HStack { if busy { ProgressView().tint(.white) }; Text(busy ? "處理中…" : title).fontWeight(.semibold) }.frame(maxWidth: .infinity).padding(.vertical, 8) }
             .buttonStyle(.borderedProminent).disabled(busy)
+    }
+}
+
+@MainActor enum StudioKeyboard {
+    static func dismiss() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+}
+extension View {
+    func studioKeyboardControls() -> some View {
+        toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("完成", systemImage: "keyboard.chevron.compact.down") { StudioKeyboard.dismiss() }
+            }
+        }
     }
 }

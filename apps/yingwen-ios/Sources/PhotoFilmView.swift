@@ -82,7 +82,7 @@ struct PhotoFilmView: View {
                         }
                     }
                 }.padding().disabled(exporting)
-            }.background(Color.studioBackground).navigationTitle("照片成片").navigationBarTitleDisplayMode(.inline)
+            }.background(Color.studioBackground).scrollDismissesKeyboard(.interactively).navigationTitle("照片成片").navigationBarTitleDisplayMode(.inline).studioKeyboardControls()
                 .onAppear { if captions.isEmpty { captions = store.voiceover } }
                 .onChange(of: selections) { _, items in Task { await loadPhotos(items) } }
                 .fileImporter(isPresented: $showAudioImporter, allowedContentTypes: [.audio]) { result in

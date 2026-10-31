@@ -104,7 +104,7 @@ struct VideoEditorView: View {
                         }
                     }
                 }.padding()
-            }.background(Color.studioBackground).navigationTitle("影片剪輯").navigationBarTitleDisplayMode(.inline)
+            }.background(Color.studioBackground).navigationTitle("影片剪輯").navigationBarTitleDisplayMode(.inline).studioKeyboardControls()
                 .scrollDismissesKeyboard(.interactively)
                 .onChange(of: selection) { _, item in
                     Task { await store.run {

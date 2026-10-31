@@ -31,7 +31,7 @@ struct SettingsView: View {
                     Text("映文 1.0.0・iPhone 安裝版").foregroundStyle(.secondary)
                     Text("此版本沒有訂閱與內購。文案頁提供免費文生影片實驗版，使用 Hugging Face 社群服務，需排隊並受免費額度限制。")
                 } header: { Text("關於映文") }
-            }.navigationTitle("設定").navigationBarTitleDisplayMode(.inline)
+            }.scrollDismissesKeyboard(.interactively).navigationTitle("設定").navigationBarTitleDisplayMode(.inline).studioKeyboardControls()
         }
     }
 }
@@ -50,7 +50,7 @@ struct PrivacyView: View {
                 Text("相簿存取採系統選取器，只讀取你選擇的素材。只有按下「存到相簿」時，才會要求新增影片的權限。你也可以不開啟此權限，改用分享或檔案App保存。")
                 Text("你可以在設定移除金鑰，並在Google AI Studio撤銷金鑰。如需支援，可透過映文專案的支援頁回報問題，請勿公開金鑰或私人素材。")
             }.padding()
-        }.navigationTitle("隱私政策").navigationBarTitleDisplayMode(.inline)
+        }.navigationTitle("隱私政策").navigationBarTitleDisplayMode(.inline).studioKeyboardControls()
     }
 }
 struct DraftsView: View {
@@ -74,7 +74,7 @@ struct DraftsView: View {
                     if exports.isEmpty { Text("完成的MP4會出現在這裡，也可隨時儲存到相簿。 ").foregroundStyle(.secondary) }
                     ForEach(exports, id: \.self) { url in ShareLink(item: url) { Label(url.deletingPathExtension().lastPathComponent, systemImage: "film") }.font(.subheadline) }
                 }
-            }.navigationTitle("作品與草稿").navigationBarTitleDisplayMode(.inline)
+            }.navigationTitle("作品與草稿").navigationBarTitleDisplayMode(.inline).studioKeyboardControls()
                 .onAppear {
                     let root = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("Exports")
                     exports = ((try? FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: [.creationDateKey])) ?? []).filter { $0.pathExtension == "mp4" }.sorted { $0.lastPathComponent > $1.lastPathComponent }
