@@ -10,7 +10,7 @@ try{
  const open=async()=>{await page.getByRole('button',{name:'業別／品項',exact:true}).tap();await page.locator('dialog:modal').waitFor();};
  const button=name=>page.getByRole('dialog').getByRole('button',{name,exact:true});
  await open();assert.equal(await page.getByLabel('攤商業別',{exact:true}).locator('option').count(),21);
- await button('取消').tap();await page.locator('dialog:modal').waitFor({state:'detached'});assert.equal(await page.locator('dialog:modal').count(),0);
+ await page.evaluate(()=>{window.__catalogEvents=[];for(const type of ['touchstart','touchend','pointerdown','pointerup','click'])document.addEventListener(type,e=>window.__catalogEvents.push({type,target:e.target.textContent?.slice(0,30)}),true)});await button('取消').tap();console.log('DIAGNOSTIC',await page.evaluate(()=>({events:window.__catalogEvents,buttons:[...document.querySelectorAll('dialog button')].map(el=>({text:el.textContent,props:Object.keys(el).filter(k=>k.startsWith('__reactProps')).map(k=>Object.keys(el[k]))}))})));await page.locator('dialog:modal').waitFor({state:'detached'});assert.equal(await page.locator('dialog:modal').count(),0);
  await open();await button('關閉').tap();await page.locator('dialog:modal').waitFor({state:'detached'});assert.equal(await page.locator('dialog:modal').count(),0);
  await open();await page.getByLabel('攤商業別',{exact:true}).selectOption('drink');await button('加入此業別範本').tap();await page.getByRole('status').filter({hasText:'已帶入'}).waitFor();
  for(const [kind,label,name,unit]of [['sale','銷售商品／服務','測試紅茶','杯'],['purchase','進貨／原料','測試茶葉','公斤'],['fixed','支出項目','測試電費','月'],['asset','資產設備','測試封口機','台']]){
