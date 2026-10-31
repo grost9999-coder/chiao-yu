@@ -4,6 +4,16 @@ const web=path.join(__dirname,'../VendorLedger/Web');
 // Surface failure details as GitHub annotations so they are readable from the checks API, not only the raw job log.
 const enc=s=>String(s).replace(/%/g,'%25').replace(/\r/g,'%0D').replace(/\n/g,'%0A');
 const gh=(level,title,msg)=>console.log('::'+level+' title='+title+'::'+enc(msg).slice(0,3500));
+// Diagnostic: tell apart "event never reaches React" from "React handler runs but the dialog stays".
+const probe=async(page,button)=>{
+ const info=await page.evaluate(()=>{window.__probe=[];const root=document.getElementById('root');
+  for(const t of ['click','touchend'])for(const el of [document.documentElement,root,document.querySelector('dialog')])el&&el.addEventListener(t,e=>window.__probe.push(t+'@'+(e.currentTarget.id||e.currentTarget.tagName)+':'+(e.target.textContent||'').slice(0,6)+':prevented='+e.defaultPrevented));
+  return {dialogInsideRoot:!!root?.querySelector('dialog'),reactRootKeys:root?Object.keys(root).filter(k=>k.startsWith('_react')).length:-1,dialogOpenAttr:document.querySelector('dialog')?.open}});
+ await button('取消').click();await page.waitForTimeout(700);
+ const afterClick=await page.evaluate(()=>({events:window.__probe,dialogs:document.querySelectorAll('dialog[open]').length}));
+ const direct=await page.evaluate(async()=>{const b=[...document.querySelectorAll('dialog button')].find(x=>x.textContent==='取消');if(!b)return 'no button';const k=Object.keys(b).find(x=>x.startsWith('__reactProps'));let r='called';try{b[k].onClick({detail:0})}catch(e){r='threw '+e.message}await new Promise(r=>setTimeout(r,700));return r+'; dialogs now '+document.querySelectorAll('dialog[open]').length});
+ gh('notice','probe',JSON.stringify({info,afterClick,direct}));
+};
 (async()=>{
 const server=http.createServer((req,res)=>{const name=req.url.split('?')[0].endsWith('i18n.js')?'i18n.js':'index.html';res.setHeader('Content-Type',name.endsWith('.js')?'text/javascript':'text/html');res.end(fs.readFileSync(path.join(web,name)))});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;
@@ -13,7 +23,7 @@ try{
  const open=async()=>{await page.getByRole('button',{name:'業別／品項',exact:true}).tap();await page.locator('dialog:modal').waitFor();};
  const button=name=>page.getByRole('dialog').getByRole('button',{name,exact:true});
  await open();assert.equal(await page.getByLabel('攤商業別',{exact:true}).locator('option').count(),21);
- await page.evaluate(()=>{window.__catalogEvents=[];for(const type of ['touchstart','touchend','pointerdown','pointerup','click'])document.addEventListener(type,e=>window.__catalogEvents.push({type,target:e.target.textContent?.slice(0,30)}),true)});await button('取消').tap();gh('notice','DIAGNOSTIC after tapping Cancel',JSON.stringify(await page.evaluate(()=>({events:window.__catalogEvents,buttons:[...document.querySelectorAll('dialog button')].map(el=>({text:el.textContent,props:Object.keys(el).filter(k=>k.startsWith('__reactProps')).map(k=>Object.keys(el[k]))}))}))));await page.waitForTimeout(1000);gh('notice','dialogs still open 1s after touch tap',String(await page.locator('dialog:modal').count()));if(await page.locator('dialog:modal').count()){await button('取消').click();await page.waitForTimeout(1000);gh('notice','dialogs still open after plain mouse click',String(await page.locator('dialog:modal').count()))}await page.locator('dialog:modal').waitFor({state:'detached',timeout:5000});assert.equal(await page.locator('dialog:modal').count(),0);
+ await page.evaluate(()=>{window.__catalogEvents=[];for(const type of ['touchstart','touchend','pointerdown','pointerup','click'])document.addEventListener(type,e=>window.__catalogEvents.push({type,target:e.target.textContent?.slice(0,30)}),true)});await button('取消').tap();gh('notice','DIAGNOSTIC after tapping Cancel',JSON.stringify(await page.evaluate(()=>({events:window.__catalogEvents,buttons:[...document.querySelectorAll('dialog button')].map(el=>({text:el.textContent,props:Object.keys(el).filter(k=>k.startsWith('__reactProps')).map(k=>Object.keys(el[k]))}))}))));await page.waitForTimeout(1000);gh('notice','dialogs still open 1s after touch tap',String(await page.locator('dialog:modal').count()));if(await page.locator('dialog:modal').count()){await probe(page,button)}await page.locator('dialog:modal').waitFor({state:'detached',timeout:5000});assert.equal(await page.locator('dialog:modal').count(),0);
  await open();await button('關閉').tap();await page.locator('dialog:modal').waitFor({state:'detached'});assert.equal(await page.locator('dialog:modal').count(),0);
  await open();await page.getByLabel('攤商業別',{exact:true}).selectOption('drink');await button('加入此業別範本').tap();await page.getByRole('status').filter({hasText:'已帶入'}).waitFor();
  for(const [kind,label,name,unit]of [['sale','銷售商品／服務','測試紅茶','杯'],['purchase','進貨／原料','測試茶葉','公斤'],['fixed','支出項目','測試電費','月'],['asset','資產設備','測試封口機','台']]){
