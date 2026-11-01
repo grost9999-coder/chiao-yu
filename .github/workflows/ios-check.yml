@@ -28,6 +28,9 @@ jobs:
           -configuration Debug -sdk iphonesimulator
           -destination 'generic/platform=iOS Simulator'
           -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+      - name: Validate packaged device family and orientations
+        working-directory: ios
+        run: python3 scripts/validate_bundle.py build/Build/Products/Debug-iphonesimulator/VendorLedger.app/Info.plist
       - uses: actions/upload-artifact@v4
         with:
           name: VendorLedger-simulator-app
