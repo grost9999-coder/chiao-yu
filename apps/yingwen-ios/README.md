@@ -4,15 +4,16 @@ Native SwiftUI app, iOS 17+. Bundle ID: `com.grost9999.yingwen`. Apple Developer
 
 ## Implemented
 
-- Product brief → Gemini generates three copy angles, narration, storyboard and video prompt.
+- Product brief → Gemini generates three copy angles, narration, storyboard and video prompt. Generated copy fields and manual copy are editable.
+- Drafts are stored on-device. Save edits as numbered versions, restore an earlier version, or save as a separate draft. Legacy draft files remain readable.
 - Gemini key is entered by the owner, tested, then stored in Keychain. Supports opaque auth keys, including `AQ.`. No API key is committed or shared with the web app.
+- Optional video-prompt optimization sends text to Gemini only after the user opts in and taps the optimize button. The user can review and edit the optimized English prompt before generation.
+- Free text-to-video through the KingNish Wan2.2 Fast Hugging Face Space. The app sends no image input. Free GPU availability, queue time and output fidelity are not guaranteed; there is no paid provider fallback.
+- Generated videos are saved under the app's `Documents/Exports` folder and can be previewed in-app from the generator or the Works & Drafts list, shared, or saved to Photos.
 - AI speech generation and importing personal narration.
 - PhotosPicker, local H.264 MP4 generation through AVAssetWriter, timed captions, optional narration, portrait/square/landscape, native share sheet and save-to-Photos.
 - Video import, preview, trim, optional original audio and frame-based burned-in subtitles.
 - Gemini video transcription and highlight suggestions, with explicit upload notice and temporary-file cleanup.
-- Device-local text drafts and previously exported MP4 files.
-
-Text-to-new-motion generation remains unconnected, matching the current web deployment; the generated visual prompt can be copied/shared. It is not represented as a completed free video generation feature.
 
 ## Verify on a Mac
 
@@ -23,7 +24,7 @@ xcodegen generate
 xcodebuild test -project YingwenStudio.xcodeproj -scheme YingwenStudio -destination 'platform=iOS Simulator,name=iPhone 17' CODE_SIGNING_ALLOWED=NO
 ```
 
-The GitHub Actions workflow selects an actually available iPhone simulator. Tests validate SRT parsing and clipping, WAV bytes, native MP4 writing, output dimensions and captioned trimming. Simulator artifacts cannot be installed on an actual iPhone.
+The GitHub Actions workflow selects an actually available iPhone simulator. Tests validate draft versioning and migration, pure text-to-video request parameters, SRT parsing and clipping, WAV bytes, native MP4 writing, output dimensions and captioned trimming. Simulator artifacts cannot be installed on an actual iPhone.
 
 ## TestFlight
 
@@ -35,8 +36,8 @@ The GitHub Actions workflow selects an actually available iPhone simulator. Test
 
 ## App Store preparation
 
-Provide a support URL/contact, public privacy-policy URL, screenshots, App Privacy disclosures (including user-initiated Gemini uploads), age rating and review notes before public submission. A successful simulator build is not evidence that signing or TestFlight upload succeeded.
+Provide a support URL/contact, public privacy-policy URL, screenshots, App Privacy disclosures (including user-initiated Gemini and Hugging Face transmissions), age rating and review notes before public submission. A successful simulator build is not evidence that signing or TestFlight upload succeeded.
 
 ## Data and privacy
 
-No analytics/ads/account server. Gemini calls go directly to Google using the owner's key. Free quotas and Google project billing determine cost; no paid provider fallback. Photos/manual exports remain local. Drafts do not include media. Users can export their finished work before deleting the app.
+No analytics/ads/account server. Gemini calls go directly to Google using the owner's key. Optional video-prompt optimization sends text to Gemini only after explicit consent and a tap. Text-to-video sends the prompt to the Hugging Face community Space only after generation consent; no photo is sent in this mode. Free service quotas and Google project billing determine availability/cost; the app has no paid provider fallback. Drafts and media remain on-device except for the user-initiated AI requests described above. Drafts do not include media. Users can export finished work before deleting the app.

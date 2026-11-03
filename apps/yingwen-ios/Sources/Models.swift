@@ -10,54 +10,140 @@ struct ProductBrief: Codable, Equatable {
     var goal = "吸引顧客購買"
     var duration = 15
 }
-struct CopyVariant: Codable, Identifiable {
-    var id: String { angle + title }
+
+struct CopyVariant: Codable, Identifiable, Equatable {
+    var id: UUID
     var angle: String
     var title: String
     var body: String
     var cta: String
     var hashtags: [String]
+
+    init(id: UUID = UUID(), angle: String, title: String, body: String, cta: String, hashtags: [String]) {
+        self.id = id
+        self.angle = angle
+        self.title = title
+        self.body = body
+        self.cta = cta
+        self.hashtags = hashtags
+    }
+
+    private enum CodingKeys: String, CodingKey { case id, angle, title, body, cta, hashtags }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        id = try values.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        angle = try values.decode(String.self, forKey: .angle)
+        title = try values.decode(String.self, forKey: .title)
+        body = try values.decode(String.self, forKey: .body)
+        cta = try values.decode(String.self, forKey: .cta)
+        hashtags = try values.decode([String].self, forKey: .hashtags)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(id, forKey: .id)
+        try values.encode(angle, forKey: .angle)
+        try values.encode(title, forKey: .title)
+        try values.encode(body, forKey: .body)
+        try values.encode(cta, forKey: .cta)
+        try values.encode(hashtags, forKey: .hashtags)
+    }
+
     var fullText: String {
         [title, body, cta, hashtags.map { $0.hasPrefix("#") ? $0 : "#" + $0 }.joined(separator: " ")]
             .filter { !$0.isEmpty }.joined(separator: "\n\n")
     }
 }
-struct StoryScene: Codable, Identifiable {
+
+struct StoryScene: Codable, Identifiable, Equatable {
     var id: String { caption + visual }
     var visual: String
     var caption: String
 }
-struct CreativeResult: Codable {
+
+struct CreativeResult: Codable, Equatable {
     var variants: [CopyVariant]
     var voiceover: String
     var scenes: [StoryScene]
     var videoPrompt: String
 }
+
 struct Caption: Codable, Equatable, Identifiable {
     var id: String { "\(start)-\(end)-\(text)" }
     var start: Double
     var end: Double
     var text: String
 }
+
 struct Transcript: Codable { var text: String; var segments: [Caption] }
 struct Highlight: Codable { var start: Double; var end: Double; var reason: String }
+
+struct StudioDraftSnapshot: Codable, Equatable {
+    var brief: ProductBrief
+    var result: CreativeResult?
+    var voiceover: String
+    var manualText: String
+}
+
+struct StudioDraftRevision: Codable, Identifiable, Equatable {
+    var id: Int { version }
+    var version: Int
+    var savedAt: Date
+    var snapshot: StudioDraftSnapshot
+}
+
 struct StudioDraft: Codable, Identifiable {
     var id = UUID()
     var createdAt = Date()
     var brief: ProductBrief
     var result: CreativeResult?
     var voiceover: String
+    // Optional new keys keep older drafts.json files readable.
+    var manualText: String? = nil
+    var updatedAt: Date? = nil
+    var revisions: [StudioDraftRevision]? = nil
+
+    var currentSnapshot: StudioDraftSnapshot {
+        StudioDraftSnapshot(brief: brief, result: result, voiceover: voiceover, manualText: manualText ?? "")
+    }
+
+    var lastSavedAt: Date { updatedAt ?? createdAt }
+
+    var revisionHistory: [StudioDraftRevision] {
+        if let revisions, !revisions.isEmpty { return revisions }
+        return [StudioDraftRevision(version: 1, savedAt: createdAt, snapshot: currentSnapshot)]
+    }
+
+    @discardableResult
+    mutating func recordVersion(_ snapshot: StudioDraftSnapshot, at date: Date = Date()) -> Int? {
+        guard snapshot != currentSnapshot else { return nil }
+        var history = revisions ?? [StudioDraftRevision(version: 1, savedAt: createdAt, snapshot: currentSnapshot)]
+        let nextVersion = (history.map(\.version).max() ?? 0) + 1
+        history.append(StudioDraftRevision(version: nextVersion, savedAt: date, snapshot: snapshot))
+        if history.count > 30 { history = Array(history.suffix(30)) }
+        brief = snapshot.brief
+        result = snapshot.result
+        voiceover = snapshot.voiceover
+        manualText = snapshot.manualText
+        updatedAt = date
+        revisions = history
+        return nextVersion
+    }
 }
+
 enum StudioError: LocalizedError {
     case message(String)
     var errorDescription: String? { switch self { case .message(let text): return text } }
 }
+
 enum AspectRatio: String, CaseIterable, Identifiable {
     case portrait = "9:16", square = "1:1", landscape = "16:9"
     var id: String { rawValue }
     var width: Int { self == .landscape ? 1280 : 720 }
     var height: Int { self == .portrait ? 1280 : 720 }
 }
+
 enum SubtitleFormat {
     static func stamp(_ seconds: Double) -> String {
         let n = Int((max(0, seconds) * 1000).rounded())

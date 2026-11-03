@@ -3,7 +3,7 @@ import UIKit
 
 struct CopyStudioView: View {
     @EnvironmentObject private var store: StudioStore
-    @State private var manualText = ""
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -25,23 +25,35 @@ struct CopyStudioView: View {
                         Picker("創作目的", selection: $store.brief.goal) { ForEach(["吸引顧客購買", "介紹品牌特色", "增加留言互動"], id: \.self) { Text($0) } }
                         Picker("腳本長度", selection: $store.brief.duration) { ForEach([15, 30, 45], id: \.self) { Text("\($0) 秒") } }
                         BusyButton(title: "生成3組文案與腳本", busy: store.busy) { Task { await store.run { try await store.generateCopy() } } }
-                        Text("只使用你提供的商品事實。生成會使用 Gemini 額度；額度用完就停止。").font(.footnote).foregroundStyle(.secondary)
+                        Text("生成結果可直接編輯。只使用你提供的商品事實；生成會使用 Gemini 額度，額度用完就停止。").font(.footnote).foregroundStyle(.secondary)
                     }
                     if let result = store.result {
-                        ForEach(result.variants) { variant in
+                        ForEach(Array(result.variants.enumerated()), id: \.element.id) { item in
+                            let index = item.offset
+                            let variant = item.element
                             StudioCard(variant.angle, icon: "text.quote") {
+                                StudioField(title: "標題", text: variantBinding(index, keyPath: \.title))
+                                StudioField(title: "文案內容", text: variantBinding(index, keyPath: \.body), multiline: true)
+                                StudioField(title: "行動呼籲", text: variantBinding(index, keyPath: \.cta))
+                                StudioField(title: "標籤（每行一個）", text: hashtagBinding(index), multiline: true)
+                                Text("文案預覽").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
                                 Text(variant.fullText).textSelection(.enabled)
                                 HStack {
-                                    Button("複製", systemImage: "doc.on.doc") { UIPasteboard.general.string = variant.fullText; store.message = "文案已複製。" }
+                                    Button("複製", systemImage: "doc.on.doc") { UIPasteboard.general.string = currentVariantText(index); store.message = "文案已複製。" }
                                     Spacer()
-                                    ShareLink(item: variant.fullText) { Label("分享", systemImage: "square.and.arrow.up") }
+                                    ShareLink(item: currentVariantText(index)) { Label("分享", systemImage: "square.and.arrow.up") }
                                 }.buttonStyle(.bordered)
                             }
                         }
                     }
                     StudioCard("手動文案", icon: "pencil.line") {
-                        StudioField(title: "也可以直接寫下你的想法", text: $manualText, multiline: true)
-                        ShareLink(item: manualText) { Label("分享這篇文案", systemImage: "square.and.arrow.up") }.disabled(manualText.isEmpty)
+                        StudioField(title: "可自由撰寫或修改，儲存草稿後會保留", text: $store.manualText, multiline: true)
+                        HStack {
+                            Button("複製文案", systemImage: "doc.on.doc") { UIPasteboard.general.string = store.manualText; store.message = "文案已複製。" }.disabled(store.manualText.isEmpty)
+                            Spacer()
+                            ShareLink(item: store.manualText) { Label("分享這篇文案", systemImage: "square.and.arrow.up") }.disabled(store.manualText.isEmpty)
+                        }.buttonStyle(.bordered)
+                        Button(store.activeDraftID == nil ? "儲存文案與草稿歷程" : "儲存修改為新版本", systemImage: "square.and.arrow.down") { store.saveDraft() }.buttonStyle(.borderedProminent)
                     }
                     StudioCard("配音與短影音腳本", icon: "waveform") {
                         StudioField(title: "配音稿（每行一段字幕）", text: $store.voiceover, multiline: true)
@@ -50,13 +62,70 @@ struct CopyStudioView: View {
                         }
                         Button("帶去照片成片", systemImage: "arrow.right.circle") { store.selectedTab = 1 }.buttonStyle(.borderedProminent)
                         if let prompt = store.result?.videoPrompt {
-                            DisclosureGroup("AI 動態影片提示詞") { VStack(alignment: .leading, spacing: 12) { Text(prompt).font(.subheadline).textSelection(.enabled); ShareLink(item: prompt) { Label("分享提示詞", systemImage: "square.and.arrow.up") }; Text("可從本頁上方的「免費文生影片」帶入提示詞生成短片，依免費服務額度排隊。").font(.footnote).foregroundStyle(.secondary) }.padding(.top, 8) }
+                            DisclosureGroup("AI 動態影片提示詞") {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text(prompt).font(.subheadline).textSelection(.enabled)
+                                    ShareLink(item: prompt) { Label("分享提示詞", systemImage: "square.and.arrow.up") }
+                                    Text("可從本頁上方的「免費文生影片」帶入提示詞生成短片，依免費服務額度排隊。").font(.footnote).foregroundStyle(.secondary)
+                                }.padding(.top, 8)
+                            }
                         }
                     }
                 }.padding()
-            }.background(Color.studioBackground).scrollDismissesKeyboard(.interactively)
-                .navigationTitle("映文・創作工作室").navigationBarTitleDisplayMode(.inline).studioKeyboardControls()
-                .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("存草稿", systemImage: "square.and.arrow.down") { store.saveDraft() } } }
+            }
+            .background(Color.studioBackground)
+            .scrollDismissesKeyboard(.interactively)
+            .navigationTitle("映文・創作工作室")
+            .navigationBarTitleDisplayMode(.inline)
+            .studioKeyboardControls()
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    if store.activeDraftID == nil {
+                        Button("存草稿", systemImage: "square.and.arrow.down") { store.saveDraft() }
+                    } else {
+                        Menu {
+                            Button("儲存修改為新版本", systemImage: "clock.arrow.circlepath") { store.saveDraft() }
+                            Button("另存為新草稿", systemImage: "doc.on.doc") { store.saveDraft(asNew: true) }
+                        } label: { Label("儲存", systemImage: "square.and.arrow.down") }
+                    }
+                }
+            }
         }
+    }
+
+    private func variantBinding(_ index: Int, keyPath: WritableKeyPath<CopyVariant, String>) -> Binding<String> {
+        Binding(
+            get: {
+                guard let result = store.result, result.variants.indices.contains(index) else { return "" }
+                return result.variants[index][keyPath: keyPath]
+            },
+            set: { value in
+                guard var result = store.result, result.variants.indices.contains(index) else { return }
+                result.variants[index][keyPath: keyPath] = value
+                store.result = result
+            }
+        )
+    }
+
+    private func hashtagBinding(_ index: Int) -> Binding<String> {
+        Binding(
+            get: {
+                guard let result = store.result, result.variants.indices.contains(index) else { return "" }
+                return result.variants[index].hashtags.joined(separator: "\n")
+            },
+            set: { value in
+                guard var result = store.result, result.variants.indices.contains(index) else { return }
+                result.variants[index].hashtags = value.components(separatedBy: .newlines)
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+                    .map { $0.hasPrefix("#") ? String($0.dropFirst()) : $0 }
+                store.result = result
+            }
+        )
+    }
+
+    private func currentVariantText(_ index: Int) -> String {
+        guard let result = store.result, result.variants.indices.contains(index) else { return "" }
+        return result.variants[index].fullText
     }
 }

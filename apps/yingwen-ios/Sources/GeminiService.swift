@@ -52,6 +52,21 @@ struct GeminiService {
         guard result.variants.count == 3 else { throw StudioError.message("AI 未產出3組文案，請重試。") }
         return result
     }
+    func refineVideoPrompt(_ prompt: String) async throws -> String {
+        let clean = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty, clean.count <= 2000 else { throw StudioError.message("請輸入 2000 字內的影片描述。") }
+        let instructions = "Rewrite the user's visual brief as one concise English text-to-video prompt. Preserve the main subject, action, setting, and explicit constraints. Do not change product identity or invent factual claims, prices, offers, logos, readable text, dialogue, or extra scenes. Describe a single coherent shot with visible motion, camera movement, composition, and lighting. Return only the prompt, without a heading or markdown."
+        let response = try await generate([
+            "systemInstruction": ["parts": [["text": instructions]]],
+            "contents": [["role": "user", "parts": [["text": clean]]]],
+            "generationConfig": ["temperature": 0.3, "maxOutputTokens": 512]
+        ])
+        let refined = parts(response).filter { ($0["thought"] as? Bool) != true }
+            .compactMap { $0["text"] as? String }.joined()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !refined.isEmpty, refined.count <= 1800 else { throw StudioError.message("Gemini 未回傳有效的影片描述，請重試或自行編輯。") }
+        return refined
+    }
     func speech(text: String, voice: String) async throws -> Data {
         let result = try await generate(["contents": [["role": "user", "parts": [["text": text, "speech_metadata": ["style": "用台灣華語清楚自然地朗讀，不加字。"]]]]], "generationConfig": ["responseModalities": ["AUDIO"], "speechConfig": ["voiceConfig": ["voice": voice]]]], model: Self.speechModel)
         guard let inline = parts(result).compactMap({ $0["inlineData"] as? [String: Any] }).first, let encoded = inline["data"] as? String, let audio = Data(base64Encoded: encoded) else { throw StudioError.message("沒有收到可用的配音。") }

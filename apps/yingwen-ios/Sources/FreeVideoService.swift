@@ -1,12 +1,26 @@
 import Foundation
 
-/// Calls only this community ZeroGPU Space. No paid inference endpoint or fallback.
+/// Calls only this community ZeroGPU Space. Text-to-video is explicit: the optional image input is always null.
 struct FreeVideoService {
     static let spaceURL = URL(string: "https://huggingface.co/spaces/KingNish/wan2-2-fast")!
     private let base = URL(string: "https://kingnish-wan2-2-fast.hf.space")!
     let token: String
 
-    func generate(prompt: String, seconds: Int, portrait: Bool) async throws -> URL {
+    static func requestBody(prompt: String, seconds: Int, portrait: Bool) throws -> Data {
+        let cleanPrompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanPrompt.isEmpty, cleanPrompt.count <= 2000 else { throw StudioError.message("請輸入 2000 字內的影片描述。") }
+        guard (1...8).contains(seconds) else { throw StudioError.message("影片長度需介於 1 到 8 秒。") }
+        let height = portrait ? 512 : 288
+        let width = portrait ? 288 : 512
+        let inputs: [Any] = [
+            NSNull(), cleanPrompt, height, width,
+            "text, subtitles, watermark, blurry, distorted",
+            seconds, 0, 4, 42, true
+        ]
+        return try JSONSerialization.data(withJSONObject: ["data": inputs])
+    }
+
+    func generateTextToVideo(prompt: String, seconds: Int, portrait: Bool) async throws -> URL {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = 600
         configuration.timeoutIntervalForResource = 660
@@ -15,9 +29,7 @@ struct FreeVideoService {
         var request = authorized(base.appendingPathComponent("gradio_api/call/generate_video"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let inputs: [Any] = [NSNull(), prompt, portrait ? 512 : 288, portrait ? 288 : 512,
-                            "text, subtitles, watermark, blurry, distorted", seconds, 0, 4, 42, true]
-        request.httpBody = try JSONSerialization.data(withJSONObject: ["data": inputs])
+        request.httpBody = try Self.requestBody(prompt: prompt, seconds: seconds, portrait: portrait)
         let (data, response) = try await session.data(for: request)
         try check(response)
         guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -57,11 +69,13 @@ struct FreeVideoService {
         }
         throw StudioError.message("免費服務連線已結束，未取得影片。請稍後重試。")
     }
+
     private func authorized(_ url: URL) -> URLRequest {
         var request = URLRequest(url: url)
         if !token.isEmpty, url.host == base.host { request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization") }
         return request
     }
+
     private func check(_ response: URLResponse) throws {
         guard let http = response as? HTTPURLResponse else { throw StudioError.message("免費服務沒有回應。") }
         switch http.statusCode {
@@ -71,6 +85,7 @@ struct FreeVideoService {
         default: throw StudioError.message("免費服務暫時無法使用（HTTP \(http.statusCode)），請稍後重試。")
         }
     }
+
     static func serviceError(_ body: String) -> StudioError {
         let lower = body.lowercased()
         if lower.contains("quota") || lower.contains("limit") || lower.contains("duration") {
@@ -81,6 +96,7 @@ struct FreeVideoService {
         }
         return .message("免費服務未能完成生成，可能正在忙碌或需要登入。請稍後重試，或填入 Hugging Face 唯讀權杖。")
     }
+
     static func videoURL(_ body: String, origin: URL) throws -> URL {
         guard let data = body.data(using: .utf8),
               let values = try JSONSerialization.jsonObject(with: data) as? [Any],

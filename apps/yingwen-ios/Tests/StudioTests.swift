@@ -13,6 +13,7 @@ final class StudioTests: XCTestCase {
         XCTAssertThrowsError(try SubtitleFormat.parse("1\n00:00:04,000 --> 00:00:02,000\n錯誤時間"))
         XCTAssertThrowsError(try SubtitleFormat.parse("1\n00:00:61,000 --> 00:01:05,000\n錯誤秒數"))
     }
+
     func testPhotoCaptionsCoverTheWholeDuration() {
         let captions = SubtitleFormat.distributed("第一句\n第二句文字比較長\n第三句", duration: 15)
         XCTAssertEqual(captions.count, 3)
@@ -20,6 +21,7 @@ final class StudioTests: XCTestCase {
         XCTAssertEqual(captions.last?.end ?? 0, 15, accuracy: 0.001)
         XCTAssertEqual(captions[0].end, captions[1].start)
     }
+
     func testWavHeaderAndPayload() {
         let pcm = Data([0, 0, 1, 0])
         let wav = GeminiService.wav(pcm)
@@ -28,6 +30,62 @@ final class StudioTests: XCTestCase {
         XCTAssertEqual(String(decoding: wav[8..<12], as: UTF8.self), "WAVE")
         XCTAssertEqual(wav.suffix(4), pcm)
     }
+
+    func testDraftRevisionStoresManualAndEditedGeneratedCopy() throws {
+        var brief = ProductBrief()
+        brief.product = "紅麴豆乳雞"
+        let variant = CopyVariant(angle: "香氣", title: "初稿標題", body: "初稿內容", cta: "來逛逛", hashtags: ["夜市"])
+        let result = CreativeResult(variants: [variant], voiceover: "配音稿", scenes: [StoryScene(visual: "暖色燈光", caption: "香酥上桌")], videoPrompt: "Cinematic close-up")
+        var draft = StudioDraft(brief: brief, result: result, voiceover: "配音稿", manualText: "手動初稿")
+        let firstDate = Date(timeIntervalSince1970: 100)
+        draft.createdAt = firstDate
+        draft.updatedAt = firstDate
+        draft.revisions = [StudioDraftRevision(version: 1, savedAt: firstDate, snapshot: draft.currentSnapshot)]
+
+        var edited = draft.currentSnapshot
+        edited.manualText = "已修改的手動文案"
+        if var editedResult = edited.result {
+            editedResult.variants[0].body = "已修改的生成文案"
+            edited.result = editedResult
+        }
+        let secondDate = Date(timeIntervalSince1970: 200)
+        XCTAssertEqual(draft.recordVersion(edited, at: secondDate), 2)
+        XCTAssertNil(draft.recordVersion(edited, at: Date(timeIntervalSince1970: 300)), "相同內容不應建立重複版本")
+        XCTAssertEqual(draft.revisionHistory.count, 2)
+        XCTAssertEqual(draft.revisionHistory[0].snapshot.manualText, "手動初稿")
+        XCTAssertEqual(draft.revisionHistory[1].snapshot.manualText, "已修改的手動文案")
+        XCTAssertEqual(draft.revisionHistory[1].snapshot.result?.variants.first?.body, "已修改的生成文案")
+
+        let data = try JSONEncoder().encode(draft)
+        let restored = try JSONDecoder().decode(StudioDraft.self, from: data)
+        XCTAssertEqual(restored.revisionHistory.count, 2)
+        XCTAssertEqual(restored.currentSnapshot.manualText, "已修改的手動文案")
+        XCTAssertEqual(restored.currentSnapshot.result?.variants.first?.body, "已修改的生成文案")
+    }
+
+    func testLegacyDraftWithoutNewFieldsRemainsReadable() throws {
+        let draft = StudioDraft(brief: ProductBrief(), result: nil, voiceover: "舊配音稿")
+        let encoded = try JSONEncoder().encode(draft)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        object.removeValue(forKey: "manualText")
+        object.removeValue(forKey: "updatedAt")
+        object.removeValue(forKey: "revisions")
+        let oldFormat = try JSONSerialization.data(withJSONObject: object)
+
+        let decoded = try JSONDecoder().decode(StudioDraft.self, from: oldFormat)
+        XCTAssertEqual(decoded.voiceover, "舊配音稿")
+        XCTAssertEqual(decoded.currentSnapshot.manualText, "")
+        XCTAssertNil(decoded.revisions)
+        XCTAssertEqual(decoded.revisionHistory.count, 1)
+    }
+
+    func testCopyVariantIDStaysStableWhenEdited() {
+        var variant = CopyVariant(angle: "切角", title: "初稿", body: "內容", cta: "行動", hashtags: [])
+        let originalID = variant.id
+        variant.title = "編輯後標題"
+        XCTAssertEqual(variant.id, originalID)
+    }
+
     @MainActor func testNativePhotoExportAndCaptionedTrim() async throws {
         let size = CGSize(width: 100, height: 160)
         let image = UIGraphicsImageRenderer(size: size).image { context in
