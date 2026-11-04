@@ -20,3 +20,11 @@ assert.ok(html.includes("preview.parsed.recipes!==undefined"));checks++;
 assert.ok(html.includes('C($10,{items:j,all:q,setAll:w,vendorId:f},f)'));checks++;
 assert.ok(html.includes('if(r.costing)LedgerProcessing.validateSnapshot(r)'));checks++;
 console.log('Processing costing: '+checks+' checks passed');
+// The native recovery path (available even after subscription expiry) includes templates too.
+const swift=fs.readFileSync(path.join(__dirname,'../VendorLedger/Sources/LedgerRecovery.swift'),'utf8');
+const exportBody=swift.match(/static let exportBody = #"""([\s\S]*?)"""#/)[1];
+const storage={vb_recipes_v32_v1:JSON.stringify([template]),vb_profiles_v30:JSON.stringify([{id:'v1'},{id:'v2'}]),vb_processing_v29:JSON.stringify([{...snap,id:'batch',vendorId:'v1'}])};
+const localStorage={getItem:k=>storage[k]??null,key:i=>Object.keys(storage)[i],length:Object.keys(storage).length};
+const exported=JSON.parse(new Function('localStorage','id',exportBody)(localStorage,'v1'));eq(exported.recipes.length,1);eq(exported.data.vb_processing_v29[0].costing.totalCost,20724);
+eq(JSON.parse(new Function('localStorage','id',exportBody)(localStorage,'v2')).recipes.length,0);
+console.log('Native recipe recovery: 3 checks passed');

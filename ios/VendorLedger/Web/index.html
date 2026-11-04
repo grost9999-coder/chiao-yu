@@ -428,9 +428,9 @@ function $10({items,all,setAll,vendorId}){
  const blank=()=>({date:X0(),product:vendorProduct(vendorId),weight:'',unit:'公斤',recipe:'',rawKg:'',rawUnitPrice:'',ingredients:[],mode:'total',note:''});
  const [draft,setDraft]=Q0.useState(blank),[edit,setEdit]=Q0.useState(null),[selected,setSelected]=Q0.useState(''),[notice,setNotice]=Q0.useState(''),[error,setError]=Q0.useState('');
  const [recipes,storeRecipes]=Kn('vb_recipes_v32_'+vendorId,[]),[legacy,setLegacy]=Q0.useState(false);
- const top=Q0.useRef(null);
- const patch=values=>{setDraft(d=>({...d,...values}));setNotice('');setError('')};
- const reset=()=>{setDraft(blank());setEdit(null);setSelected('');setLegacy(false);setError('');setNotice('')};
+ const top=Q0.useRef(null),scaleRaw=Q0.useRef(null);
+ const patch=values=>{scaleRaw.current=null;setDraft(d=>({...d,...values}));setNotice('');setError('')};
+ const reset=()=>{setDraft(blank());setEdit(null);setSelected('');setLegacy(false);scaleRaw.current=null;setError('');setNotice('')};
  const fieldStyle={width:'100%',minWidth:0,border:'1px solid #cddfd5',borderRadius:12,padding:'10px 12px',background:'#fff',fontSize:16};
  const panel={background:'#fff',border:'1px solid #dce7df',borderRadius:24,padding:18,marginBottom:16};
  const grid={display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:12};
@@ -439,11 +439,11 @@ function $10({items,all,setAll,vendorId}){
  const input=(label,key,type='number')=>C('label',{style:{display:'block',fontSize:13,fontWeight:600},children:[label,C('input',{'aria-label':label,type,min:type==='number'?0:undefined,step:type==='number'?'any':undefined,value:draft[key]??'',onChange:e=>patch({[key]:e.target.value}),style:fieldStyle})]});
  const money=x=>'$'+Number(x).toLocaleString('zh-TW',{minimumFractionDigits:2,maximumFractionDigits:2});
  let calculation=null,pending='';try{calculation=LedgerProcessing.calculate(draft)}catch(e){pending=e.message}
- const changeRaw=value=>{const previous=Number(draft.rawKg),next=Number(value);patch({rawKg:value,...(previous>0&&next>0?{ingredients:LedgerProcessing.scale(draft.ingredients,next/previous),weight:Number((Number(draft.weight)*next/previous).toFixed(9))||''}:{})})};
+ const changeRaw=value=>{const base=scaleRaw.current||{raw:Number(draft.rawKg),ingredients:LedgerProcessing.copy(draft.ingredients),weight:Number(draft.weight)};if(base.raw>0)scaleRaw.current=base;const next=Number(value),factor=next/base.raw;setDraft(d=>({...d,rawKg:value,...(base.raw>0&&next>0?{ingredients:LedgerProcessing.scale(base.ingredients,factor),weight:Number((base.weight*factor).toFixed(9))||''}:{})}));setError('');setNotice('')};
  const applyRecipe=id=>{const r=recipes.find(r=>r.id===id);setSelected(id);if(!r)return;try{LedgerProcessing.templates([r]);const raw=Number(draft.rawKg)>0?Number(draft.rawKg):r.baseRawKg,factor=raw/r.baseRawKg;patch({recipe:r.name,rawKg:raw,rawUnitPrice:r.rawUnitPrice,ingredients:LedgerProcessing.scale(r.ingredients,factor),weight:Number((r.baseYieldKg*factor).toFixed(9)),unit:'公斤'});setLegacy(false)}catch(e){setError(e.message)}};
  const saveRecipe=()=>{try{if(!selected&&recipes.length>=100)throw Error('每攤最多100組配方');const r=LedgerProcessing.template(draft,selected||M0());if(storeRecipes(list=>[...list.filter(x=>x.id!==r.id),r])){setSelected(r.id);setNotice('配方已儲存；舊批次成本不變。');setError('')}}catch(e){setError(e.message)}};
  const save=()=>{try{const row={...(edit?items.find(x=>x.id===edit):{}),...(legacy?LedgerProcessing.copy(draft):LedgerProcessing.snapshot(draft)),id:edit||M0(),vendorId};if(!row.product?.trim()||!row.date)throw Error('成品與日期必填');LedgerProcessing.number(row.weight,'成品數量',true);if(setAll(list=>edit?list.map(x=>x.id===edit?row:x):[...list,row])){reset();setNotice('本批加工已儲存。')}}catch(e){setError(e.message)}};
- const open=r=>{setEdit(r.id);setDraft({...blank(),...LedgerProcessing.copy(r)});setSelected('');setLegacy(!r.costing);setNotice('');setError('');top.current?.scrollIntoView({block:'start',behavior:'smooth'})};
+ const open=r=>{scaleRaw.current=null;setEdit(r.id);setDraft({...blank(),...LedgerProcessing.copy(r)});setSelected('');setLegacy(!r.costing);setNotice('');setError('');top.current?.scrollIntoView({block:'start',behavior:'smooth'})};
  const rowField=(r,index,label,key,type='number')=>C('label',{style:{display:'block',fontSize:12},children:[label,C('input',{'aria-label':label+' '+(index+1),type,min:type==='number'?0:undefined,step:type==='number'?'any':undefined,value:r[key]??'',style:fieldStyle,onChange:e=>patch({ingredients:draft.ingredients.map(x=>x.id===r.id?{...x,[key]:e.target.value}:x)})})]});
  const summary=c=>C('div',{style:{background:'#f1f8ef',borderRadius:16,padding:14,marginTop:14},'data-testid':'batch-summary',children:[['醃料成本',c.marinadeCost],['生肉／主原料成本',c.rawCost],['本批總成本',c.totalCost],['每公斤成品成本',c.costPerKg]].map(([label,value])=>C('div',{style:{display:'flex',justifyContent:'space-between',gap:12,padding:'5px 0'},children:[C('span',{children:label}),C('strong',{children:money(value)})]},label))});
  return C('div',{'data-testid':'processing-page',ref:top,children:[
@@ -453,7 +453,7 @@ function $10({items,all,setAll,vendorId}){
  !legacy&&C('div',{children:[
  C('label',{style:{display:'block',marginTop:14},children:['套用已儲存配方',C('select',{'aria-label':'套用已儲存配方',value:selected,onChange:e=>applyRecipe(e.target.value),style:fieldStyle,children:[C('option',{value:'',children:'本次自訂配方'}),...recipes.map(r=>C('option',{value:r.id,children:r.name},r.id))]})]}),
  C('div',{style:{marginTop:12},children:input('配方名稱','recipe','text')}),
- C('div',{style:{...grid,marginTop:12},children:[C('label',{style:{fontSize:13,fontWeight:600},children:['生肉／主原料重量（公斤）',C('input',{'aria-label':'生肉／主原料重量（公斤）',type:'number',min:0,step:'any',value:draft.rawKg,style:fieldStyle,onChange:e=>changeRaw(e.target.value)})]}),input('原料每公斤單價','rawUnitPrice')]}),
+ C('div',{style:{...grid,marginTop:12},children:[C('label',{style:{fontSize:13,fontWeight:600},children:['生肉／主原料重量（公斤）',C('input',{'aria-label':'生肉／主原料重量（公斤）',type:'number',min:0,step:'any',value:draft.rawKg,style:fieldStyle,onBlur:()=>{scaleRaw.current=null},onChange:e=>changeRaw(e.target.value)})]}),input('原料每公斤單價','rawUnitPrice')]}),
  C('p',{style:{fontSize:12,color:'#66776d',marginTop:8},children:'變更原料重量會等比例換算目前成分用量及預估成品重量；完成後請核對實際成品重量。台斤／斤以600公克換算。'}),
  C('div',{style:{...grid,marginTop:12},children:[input('成品重量／數量','weight'),C('label',{style:{fontSize:13,fontWeight:600},children:['成品重量單位',C('select',{'aria-label':'成品重量單位',style:fieldStyle,value:draft.unit,onChange:e=>patch({unit:e.target.value}),children:['公斤','台斤','公克'].map(u=>C('option',{value:u,children:u},u))})]})]}),
  C('h3',{style:{fontWeight:800,marginTop:20,marginBottom:8},children:'本批醃料成分'}),
