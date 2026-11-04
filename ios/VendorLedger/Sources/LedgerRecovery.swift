@@ -86,7 +86,7 @@ enum LedgerRecoveryScripts {
       const k=localStorage.key(i);
       if(k.startsWith('vb_options_')&&k.endsWith('_'+id)) options[k.slice(0,-id.length)]=read(k,[]);
     }
-    return JSON.stringify({app:'vendor_v29_backup',version:1,exportedAt:new Date().toISOString(),vendor:read('vb_profiles_v30',[]).find(p=>p.id===id),data,options,legacyArchives:read('vb_legacy_archives_v31',{})[id]||[]});
+    return JSON.stringify({app:'vendor_v29_backup',version:1,exportedAt:new Date().toISOString(),vendor:read('vb_profiles_v30',[]).find(p=>p.id===id),data,options,recipes:read('vb_recipes_v32_'+id,[]),legacyArchives:read('vb_legacy_archives_v31',{})[id]||[]});
     """#
 }
 
@@ -160,3 +160,4 @@ struct LedgerBackupShareSheet: UIViewControllerRepresentable {
     }
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
+

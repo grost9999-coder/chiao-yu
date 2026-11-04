@@ -20,6 +20,8 @@ jobs:
           python3 ios/tests/bundle_test.py
           node ios/tests/i18n.test.cjs
           node ios/tests/catalog.test.cjs
+          node ios/tests/processing.test.cjs
           node ios/tests/profit.test.cjs
           node ios/tests/inventory.test.cjs
           node ios/tests/subscription-recovery.test.cjs
+

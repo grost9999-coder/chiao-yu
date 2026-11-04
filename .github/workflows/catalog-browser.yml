@@ -19,4 +19,7 @@ jobs:
           npm install --no-save --ignore-scripts playwright@1.64.1
           npx playwright install webkit
       - name: Exercise actual iPhone touch controls and saved data
-        run: node ios/tests/catalog-browser.cjs
+        run: |
+          node ios/tests/catalog-browser.cjs
+          node ios/tests/processing-browser.cjs
+
