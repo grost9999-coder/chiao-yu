@@ -8,3 +8,6 @@ build/
 
 __pycache__/
 *.py[cod]
+
+VendorLedger/Resources/GoogleService-Info.plist
+

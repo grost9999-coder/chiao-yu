@@ -21,7 +21,7 @@ const helpers=()=>{window.__cur=()=>{const r=document.getElementById('root');con
   window.__where=()=>{const r=document.getElementById('root');const ck=Object.keys(r).find(k=>k.startsWith('__reactContainer'));const fr=r[ck].stateNode;const ds=[...document.querySelectorAll('dialog')];let seen=0,hits=0,types=[];const walk=n=>{while(n){seen++;if(n.stateNode&&ds.includes(n.stateNode))hits++;if(n.type&&n.type.name&&['CatalogSettings','LX'].includes(n.type.name))types.push(n.type.name);if(n.child)walk(n.child);n=n.sibling}};walk(fr.current);const d=ds[0];return {dialogEls:ds.length,connected:d&&d.isConnected,parent:d&&(d.parentElement.tagName+'.'+String(d.parentElement.className).slice(0,40)),inCurrentTree:hits,fibersSeen:seen,componentsInTree:types,rootChildren:r.children.length,bodyChildren:[...document.body.children].map(x=>x.tagName+'#'+x.id).join(',')}};};
 const state=async(page,label)=>{await page.evaluate(helpers);gh('notice','state: '+label,JSON.stringify(await page.evaluate(()=>({where:window.__where(),cur:window.__cur(),dom:window.__dom.slice()}))))};
 (async()=>{
-const server=http.createServer((req,res)=>{const name=req.url.split('?')[0].endsWith('i18n.js')?'i18n.js':'index.html';res.setHeader('Content-Type',name.endsWith('.js')?'text/javascript':'text/html');res.end(fs.readFileSync(path.join(web,name)))});
+const server=http.createServer((req,res)=>{const name=req.url.split('?')[0].endsWith('i18n.js')?'i18n.js':req.url.split('?')[0].endsWith('account-storage.js')?'account-storage.js':'index.html';res.setHeader('Content-Type',name.endsWith('.js')?'text/javascript':'text/html');res.end(fs.readFileSync(path.join(web,name)))});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;
 try{
  browser=await webkit.launch({headless:true});const page=await browser.newPage({...devices['iPhone 13']});const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.error('Browser error:',e.message);gh('warning','pageerror',(e.stack||e.message))});page.on('console',m=>{if(['error','warning'].includes(m.type()))gh('warning','console.'+m.type(),m.text())});
@@ -52,3 +52,4 @@ try{
  assert.deepEqual(errors,[]);console.log('PASS: iPhone WebKit touch actions, cancel/close, all four item types, draft save, reload persistence, isolation and 20 industry templates');
 }finally{await browser?.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);gh('error','catalog-browser failed',(e&&e.stack)||e);process.exitCode=1});
+

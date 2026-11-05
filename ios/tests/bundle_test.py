@@ -13,7 +13,7 @@ spec.loader.exec_module(module)
 class BundleTests(unittest.TestCase):
     def setUp(self):
         self.info = plistlib.loads((ROOT / 'VendorLedger/Info.plist').read_bytes())
-        self.info.update(CFBundleIdentifier='com.qiaoyu.vendorbookpro', UIDeviceFamily=[1])
+        self.info.update(CFBundleIdentifier='com.qiaoyu.vendorbookpro', UIDeviceFamily=[1,2])
 
     def test_source_and_valid_archive(self):
         module.validate(self.info)
@@ -30,7 +30,7 @@ class BundleTests(unittest.TestCase):
                 with self.assertRaises(ValueError): module.validate(info)
 
     def test_reject_device_family_change(self):
-        with self.assertRaises(ValueError): module.validate({**self.info, 'UIDeviceFamily':[1,2]})
+        with self.assertRaises(ValueError): module.validate({**self.info, 'UIDeviceFamily':[1]})
 
     def test_build_uses_explicit_plist_and_validates_ipa(self):
         project = (ROOT / 'project.yml').read_text()
@@ -40,3 +40,4 @@ class BundleTests(unittest.TestCase):
         self.assertIn('validate_bundle.py', (ROOT.parent / 'codemagic.yaml').read_text())
 
 if __name__ == '__main__': unittest.main()
+

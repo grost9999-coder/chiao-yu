@@ -109,6 +109,7 @@ final class LedgerSubscriptionAccess: ObservableObject {
 
 @MainActor
 struct SubscriptionRootView: View {
+    @EnvironmentObject private var account: LedgerAccountStore
     @StateObject private var access = LedgerSubscriptionAccess()
     @Environment(\.scenePhase) private var scenePhase
     @State private var showPlans = false
@@ -138,7 +139,7 @@ struct SubscriptionRootView: View {
             } else {
                 LedgerSubscriptionPlans(access: access)
             }
-            }.id(language)
+            }.id(language + "|" + account.storageKey + "|" + account.webRevision.uuidString)
         }
         .environment(\.locale, Locale(identifier: LedgerLanguage.resolved(language)))
         .tint(Color(red: 0.15, green: 0.43, blue: 0.32))
@@ -171,6 +172,7 @@ struct SubscriptionRootView: View {
 
 @MainActor
 struct LedgerSubscriptionPlans: View {
+    @EnvironmentObject private var account: LedgerAccountStore
     @ObservedObject var access: LedgerSubscriptionAccess
     @State private var showBackup = false
     @State private var showPrivacy = false
@@ -209,7 +211,7 @@ struct LedgerSubscriptionPlans: View {
                         Task { await access.loadProducts() }
                     }.buttonStyle(.borderedProminent)
                 }
-                Text(ledgerLocalized("免費試用僅限符合資格的 Apple 帳號，且須先確認訂閱。試用結束後，按所選月繳或年繳方案自動續訂並收費。請於試用或當期結束至少 24 小時前取消，以免續訂。實際價格、試用資格與扣款日期以 App Store 確認畫面為準。"))
+                Text(ledgerLocalized(access.trialAvailable ? "免費試用僅限符合資格的 Apple 帳號，且須先確認訂閱。試用結束後，按所選月繳或年繳方案自動續訂並收費。請於試用或當期結束至少 24 小時前取消，以免續訂。實際價格、試用資格與扣款日期以 App Store 確認畫面為準。" : "確認訂閱後，將依所選方案收費並自動續訂。請於當期結束至少 24 小時前取消，以免續訂。實際價格與扣款日期以 App Store 確認畫面為準。"))
                     .font(.footnote).foregroundStyle(.secondary)
                 if let message = access.message {
                     Text(message).font(.footnote)
@@ -235,7 +237,7 @@ struct LedgerSubscriptionPlans: View {
         .background(Color(red: 0.96, green: 0.98, blue: 0.95))
         .task { await access.loadProducts() }
         .manageSubscriptionsSheet(isPresented: $showManage)
-        .sheet(isPresented: $showBackup) { LedgerRecoveryView() }
+        .sheet(isPresented: $showBackup) { LedgerRecoveryView(dataStore: account.dataStore) }
         .sheet(isPresented: $showPrivacy) { NavigationStack { LedgerPrivacyView() } }
     }
 }
@@ -259,3 +261,4 @@ struct LedgerPrivacyView: View {
         }.navigationTitle(ledgerLocalized("隱私權政策")).navigationBarTitleDisplayMode(.inline)
     }
 }
+

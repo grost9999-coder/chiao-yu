@@ -67,3 +67,4 @@ final class LedgerRecipeOCR {
         webView.evaluateJavaScript("window.dispatchEvent(new CustomEvent('ledger-recipe-ocr',{detail:\(json)}));", completionHandler: nil)
     }
 }
+

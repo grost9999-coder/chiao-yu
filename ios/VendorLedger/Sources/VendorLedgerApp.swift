@@ -5,15 +5,16 @@ import UniformTypeIdentifiers
 @main
 struct VendorLedgerApp: App {
     var body: some Scene {
-        WindowGroup { SubscriptionRootView().preferredColorScheme(.light) }
+        WindowGroup { LedgerAccountShell().preferredColorScheme(.light) }
     }
 }
 
 struct LedgerView: UIViewRepresentable {
+    @EnvironmentObject private var account: LedgerAccountStore
     func makeCoordinator() -> Coordinator { Coordinator() }
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
-        config.websiteDataStore = .default()
+        config.websiteDataStore = account.dataStore
         config.userContentController.add(context.coordinator, name: "backup")
         config.userContentController.add(context.coordinator, name: "recipeOCR")
         // Anchor downloads of blob JSON use the native share sheet on iPhone.
@@ -126,4 +127,5 @@ struct LedgerView: UIViewRepresentable {
         }
     }
 }
+
 

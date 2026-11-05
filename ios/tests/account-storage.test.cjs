@@ -1,0 +1,12 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
+const ctx=vm.createContext({TextEncoder});vm.runInContext(fs.readFileSync(path.join(__dirname,'../VendorLedger/Web/account-storage.js'),'utf8'),ctx);const S=ctx.LedgerAccountStorage;
+class Store{constructor(rows={}){this.data=new Map(Object.entries(rows));this.fail=false}get length(){return this.data.size}key(i){return [...this.data.keys()][i]}getItem(k){return this.data.get(k)??null}removeItem(k){this.data.delete(k)}setItem(k,v){if(this.fail&&v.includes('new-recipe')){this.fail=false;throw Error('quota')}this.data.set(k,v)}}
+let n=0;const eq=(a,b)=>{assert.deepEqual(a,b);n++},throws=f=>{assert.throws(f);n++};
+const store=new Store({vb_profiles_v30:JSON.stringify([{id:'v1',name:'攤商'}]),vb_vendor_v29:'"v1"',vb_daily_v29:'[{"id":"d1","vendorId":"v1","costOfGoods":30}]',vb_recipes_v32_v1:'[]',vb_options_inventory_units_v1:'["公克"]',firebaseToken:'must-not-upload','other-app':'preserve'});
+const raw=S.read(store);eq(raw.includes('must-not-upload'),false);eq(raw.includes('firebaseToken'),false);eq(JSON.parse(raw).data.vb_daily_v29,store.getItem('vb_daily_v29'));
+for(const k of ['__proto__','constructor','firebaseToken','vb_other_unknown','vb_recipes_v32_/bad'])eq(S.allowed(k),false);
+for(const mutate of [x=>x.app='other',x=>x.version=2,x=>x.data.vb_daily_v29='not json',x=>x.data.vb_daily_v29='{}',x=>x.data.vb_daily_v29='[{"id":"x"},{"id":"x"}]',x=>x.data.vb_profiles_v30=JSON.stringify(Array.from({length:21},(_,i)=>({id:String(i)}))),x=>x.data.vb_options_inventory_units_v1='{}',x=>x.data.firebaseToken='"secret"']){const d=JSON.parse(raw);mutate(d);throws(()=>S.apply(store,JSON.stringify(d)));eq(S.read(store).includes('"id"'),false)}
+const next=JSON.parse(raw);next.data.vb_recipes_v32_v1='[{"id":"new-recipe"}]';const newer=JSON.stringify(next);store.fail=true;throws(()=>S.apply(store,newer));eq(JSON.parse(S.read(store)).data,JSON.parse(raw).data);
+S.apply(store,newer);eq(store.getItem('vb_recipes_v32_v1'),next.data.vb_recipes_v32_v1);eq(store.getItem('other-app'),'preserve');eq(store.getItem('firebaseToken'),'must-not-upload');
+const empty=new Store();S.apply(empty,S.read(store));eq(empty.getItem('vb_daily_v29'),store.getItem('vb_daily_v29'));
+console.log('PASS '+n+' account snapshot checks: table allowlist, malformed backups, rollback, round trip and token exclusion');

@@ -92,6 +92,7 @@ enum LedgerRecoveryScripts {
 
 @MainActor
 struct LedgerRecoveryView: View {
+    var dataStore: WKWebsiteDataStore = .default()
     @StateObject private var model = LedgerRecoveryModel()
     @Environment(\.dismiss) private var dismiss
     var body: some View {
@@ -114,7 +115,7 @@ struct LedgerRecoveryView: View {
                 }
                 // Reuse exactly the bundled file URL and persistent WebKit store.
                 // The hidden web view never exposes paid editing UI or sends data.
-                LedgerRecoveryWebView(model: model).frame(height: 1).opacity(0)
+                LedgerRecoveryWebView(model: model, dataStore: dataStore).frame(height: 1).opacity(0)
                     .accessibilityHidden(true).allowsHitTesting(false)
             }
             .navigationTitle(ledgerLocalized("匯出既有帳本"))
@@ -127,10 +128,11 @@ struct LedgerRecoveryView: View {
 
 struct LedgerRecoveryWebView: UIViewRepresentable {
     let model: LedgerRecoveryModel
+    let dataStore: WKWebsiteDataStore
     func makeCoordinator() -> Coordinator { Coordinator(model: model) }
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = .default()
+        configuration.websiteDataStore = dataStore
         let web = WKWebView(frame: .zero, configuration: configuration)
         web.navigationDelegate = context.coordinator
         if let url = Bundle.main.url(forResource: "index", withExtension: "html", subdirectory: "Web") {
@@ -160,4 +162,5 @@ struct LedgerBackupShareSheet: UIViewControllerRepresentable {
     }
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
+
 

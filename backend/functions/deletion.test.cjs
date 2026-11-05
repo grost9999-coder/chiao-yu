@@ -1,0 +1,6 @@
+const {test}=require('node:test'),assert=require('node:assert/strict');
+const {deleteOwnedAccount}=require('./deletion.cjs');
+const make=()=>{const log=[];return {log,now:()=>1000,error:(code,message)=>Object.assign(Error(message),{code}),lock:async uid=>log.push(['lock',uid]),deleteSnapshots:async uid=>log.push(['data',uid]),deleteUser:async uid=>log.push(['auth',uid])}};
+test('unauthenticated and stale sessions cannot delete',async()=>{for(const auth of [null,{uid:'a',token:{}},{uid:'a',token:{auth_time:0}},{uid:'a',token:{auth_time:Infinity}},{uid:'a',token:{auth_time:1100}}]){const d=make();await assert.rejects(deleteOwnedAccount({auth},d));assert.deepEqual(d.log,[])}});
+test('client UID cannot select another account, lock precedes recursive deletion',async()=>{const d=make();assert.deepEqual(await deleteOwnedAccount({auth:{uid:'owner',token:{auth_time:900}},data:{uid:'victim'}},d),{deleted:true});assert.deepEqual(d.log,[['lock','owner'],['data','owner'],['auth','owner']])});
+test('partial cleanup failure retains login so deletion can be retried',async()=>{const d=make();d.deleteSnapshots=async()=>{throw Error('offline')};await assert.rejects(deleteOwnedAccount({auth:{uid:'a',token:{auth_time:999}}},d));assert.deepEqual(d.log,[['lock','a']])});

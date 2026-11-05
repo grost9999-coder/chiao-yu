@@ -14,15 +14,15 @@ ALL = {
 def validate(info):
     if info.get('CFBundleIdentifier') != 'com.qiaoyu.vendorbookpro':
         raise ValueError('Unexpected bundle identifier')
-    if info.get('UIDeviceFamily') != [1]:
-        raise ValueError('This release must retain iPhone-only device family [1]')
+    if info.get('UIDeviceFamily') != [1, 2]:
+        raise ValueError('Universal release must contain iPhone and iPad device families [1, 2]')
     for key in ('UISupportedInterfaceOrientations', 'UISupportedInterfaceOrientations~ipad'):
         values = info.get(key)
         if not isinstance(values, list) or set(values) != ALL:
             raise ValueError(f'{key} must be an array with all four orientations (90474)')
     if info.get('UISupportedInterfaceOrientations~iphone') != ['UIInterfaceOrientationPortrait']:
         raise ValueError('The iPhone-specific orientation must remain portrait')
-    print('Bundle validated: iPhone family, portrait on iPhone, all orientations for iPad compatibility')
+    print('Bundle validated: iPhone + iPad, portrait on iPhone, four iPad orientations')
 
 def read_ipa(path):
     with zipfile.ZipFile(path) as archive:
@@ -49,3 +49,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

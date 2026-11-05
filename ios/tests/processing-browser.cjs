@@ -1,6 +1,6 @@
 const {webkit,devices}=require('playwright');
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
-(async()=>{const web=path.join(__dirname,'../VendorLedger/Web');const server=http.createServer((req,res)=>{const name=req.url.split('?')[0].endsWith('i18n.js')?'i18n.js':'index.html';res.setHeader('Content-Type',name.endsWith('.js')?'text/javascript':'text/html');res.end(fs.readFileSync(path.join(web,name)))});await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;
+(async()=>{const web=path.join(__dirname,'../VendorLedger/Web');const server=http.createServer((req,res)=>{const name=req.url.split('?')[0].endsWith('i18n.js')?'i18n.js':req.url.split('?')[0].endsWith('account-storage.js')?'account-storage.js':'index.html';res.setHeader('Content-Type',name.endsWith('.js')?'text/javascript':'text/html');res.end(fs.readFileSync(path.join(web,name)))});await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;
 try{browser=await webkit.launch({headless:true});const page=await browser.newPage({...devices['iPhone 13']});const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:'+server.address().port+'/?language=zh-Hant');
 const go=async()=>{await page.getByRole('button',{name:'加工',exact:true}).tap();await page.getByTestId('processing-page').waitFor()};await go();const field=name=>page.getByLabel(name,{exact:true}),button=name=>page.getByRole('button',{name,exact:true});
 await field('成品名稱').fill('自製翅腿');await field('配方名稱').fill('第一批配方');await field('生肉／主原料重量（公斤）').fill('340');await field('原料每公斤單價').fill('55');await field('成品重量／數量').fill('360');
@@ -20,3 +20,4 @@ await field('購入總價 1').fill('10');await page.evaluate(()=>{window.__set=S
 await page.evaluate(()=>localStorage.setItem('vb_vendor_v29',JSON.stringify('v2')));await page.reload();await go();assert.equal(await field('套用已儲存配方').locator('option').count(),1);assert.equal(await button('編輯此批次').count(),0);
 assert.deepEqual(errors,[]);console.log('PASS: iPhone batch recipe costing, scaling, edit/cancel, snapshots, reload, missing prices, storage failure and vendor isolation');
 }finally{await browser?.close();await new Promise(r=>server.close(r))}})().catch(e=>{console.error(e);console.log('::error::'+String(e.stack||e).replace(/\n/g,'%0A'));process.exitCode=1});
+
