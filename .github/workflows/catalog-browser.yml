@@ -1,4 +1,4 @@
-name: Catalog iPhone WebKit touch checks
+name: Catalog mobile WebKit touch checks
 on:
   pull_request:
     paths: ['ios/**', '.github/workflows/catalog-browser.yml']
@@ -10,7 +10,7 @@ permissions:
   contents: read
 jobs:
   touch:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
@@ -20,7 +20,7 @@ jobs:
       - name: Install WebKit test runner
         run: |
           npm install --no-save --ignore-scripts playwright@1.64.1
-          npx playwright install webkit
+          npx playwright install --with-deps webkit
       - name: Exercise actual iPhone touch controls and saved data
         run: |
           node ios/tests/catalog-browser.cjs
