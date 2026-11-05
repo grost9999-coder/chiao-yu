@@ -49,7 +49,7 @@ final class LedgerCloudBackup: ObservableObject {
         defer { busy = false }
         do { try await operation() }
         catch let e as LedgerAccountError { error = e.localizedDescription }
-        catch { error = ledgerLocalized("雲端操作未完成，裝置資料仍保留。請確認連線、Email 驗證及雲端服務設定。") }
+        catch { self.error = ledgerLocalized("雲端操作未完成，裝置資料仍保留。請確認連線、Email 驗證及雲端服務設定。") }
     }
     private func snapshot() async throws -> String {
         guard ready, let web = webView,
