@@ -22,6 +22,7 @@ jobs:
         run: |
           node ios/tests/catalog-browser.cjs
           node ios/tests/processing-browser.cjs
+          node ios/tests/purchase-marinade-browser.cjs
           node ios/tests/recipe-import-browser.cjs
 
 
