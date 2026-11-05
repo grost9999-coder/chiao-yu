@@ -8,3 +8,6 @@ r=ctx.R.parse('1. 糖 50g 22元/公斤\n2. 粉 1公斤 $50/包\n鹽 適量\n總�
 const draft={date:'2026-11-05',product:'雞',recipe:'照片',rawKg:1,rawUnitPrice:50,weight:1,unit:'公斤',ingredients:[r.ingredients[0]],sourceText:'糖50g 22元/公斤'};
 const snap=ctx.P.snapshot(draft),template=ctx.P.template(draft,'t');eq(snap.costing.totalCost,51.1);eq(template.sourceText,draft.sourceText);eq(ctx.P.templates([template])[0].sourceText,draft.sourceText);draft.ingredients[0].packPrice=99;eq(snap.costing.totalCost,51.1);
 console.log('Recipe import parser and snapshots: '+checks+' checks passed');
+
+for(const text of ['醬油 1/2公斤','糖 50,5g','鹽 50-60g','糖 50g × 2']){const r=ctx.R.parse(text);eq(r.ingredients.length,0);eq(r.unparsed.length,1)}
+console.log('Ambiguous amounts rejected: 8 checks passed');

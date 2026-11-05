@@ -436,6 +436,7 @@ const LedgerRecipeImport=(()=>{
   const out={ingredients:[],unparsed:[],recipe:'',rawKg:'',rawUnitPrice:'',weight:'',unit:'公斤'};
   for(let line of text.split(/\n/)){line=line.trim().replace(/^\d+[.)、]\s*/,'');if(!line)continue;
    const title=line.match(/^(?:配方名稱|配方名称|配方|recipe)\s*[:：]\s*(.+)$/i);if(title){out.recipe=title[1].trim();continue}
+   const amountText=line.split(/[$＄]/)[0];if(/\d\s*[/／~～-]\s*\d|\d,\d|\d\s*[×*]\s*\d/.test(amountText)){out.unparsed.push(line);continue}
    const match=line.match(quantity);if(!match||!match[1].trim()){out.unparsed.push(line);continue}
    if(/[×*]\s*\d/.test(line)){out.unparsed.push(line);continue}
    const name=match[1].trim().replace(/[:：]$/,''),qty=Number(match[2]),unit=canonical(match[3]);if(!(qty>0)){out.unparsed.push(line);continue}
