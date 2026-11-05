@@ -23,6 +23,7 @@ jobs:
           node ios/tests/processing.test.cjs
           node ios/tests/purchase-marinade.test.cjs
           node ios/tests/recipe-import.test.cjs
+          node ios/tests/recipe-multi.test.cjs
           node ios/tests/profit.test.cjs
           node ios/tests/inventory.test.cjs
           node ios/tests/subscription-recovery.test.cjs

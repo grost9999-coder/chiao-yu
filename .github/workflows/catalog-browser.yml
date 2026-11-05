@@ -24,5 +24,6 @@ jobs:
           node ios/tests/processing-browser.cjs
           node ios/tests/purchase-marinade-browser.cjs
           node ios/tests/recipe-import-browser.cjs
+          node ios/tests/recipe-multi-browser.cjs
 
 
