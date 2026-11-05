@@ -1,0 +1,10 @@
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
+const h=fs.readFileSync(path.join(__dirname,'../VendorLedger/Web/index.html'),'utf8'),ctx=vm.createContext({});vm.runInContext(h.slice(h.indexOf('const LedgerProcessing='),h.indexOf('function $10('))+';globalThis.P=LedgerProcessing;globalThis.R=LedgerRecipeImport',ctx);
+let checks=0;const eq=(a,b)=>{assert.equal(a,b);checks++};
+let r=ctx.R.parse('配方名稱：測試配方\n生肉 340公斤 $55/公斤\n成品重量 360公斤\n紅麴豆腐乳 1000g $150/kg\n米酒 2.4L $100/2.4L\n醬油 1,000公克\n冰水 180公克 $0/公斤\n不確定的文字');
+eq(r.recipe,'測試配方');eq(r.rawKg,340);eq(r.rawUnitPrice,55);eq(r.weight,360);eq(r.ingredients.length,4);eq(r.ingredients[0].packPrice,150);eq(r.ingredients[0].packUnit,'公斤');eq(r.ingredients[1].packPrice,100);eq(r.ingredients[1].packQty,2.4);eq(r.ingredients[2].qty,1000);eq(r.ingredients[2].packPrice,'');eq(r.ingredients[3].packPrice,0);eq(r.unparsed.length,1);
+r=ctx.R.parse('醬油 100g\n米酒 200ml\n鹽 50g',[{name:'醬油',packQty:1,packUnit:'公斤',packPrice:22},{name:'米酒',packQty:1,packUnit:'公斤',packPrice:100}]);eq(r.ingredients[0].packPrice,22);eq(ctx.P.ingredient(r.ingredients[0]).cost,2.2);eq(r.ingredients[1].packPrice,'');eq(r.ingredients[2].packPrice,'');
+r=ctx.R.parse('1. 糖 50g 22元/公斤\n2. 粉 1公斤 $50/包\n鹽 適量\n總成本 $500');eq(r.ingredients.length,2);eq(r.ingredients[0].name,'糖');eq(r.ingredients[0].packPrice,22);eq(r.ingredients[1].packPrice,'');eq(r.unparsed.length,2);
+const draft={date:'2026-11-05',product:'雞',recipe:'照片',rawKg:1,rawUnitPrice:50,weight:1,unit:'公斤',ingredients:[r.ingredients[0]],sourceText:'糖50g 22元/公斤'};
+const snap=ctx.P.snapshot(draft),template=ctx.P.template(draft,'t');eq(snap.costing.totalCost,51.1);eq(template.sourceText,draft.sourceText);eq(ctx.P.templates([template])[0].sourceText,draft.sourceText);draft.ingredients[0].packPrice=99;eq(snap.costing.totalCost,51.1);
+console.log('Recipe import parser and snapshots: '+checks+' checks passed');

@@ -16,6 +16,10 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+      - name: Verify actual on-device recipe OCR engine
+        run: |
+          swiftc -target "$(uname -m)-apple-macosx14.0" ios/VendorLedger/Sources/LedgerRecipeOCR.swift ios/tests/RecipeOCRCheck.swift -o /tmp/recipe-ocr-check
+          /tmp/recipe-ocr-check
       - name: Install project generator
         run: brew install xcodegen
       - name: Generate Xcode project
@@ -36,3 +40,4 @@ jobs:
           name: VendorLedger-simulator-app
           path: ios/build/Build/Products/Debug-iphonesimulator/VendorLedger.app
           if-no-files-found: error
+
