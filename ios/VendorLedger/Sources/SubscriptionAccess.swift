@@ -109,7 +109,6 @@ final class LedgerSubscriptionAccess: ObservableObject {
 
 @MainActor
 struct SubscriptionRootView: View {
-    @EnvironmentObject private var account: LedgerAccountStore
     @StateObject private var access = LedgerSubscriptionAccess()
     @Environment(\.scenePhase) private var scenePhase
     @State private var showPlans = false
@@ -141,7 +140,7 @@ struct SubscriptionRootView: View {
             } else {
                 LedgerSubscriptionPlans(access: access)
             }
-            }.id(language + "|" + account.storageKey + "|" + account.webRevision.uuidString)
+            }.id(language)
         }
         .environment(\.locale, Locale(identifier: LedgerLanguage.resolved(language)))
         .tint(Color(red: 0.15, green: 0.43, blue: 0.32))
@@ -174,7 +173,6 @@ struct SubscriptionRootView: View {
 
 @MainActor
 struct LedgerSubscriptionPlans: View {
-    @EnvironmentObject private var account: LedgerAccountStore
     @ObservedObject var access: LedgerSubscriptionAccess
     @State private var showBackup = false
     @State private var showPrivacy = false
@@ -239,7 +237,7 @@ struct LedgerSubscriptionPlans: View {
         .background(Color(red: 0.96, green: 0.98, blue: 0.95))
         .task { await access.loadProducts() }
         .manageSubscriptionsSheet(isPresented: $showManage)
-        .sheet(isPresented: $showBackup) { LedgerRecoveryView(dataStore: account.dataStore) }
+        .sheet(isPresented: $showBackup) { LedgerRecoveryView() }
         .sheet(isPresented: $showPrivacy) { NavigationStack { LedgerPrivacyView() } }
     }
 }
@@ -251,13 +249,13 @@ struct LedgerPrivacyView: View {
                 Text(ledgerLocalized("攤商記帳王 PRO 隱私權政策")).font(.title2.bold())
                 Text(ledgerLocalized("更新日期：2026 年 11 月 6 日"))
                 Text(ledgerLocalized("帳本與儲存")).font(.headline)
-                Text(ledgerLocalized("本機訪客可不註冊使用帳本；選用 Apple 或 Email 登入後，帳目保存在該帳號獨立的裝置空間。雲端備份與還原需由你主動操作，不是即時雙向同步。移除 App 或遺失裝置可能造成資料遺失，請定期備份。"))
+                Text(ledgerLocalized("免註冊、免登入。帳本、進貨、配方與加工紀錄儲存在此裝置，不會自動上傳至開發者伺服器。移除 App、遺失或更換裝置前，請先匯出備份。"))
                 Text(ledgerLocalized("Apple 訂閱")).font(.headline)
                 Text(ledgerLocalized("訂閱、付款、試用資格與退款由 Apple 處理。App 使用 StoreKit 取得商品、購買驗證與訂閱權益狀態。開發者不會取得你的完整付款卡號。Apple 可能依其隱私權政策處理帳號與付款資料。"))
                 Text(ledgerLocalized("備份與分享")).font(.headline)
-                Text(ledgerLocalized("你主動使用雲端備份時，攤商資料、財務紀錄、配方、備忘與舊版封存會傳送至本 App 的 Firebase 服務，依登入帳號限制存取。Firebase Authentication 處理登入識別與 Email；Firestore 保存帳本備份。這不是端對端加密服務。匯出或分享的檔案由你選擇位置保管；訂閱到期仍可匯出裝置資料。"))
+                Text(ledgerLocalized("可自行匯出 JSON，儲存至你選擇的檔案位置，再於新裝置匯入還原。若選擇 iCloud Drive 或其他雲端位置，由該服務處理檔案。本 App 不提供帳號或自動雲端同步；訂閱到期仍可匯出本機帳本。"))
                 Text(ledgerLocalized("資料控制")).font(.headline)
-                Text(ledgerLocalized("你可編輯帳目，於帳號頁申請刪除帳號與雲端資料，並自行刪除已匯出的檔案。刪除帳號不會取消 Apple 訂閱。配方照片在裝置上辨識；目前備份保存辨識文字與配方，不保存原始照片。本 App 未整合廣告或 Google Analytics；Apple 與 Firebase 可能依各自政策處理服務所需的帳號、網路與安全資訊。支援信箱：grost9999@gmail.com。"))
+                Text(ledgerLocalized("你可在 App 編輯或刪除紀錄，已匯出的備份需自行保管與刪除。配方照片在裝置辨識，備份包含文字與配方，不含原始照片。沒有廣告、追蹤或 Firebase 帳號服務。刪除 App 不會取消 Apple 訂閱。支援：grost9999@gmail.com。"))
                 Link(ledgerLocalized("Apple 隱私權政策"), destination: URL(string: "https://www.apple.com/legal/privacy/")!)
             }.padding(24).frame(maxWidth: 600)
         }.navigationTitle(ledgerLocalized("隱私權政策")).navigationBarTitleDisplayMode(.inline)

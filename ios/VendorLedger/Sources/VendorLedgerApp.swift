@@ -5,16 +5,15 @@ import UniformTypeIdentifiers
 @main
 struct VendorLedgerApp: App {
     var body: some Scene {
-        WindowGroup { LedgerAccountShell().preferredColorScheme(.light) }
+        WindowGroup { LedgerLocalDataShell().preferredColorScheme(.light) }
     }
 }
 
 struct LedgerView: UIViewRepresentable {
-    @EnvironmentObject private var account: LedgerAccountStore
     func makeCoordinator() -> Coordinator { Coordinator() }
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
-        config.websiteDataStore = LedgerDemo.isEnabled ? .nonPersistent() : account.dataStore
+        config.websiteDataStore = LedgerDemo.isEnabled ? .nonPersistent() : .default()
         if let demo = LedgerDemo.script {
             config.userContentController.addUserScript(WKUserScript(source:demo,injectionTime:.atDocumentStart,forMainFrameOnly:true))
         }

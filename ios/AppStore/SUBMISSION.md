@@ -1,13 +1,12 @@
 # 攤商記帳王 PRO 新版送審準備
 
-程式已更新；後端、Apple 後台與實際購買驗收須完成 RELEASE-GATES.md。未宣稱已發布或送審。
+免註冊、免登入、本機儲存；不提供 Firebase 帳號或自動雲端備份。沒有 App 審查登入帳密需求。
+Apple StoreKit 訂閱仍決定付費功能權限。台灣月繳目標 NT$100（com.qiaoyu.vendorbookpro.pro.monthly）；既有年繳目標 NT$1,089（com.qiaoyu.vendorbookpro.pro.annual）。價格與試用資格以 Apple 確認畫面為準。
 
-台灣月繳目標 NT$100，商品 com.qiaoyu.vendorbookpro.pro.monthly。既有年繳目標 NT$1,089，商品 com.qiaoyu.vendorbookpro.pro.annual。兩者同群組、同等級。各地價格、首次優惠與資格以 StoreKit 回傳為準。符合資格的新訂閱者，於有設定首次優惠的方案享一個月免費試用。
+使用 product-page-zh-Hant.json 的文字與審查步驟。沒有帳號、Firebase 設定或 Sign in with Apple capability 要求；Codemagic 可直接產生專案、套用原有 App Store 簽章並建置。仍需原本的 Apple 付費協議、簽章與上傳權限。
 
-使用 product-page-zh-Hant.json 的文字與審查步驟。先完成 ACCOUNTS_SETUP.md 的 Firebase 與 Apple 登入服務；正式建置缺少 Firebase 設定會中止，不上傳尚未啟用帳號功能的版本。
+資料沿用原本 default WebKit 本機儲存，不會在升級時移除。App 的各攤商 JSON 可匯出／匯入，請逐攤備份。恢復購買僅恢復訂閱權益。備份提醒是前景每七天顯示，不是背景自動備份。
 
-啟用帳號／雲端後，App 隱私問卷須反映與帳號連結的 Email、使用者 ID、主動備份的財務資訊與使用者文字內容，不再填完全不蒐集。沒有廣告或追蹤用途。連同 Firebase SDK 的隱私資訊一起核對。
+提交前依 RELEASE-GATES.md 核對實機資料、iPad、多圖 OCR、採購／加工成本及購買。先前原生預覽錄影失敗，不能把故事板草稿當成已完成的原生錄影。
 
-支援 iPhone／iPad；相機、多圖辨識須在實機確認。原生預覽錄影在 Actions 產生，需逐段檢查。沒有對應 Duo 模擬器時會明確列為待補，不用其他裝置冒充。
-
-仍需擁有者提供審查電話、有效且已驗證的審查帳號，確認新建置、分類、分級、銷售地區、出口合規、付費協議與訂閱審查資料，再提交。
+仍需擁有者填審查電話、發布本機版隱私／支援頁、核對隱私問卷及各上架欄位、選定新建置，再送審。此提交不代表已上架或 TestFlight 已更新。

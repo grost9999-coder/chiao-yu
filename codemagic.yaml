@@ -18,10 +18,6 @@ workflows:
         script: |
           set -eu
           brew install xcodegen
-      - name: Validate account service configuration
-        script: |
-          set -eu
-          python3 "$CM_BUILD_DIR/ios/scripts/configure_accounts.py"
       - name: Generate iOS project
         script: |
           set -eu

@@ -2,7 +2,7 @@
   "status": "prepared_not_updated_in_app_store_connect",
   "name": "攤商記帳王PRO",
   "subtitle": "攤位收支、配方成本與庫存管理",
-  "promotionalText": "為夜市、市集與小攤位整理收支。20 種業別範本、自訂品項、醃料進貨、配方與批次成本、營運分析及 JSON 備份。可選 Apple 或 Email 登入，主動備份至雲端；帳目也會保存在裝置內。",
+  "promotionalText": "免註冊、免登入，資料儲存在本機。20 種業別範本、自訂品項、醃料進貨、多圖配方辨識、批次成本與營運分析，支援自行匯出 JSON 備份及匯入還原。",
   "keywords": "夜市,市集,擺攤,營收,收支,進貨,毛利,成本,庫存,盤點,配方,醃料,備份",
   "supportURL": "https://grost9999-coder.github.io/chiao-yu/support/",
   "privacyPolicyURL": "https://grost9999-coder.github.io/chiao-yu/privacy/",
@@ -12,13 +12,13 @@
   "reviewEmail": "grost9999@gmail.com",
   "reviewPhone": null,
   "reviewAccount": null,
-  "description": "攤商記帳王 PRO，幫你把每天的小生意記清楚。\n\n【每日營運】\n整理銷售、平台收入、找零金、收攤現金、攤租與雜項。採購、耗用成本及期間費用分開記錄，檢視日、週、月、年營收、毛利及稅前淨利。缺少成本時會提示核對。統計供日常管理參考，不取代正式會計或報稅。\n\n【業別與品項】\n20 種業別範本，最多 20 個獨立攤商帳本。可自訂商品、服務、進貨、支出與設備，設定單位、數量及價格，儲存後繼續編輯。\n\n【加工與配方成本】\n記錄醃料進貨，設定配方成分、本批用量、購入數量與金額。依主原料、醃料及成品重量計算批次與單位成本，儲存配方範本及加工批次。每批可有不同成分與價格；修改範本不會自動改寫舊批次成本。\n\n【多張配方照片辨識】\n選取最多 10 張配方圖片，逐張辨識、核對文字並生成可編輯成分。辨識可能出錯，請確認品名、單位、用量與價格；缺少單價須先補齊。照片在裝置辨識，備份保存文字與配方，不含原始照片。\n\n【庫存、資產與備忘】\n整理庫存盤點、設備與備忘。加工成本與庫存紀錄分開管理，請維護實際庫存。\n\n【帳號與備份】\n可用本機訪客帳本，或選 Apple／Email 註冊登入。帳號的裝置資料分開保存，可連結另一種登入方式；不同既有帳號不自動合併。Email 驗證後可主動備份與還原雲端帳本。這不是即時雙向同步；登入不代表帳目已上傳。支援單攤 JSON 與完整帳號備份，請定期保存副本。\n\n【裝置與語言】\niPhone 與 iPad；繁體中文、簡體中文、英文及日文介面。\n\n【訂閱】\nApp 免費下載，完整記帳需 Apple 自動續訂訂閱。台灣月繳 NT$100；其他方案與地區價格以 App Store 確認畫面為準。\n符合資格的新訂閱者，於已設定首次優惠的方案可享 1 個月免費試用；須先確認訂閱。試用或當期結束後按方案自動收費續訂，請至少於期滿 24 小時前取消。訂閱到期不刪除裝置帳本，仍可匯出。\n刪除 App 帳號不會取消 Apple 訂閱，請另至 Apple 訂閱管理處理。\n\n使用條款：https://www.apple.com/legal/internet-services/itunes/dev/stdeula/\n隱私政策：https://grost9999-coder.github.io/chiao-yu/privacy/\n支援：https://grost9999-coder.github.io/chiao-yu/support/",
-  "reviewNotes": "Universal iPhone/iPad bookkeeping app. Guest use does not require an app account; paid editing still requires a valid StoreKit subscription. Apple and email accounts are optional and use separate persistent account stores. Verify email before cloud access. Cloud backup and restore are explicit actions, not live two-way sync. Restoring purchases restores Apple entitlement only. Open Processing, enter raw weight and price, add ingredient usage and purchase price, inspect the cost summary, then save a batch or recipe. OCR uses Apple Vision on-device and supports multiple images with manual review. Original photos are not included in backups. Account screen offers sign-in linking, reauthentication and account deletion. Deleting an app account does not cancel the Apple subscription.",
+  "description": "攤商記帳王 PRO，幫你把每天的小生意記清楚。\n\n【每日營運】\n整理銷售、平台收入、找零金、收攤現金、攤租與雜項。採購、耗用成本及期間費用分開記錄，檢視日、週、月、年營收、毛利及稅前淨利。缺少成本時會提示核對。統計供日常管理參考，不取代正式會計或報稅。\n\n【業別與品項】\n20 種業別範本，最多 20 個獨立攤商帳本。可自訂商品、服務、進貨、支出與設備，設定單位、數量及價格，儲存後繼續編輯。\n\n【加工與配方成本】\n記錄醃料進貨，設定配方成分、本批用量、購入數量與金額。依主原料、醃料及成品重量計算批次與單位成本，儲存配方範本及加工批次。每批可有不同成分與價格；修改範本不會自動改寫舊批次成本。\n\n【多張配方照片辨識】\n選取最多 10 張配方圖片，逐張辨識、核對文字並生成可編輯成分。辨識可能出錯，請確認品名、單位、用量與價格；缺少單價須先補齊。照片在裝置辨識，備份保存文字與配方，不含原始照片。\n\n【庫存、資產與備忘】\n整理庫存盤點、設備與備忘。加工成本與庫存紀錄分開管理，請維護實際庫存。\n\n【免登入與本機備份】\n免註冊、免登入。帳本、進貨、配方與加工紀錄儲存在此裝置，不會自動上傳至開發者伺服器。支援各攤商 JSON 匯出備份與匯入還原；可自行選擇儲存到檔案或 iCloud Drive。登入 Apple 購買帳號及恢復購買只處理訂閱權益，不會還原帳本。移除 App、手機遺失或換機可能造成資料遺失，請定期將每個攤商帳本匯出備份。\n\n【裝置與語言】\niPhone 與 iPad；繁體中文、簡體中文、英文及日文介面。\n\n【訂閱】\nApp 免費下載，完整記帳需 Apple 自動續訂訂閱。台灣月繳 NT$100；其他方案與地區價格以 App Store 確認畫面為準。\n符合資格的新訂閱者，於已設定首次優惠的方案可享 1 個月免費試用；須先確認訂閱。試用或當期結束後按方案自動收費續訂，請至少於期滿 24 小時前取消。訂閱到期不刪除裝置帳本，仍可匯出。\n刪除 App 不會取消 Apple 訂閱，請另至 Apple 訂閱管理處理。\n\n使用條款：https://www.apple.com/legal/internet-services/itunes/dev/stdeula/\n隱私政策：https://grost9999-coder.github.io/chiao-yu/privacy/\n支援：https://grost9999-coder.github.io/chiao-yu/support/",
+  "reviewNotes": "Universal iPhone/iPad local bookkeeping app. No app account, registration or sign-in is provided. Paid editing requires a valid StoreKit subscription; restore purchases restores entitlement only, not ledger data. Ledger data stays in the persistent default WebKit store. JSON backup exports are user-initiated, available even after subscription expiry; import each vendor's JSON through Backup/Import. Open Processing, enter raw weight and price, add ingredient usage and purchase price, inspect costs and save a batch or recipe. OCR uses Apple Vision on-device, supports multiple photos with manual review, and does not retain original photos. No Firebase SDK or developer cloud backup. Deleting the app does not cancel an Apple subscription.",
   "submissionPrerequisites": [
-    "Deploy Firebase Auth providers, Firestore rules and deletion functions, then validate with real accounts.",
-    "Enable Sign in with Apple on the App ID and regenerate the signing profile.",
-    "Fill review phone and a usable verified review account before submitting.",
-    "Publish updated privacy/support pages and verify the public URLs.",
-    "Review the native preview recordings and select the latest passing build."
+    "Fill review phone; no app review login account is required.",
+    "Publish updated local-only privacy/support pages and verify public URLs.",
+    "Check App Privacy answers against the shipped binary and Apple's StoreKit handling.",
+    "Review native preview recordings and select the latest passing build.",
+    "Verify subscription prices, trial eligibility and purchase/restore with sandbox accounts."
   ]
 }
