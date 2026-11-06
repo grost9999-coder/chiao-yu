@@ -1,0 +1,9 @@
+# Legacy procurement and manufacturing import
+
+Old qy_v3 purchaseRecs contain receipt groups with type and items [{name,qty,unit,total,unitCost}]. The prior converter only created daily consumed-cost rows; actual receipts stayed in the original archive. Conversion now flattens real receipts using stable qy3-purchase-<id>-<index> IDs, preserves purchase categories/payment/note, and marks them procurement. They populate marinade pickers and current ingredient prices without being counted again in daily profit. The purchase list separates receipt totals from consumed costs.
+
+Old marinadeRecs preserve original meatCost, marinadeCost and totalCost in legacyCosting, with original raw/finished kg and derived original cost per kg. These values are explicitly historical; current purchase prices do not rewrite them. Missing costs remain null/unprovided. Text-only recipe IDs are retained, not treated as full ingredient snapshots. If old backups lack ingredient details, users must supply them before recalculating a batch.
+
+Archived repair now covers missing procurement, legacy batch cost summaries, monthly expenses and equipment. Existing edited rows are retained. Previously imported text-only batches can receive original cost summaries without overwriting their notes or a newly calculated snapshot. Repeating repair adds no duplicate receipts and does not create inventory movements. Reimport of the same original JSON remains idempotent by stable IDs.
+
+Tests use synthetic fixtures based on the original app's documented source schema, including a 2kg/60 marinade receipt and historical 340kg raw/360kg finished batch. The newly attached personal JSON could not be read because the local execution environment was unavailable during this change; do not claim that this particular file was fully audited. No personal JSON is committed to the public repository.

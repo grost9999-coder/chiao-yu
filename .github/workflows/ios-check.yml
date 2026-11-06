@@ -16,6 +16,10 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+      - name: Verify actual on-device recipe OCR engine
+        run: |
+          swiftc -target "$(uname -m)-apple-macosx14.0" ios/VendorLedger/Sources/LedgerRecipeOCR.swift ios/tests/RecipeOCRCheck.swift -o /tmp/recipe-ocr-check
+          /tmp/recipe-ocr-check
       - name: Install project generator
         run: brew install xcodegen
       - name: Generate Xcode project
@@ -28,8 +32,12 @@ jobs:
           -configuration Debug -sdk iphonesimulator
           -destination 'generic/platform=iOS Simulator'
           -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+      - name: Validate packaged device family and orientations
+        working-directory: ios
+        run: python3 scripts/validate_bundle.py build/Build/Products/Debug-iphonesimulator/VendorLedger.app/Info.plist
       - uses: actions/upload-artifact@v4
         with:
           name: VendorLedger-simulator-app
           path: ios/build/Build/Products/Debug-iphonesimulator/VendorLedger.app
           if-no-files-found: error
+

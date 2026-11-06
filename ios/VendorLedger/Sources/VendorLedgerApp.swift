@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 @main
 struct VendorLedgerApp: App {
     var body: some Scene {
-        WindowGroup { SubscriptionRootView().preferredColorScheme(.light) }
+        WindowGroup { LedgerLocalDataShell().preferredColorScheme(.light) }
     }
 }
 
@@ -13,8 +13,12 @@ struct LedgerView: UIViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator() }
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
-        config.websiteDataStore = .default()
+        config.websiteDataStore = LedgerDemo.isEnabled ? .nonPersistent() : .default()
+        if let demo = LedgerDemo.script {
+            config.userContentController.addUserScript(WKUserScript(source:demo,injectionTime:.atDocumentStart,forMainFrameOnly:true))
+        }
         config.userContentController.add(context.coordinator, name: "backup")
+        config.userContentController.add(context.coordinator, name: "recipeOCR")
         // Anchor downloads of blob JSON use the native share sheet on iPhone.
         let bridge = #"""
         document.addEventListener('click', async function(e) {
@@ -45,18 +49,27 @@ struct LedgerView: UIViewRepresentable {
     func updateUIView(_ uiView: WKWebView, context: Context) {}
     static func dismantleUIView(_ web: WKWebView, coordinator: Coordinator) {
         web.configuration.userContentController.removeScriptMessageHandler(forName: "backup")
+        web.configuration.userContentController.removeScriptMessageHandler(forName: "recipeOCR")
     }
 
     class Coordinator: NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationDelegate {
         weak var webView: WKWebView?
         var activeBackupURL: URL?
+        let recipeOCR = LedgerRecipeOCR()
         func presenter() -> UIViewController? {
             guard var view = webView?.window?.rootViewController else { return nil }
             while let next = view.presentedViewController { view = next }
             return view
         }
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-            guard message.frameInfo.isMainFrame,
+            if message.name == "recipeOCR" {
+                guard message.frameInfo.isMainFrame,
+                      message.frameInfo.request.url?.isFileURL == true,
+                      let body = message.body as? [String: Any], let webView else { return }
+                recipeOCR.recognize(body, webView: webView)
+                return
+            }
+            guard message.name == "backup", message.frameInfo.isMainFrame,
                   message.frameInfo.request.url?.isFileURL == true,
                   let body = message.body as? [String: Any],
                   let text = body["text"] as? String,
@@ -116,3 +129,5 @@ struct LedgerView: UIViewRepresentable {
         }
     }
 }
+
+

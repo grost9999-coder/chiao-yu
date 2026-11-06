@@ -1,0 +1,14 @@
+const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict');
+const root = path.resolve(__dirname, '..');
+const read = p => fs.readFileSync(path.join(root,p),'utf8');
+const sources = fs.readdirSync(path.join(root,'VendorLedger/Sources')).filter(p=>p.endsWith('.swift')).map(p=>read('VendorLedger/Sources/'+p)).join('\n');
+assert.doesNotMatch(sources, /import Firebase|LedgerAccountStore|account\.dataStore|LedgerAccountShell|LedgerCloudBackup/);
+assert.match(read('VendorLedger/Sources/VendorLedgerApp.swift'), /LedgerLocalDataShell\(\)/);
+assert.match(read('VendorLedger/Sources/VendorLedgerApp.swift'), /LedgerDemo\.isEnabled \? \.nonPersistent\(\) : \.default\(\)/);
+assert.doesNotMatch(read('project.yml'), /Firebase|applesignin|entitlements:/);
+assert.doesNotMatch(read('../codemagic.yaml'), /configure_accounts|FIREBASE/);
+assert.match(read('VendorLedger/Sources/LedgerLocalDataView.swift'), /LedgerRecoveryView\(\)/);
+assert.match(read('VendorLedger/Sources/SubscriptionAccess.swift'), /Transaction\.currentEntitlements/);
+assert.match(read('VendorLedger/Sources/SubscriptionAccess.swift'), /LedgerRecoveryView\(\)/);
+assert.match(read('VendorLedger/Sources/LedgerLocalDataView.swift'), /7 \* 24 \* 60 \* 60/);
+console.log('Local-only storage, backup access and subscription boundary checks passed');

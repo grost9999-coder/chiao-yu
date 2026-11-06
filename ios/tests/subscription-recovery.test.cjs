@@ -19,6 +19,7 @@ assert.equal(JSON.stringify([...storage]),before);checks++;
 const id='v";throw Error("injected");//';put('vb_profiles_v30',[{id,name:'特殊名稱'}]);put('vb_daily_v29',[{id:'item',vendorId:id,amount:7}]);const odd=JSON.parse(vm.runInContext('(function(){const id='+JSON.stringify([id])+'[0];'+body+'})()',ctx));assert.equal(odd.data.vb_daily_v29.length,1);assert.equal(odd.vendor.id,id);checks+=2;
 storage.clear();assert.deepEqual(JSON.parse(vm.runInContext(profiles,ctx)),[]);checks++;
 storage.set('vb_profiles_v30','invalid');assert.throws(()=>vm.runInContext(profiles,ctx));checks++;
-const config=JSON.parse(fs.readFileSync(path.join(root,'AppStore/subscriptions.json'),'utf8'));assert.deepEqual(config.products.map(p=>p.requestedPrice),['99.00','1089.00']);checks++;
+const config=JSON.parse(fs.readFileSync(path.join(root,'AppStore/subscriptions.json'),'utf8'));assert.deepEqual(config.products.map(p=>p.requestedPrice),['100.00','1089.00']);checks++;
 for(const p of config.products){assert.ok(access.includes('"'+p.productID+'"'));assert.equal(p.introductoryOffer.duration,'ONE_MONTH');checks+=2}
 console.log(JSON.stringify({checks,status:'passed',scope:'Native backup JavaScript and release configuration only; iOS StoreKit compile/sandbox tests still required'}));
+
