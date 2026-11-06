@@ -1,0 +1,2 @@
+"NSCameraUsageDescription" = "Photograph recipes to recognize ingredients and quantities on this device.";
+"NSPhotoLibraryUsageDescription" = "Choose multiple recipe images for on-device text recognition and editable recipes.";

@@ -1,0 +1,39 @@
+name: Native iPhone and iPad preview recordings
+on:
+  pull_request:
+    paths: ['ios/**', '.github/workflows/app-previews.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: native-previews-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  record:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build and video tools
+        run: brew install xcodegen ffmpeg
+      - name: Build simulator app and UI tests
+        working-directory: ios
+        run: |
+          xcodegen generate
+          xcodebuild -project VendorLedger.xcodeproj -scheme VendorLedger -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build CODE_SIGNING_ALLOWED=NO build-for-testing
+      - name: Record actual native app previews
+        working-directory: ios
+        run: python3 scripts/record_previews.py --app build/Build/Products/Debug-iphonesimulator/VendorLedger.app --out build/AppPreviews
+      - name: Verify iPad portrait and landscape
+        working-directory: ios
+        run: |
+          ipad_id="$(cat build/AppPreviews/ipad-simulator-id.txt)"
+          xcodebuild -project VendorLedger.xcodeproj -scheme VendorLedger -configuration Debug -destination "id=$ipad_id" -derivedDataPath build -resultBundlePath build/iPad-layout-results CODE_SIGNING_ALLOWED=NO -only-testing:VendorLedgerUITests/UniversalUITests test-without-building
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: VendorLedger-native-AppPreviews
+          path: |
+            ios/build/AppPreviews
+            ios/build/iPad-layout-results.xcresult
+          if-no-files-found: error

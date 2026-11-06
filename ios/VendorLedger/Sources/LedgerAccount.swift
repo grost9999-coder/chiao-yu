@@ -118,7 +118,7 @@ final class LedgerAccountStore: ObservableObject {
         guard let apple = authorization.credential as? ASAuthorizationAppleIDCredential,
               let token = apple.identityToken, let idToken = String(data: token, encoding: .utf8),
               let nonce, !nonce.isEmpty else { throw LedgerAccountError.message("Apple 登入驗證未完成，請重試。") }
-        let credential = OAuthProvider.appleCredential(withIDToken: idToken, rawNonce: nonce, fullName: apple.fullName)
+        let credential = OAuthProvider.appleCredential(withIDToken: idToken, rawNonce: nonce, fullName: nil)
         switch purpose {
         case .signIn:
             user = try await Auth.auth().signIn(with: credential).user

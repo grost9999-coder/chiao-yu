@@ -1,0 +1,2 @@
+"NSCameraUsageDescription" = "レシピを撮影し、この端末で材料と分量を認識します。";
+"NSPhotoLibraryUsageDescription" = "複数のレシピ画像を選択し、この端末で文字を認識して編集可能なレシピを作成します。";

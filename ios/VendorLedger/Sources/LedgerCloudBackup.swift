@@ -20,6 +20,7 @@ final class LedgerCloudBackup: ObservableObject {
     @Published var error = ""
     @Published var recoveryExport: LedgerRecoveryExport?
     @Published var ready = false
+    @Published var recoveryFiles: [URL] = []
     weak var webView: WKWebView?
     private let account: LedgerAccountStore
     private let uid: String
@@ -49,6 +50,7 @@ final class LedgerCloudBackup: ObservableObject {
         defer { busy = false }
         do { try await operation() }
         catch let e as LedgerAccountError { error = e.localizedDescription }
+        catch let e as NSError where e.domain == "LedgerCloudConflict" { error = e.localizedDescription }
         catch { self.error = ledgerLocalized("雲端操作未完成，裝置資料仍保留。請確認連線、Email 驗證及雲端服務設定。") }
     }
     private func snapshot() async throws -> String {
@@ -82,7 +84,7 @@ final class LedgerCloudBackup: ObservableObject {
             do {
                 let remote = try transaction.getDocument(root)
                 guard remote.data()?["revision"] as? String == expected else {
-                    throw LedgerAccountError.message("另一台裝置已更新雲端備份。請重新檢查，核對後再決定儲存或還原。")
+                    throw NSError(domain:"LedgerCloudConflict",code:409,userInfo:[NSLocalizedDescriptionKey:ledgerLocalized("另一台裝置已更新雲端備份。請重新檢查，核對後再決定儲存或還原。")])
                 }
                 transaction.setData(metadata, forDocument: root)
             } catch { errorPointer?.pointee = error as NSError }
@@ -105,16 +107,38 @@ final class LedgerCloudBackup: ObservableObject {
               data.count <= 25_000_000,
               SHA256.hash(data: data).map({String(format:"%02x",$0)}).joined() == chosen.digest,
               let text = String(data: data, encoding: .utf8) else { throw LedgerAccountError.message("雲端備份檢查失敗，未變更本機資料。") }
+        try await applySnapshot(text)
+    }
+    func importSnapshot(_ text: String) async throws {
+        try checkUser()
+        try await applySnapshot(text)
+    }
+    private var recoveryFolder: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("AccountRecovery/" + LedgerAccountStore.identifier(uid).uuidString)
+    }
+    func loadRecoveryFiles() {
+        recoveryFiles = ((try? FileManager.default.contentsOfDirectory(at:recoveryFolder,includingPropertiesForKeys:nil)) ?? []).filter { $0.pathExtension == "json" }.sorted { $0.lastPathComponent > $1.lastPathComponent }
+    }
+    func exportSnapshot() async throws {
+        try checkUser()
+        let text = try await snapshot()
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("完整帳號備份-" + UUID().uuidString + ".json")
+        try Data(text.utf8).write(to:file,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
+        recoveryExport = LedgerRecoveryExport(url:file)
+    }
+    private func applySnapshot(_ text: String) async throws {
+        guard let web = webView, ready else { throw LedgerAccountError.message("帳本尚未讀取完成，或備份超過 25 MB。") }
         _ = try await web.callAsyncJavaScript("return LedgerAccountStorage.validate(snapshot).version;", arguments:["snapshot":text], in:nil, contentWorld:.page)
         // Keep an on-disk recovery file before replacing any local ledger table.
         let old = try await snapshot()
-        let folder = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("AccountRecovery/" + LedgerAccountStore.identifier(uid).uuidString)
+        let folder = recoveryFolder
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let file = folder.appendingPathComponent("還原前帳本-" + UUID().uuidString + ".json")
+        let file = folder.appendingPathComponent("還原前帳本-" + String(Int(Date().timeIntervalSince1970)) + "-" + UUID().uuidString + ".json")
         try Data(old.utf8).write(to:file,options:[.atomic,.completeFileProtectionUntilFirstUserAuthentication])
         try checkUser()
         _ = try await web.callAsyncJavaScript("return LedgerAccountStorage.apply(localStorage, snapshot);", arguments:["snapshot":text], in:nil, contentWorld:.page)
         message = ledgerLocalized("已還原雲端帳本；還原前的本機副本可匯出保管。")
+        loadRecoveryFiles()
         recoveryExport = LedgerRecoveryExport(url:file)
         account.webRevision = UUID()
     }

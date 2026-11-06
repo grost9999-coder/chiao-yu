@@ -1,6 +1,7 @@
 import SwiftUI
 import AuthenticationServices
 import WebKit
+import UniformTypeIdentifiers
 
 struct LedgerAccountShell: View {
     @StateObject private var account = LedgerAccountStore()
@@ -38,6 +39,7 @@ struct LedgerAccountView: View {
     @State private var signOutPrompt = false
     @State private var linkEmail = false
     @State private var consent = false
+    @State private var showPrivacy = false
     private func t(_ key: String) -> String { ledgerLocalized(key) }
     var body: some View {
         NavigationStack {
@@ -78,7 +80,7 @@ struct LedgerAccountView: View {
                         Text(t("可使用 Apple，或以 Email 註冊。登入後會開啟獨立帳本；原有本機訪客資料會保留。"))
                             .font(.footnote).foregroundStyle(.secondary)
                         Toggle(t("我已閱讀隱私權政策，並同意建立帳號"),isOn:$consent)
-                        Link(t("帳號與雲端隱私權政策"),destination:URL(string:"https://grost9999-coder.github.io/chiao-yu/privacy/")!)
+                        Button(t("帳號與雲端隱私權政策")) { showPrivacy = true }
                         appleButton(.signIn).disabled(!consent)
                         Picker(t("Email 方式"),selection:$create) {
                             Text(t("登入")).tag(false); Text(t("註冊帳號")).tag(true)
@@ -107,6 +109,7 @@ struct LedgerAccountView: View {
             .navigationTitle(t("帳號與資料"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement:.cancellationAction) { Button(t("完成")) { dismiss() }.disabled(account.busy) } }
+            .sheet(isPresented:$showPrivacy) { NavigationStack { LedgerPrivacyView() } }
             .sheet(isPresented:$showCloud) { LedgerCloudBackupView(account:account) }
             .sheet(isPresented:$showDelete) { deleteView }
             .sheet(isPresented:$showGuestExport) { LedgerRecoveryView(dataStore:.default()) }
@@ -126,7 +129,7 @@ struct LedgerAccountView: View {
         SignInWithAppleButton(.continue) { request in
             do {
                 let value = try LedgerAccountStore.nonce(); nonce = value
-                request.requestedScopes = [.email,.fullName]
+                request.requestedScopes = [.email]
                 request.nonce = LedgerAccountStore.sha256(value)
             } catch { nonce = nil; account.error = LedgerAccountStore.friendly(error) }
         } onCompletion: { result in
@@ -168,6 +171,8 @@ struct LedgerCloudBackupView: View {
     private let account: LedgerAccountStore
     @Environment(\.dismiss) private var dismiss
     @State private var pending: String?
+    @State private var importing = false
+    @State private var localSnapshot: String?
     init(account: LedgerAccountStore) { self.account = account; _model = StateObject(wrappedValue:LedgerCloudBackup(account:account)) }
     var body: some View {
         NavigationStack {
@@ -188,6 +193,13 @@ struct LedgerCloudBackupView: View {
                     Button(ledgerLocalized("將本機帳本備份到雲端")) { pending = "upload" }
                     Button(ledgerLocalized("以雲端版本還原本機")) { pending = "restore" }.disabled(model.head == nil)
                 }.disabled(!model.ready || model.busy)
+                Section(ledgerLocalized("完整帳號備份")) {
+                    Button(ledgerLocalized("匯出完整帳號備份")) { Task { await model.run { try await model.exportSnapshot() } } }
+                    Button(ledgerLocalized("匯入完整帳號備份")) { importing = true }
+                    ForEach(model.recoveryFiles,id: \.self) { file in
+                        Button(file.lastPathComponent) { model.recoveryExport = LedgerRecoveryExport(url:file) }
+                    }
+                }.disabled(model.busy || !model.ready)
                 if !model.message.isEmpty { Text(model.message).foregroundStyle(.green) }
                 if !model.error.isEmpty { Text(model.error).foregroundStyle(.red) }
                 if model.busy { ProgressView(ledgerLocalized("處理中…")) }
@@ -196,15 +208,25 @@ struct LedgerCloudBackupView: View {
             .navigationTitle(ledgerLocalized("雲端備份／還原"))
             .toolbar { ToolbarItem(placement:.cancellationAction) { Button(ledgerLocalized("完成")) { dismiss() }.disabled(model.busy) } }
             .interactiveDismissDisabled(model.busy)
-            .task { await model.run { try await model.inspect() } }
-            .confirmationDialog(ledgerLocalized(pending == "upload" ? "確認以此裝置帳本建立新的雲端備份？" : "確認以雲端帳本取代此帳號的本機資料？"),isPresented:Binding(get:{pending != nil},set:{if !$0 {pending = nil}}),titleVisibility:.visible) {
+            .task { model.loadRecoveryFiles(); await model.run { try await model.inspect() } }
+            .confirmationDialog(ledgerLocalized(pending == "upload" ? "確認以此裝置帳本建立新的雲端備份？" : pending == "local" ? "確認以匯入備份取代此帳號的本機資料？" : "確認以雲端帳本取代此帳號的本機資料？"),isPresented:Binding(get:{pending != nil},set:{if !$0 {pending = nil}}),titleVisibility:.visible) {
                 Button(ledgerLocalized("確認"),role:.destructive) {
                     let action = pending; pending = nil
-                    Task { await model.run { if action == "upload" { try await model.upload() } else { try await model.restore() } } }
+                    Task { await model.run { if action == "upload" { try await model.upload() } else if action == "local", let text = localSnapshot { try await model.importSnapshot(text); localSnapshot = nil } else { try await model.restore() } } }
                 }
                 Button(ledgerLocalized("取消"),role:.cancel) { pending = nil }
             }
-            .sheet(item:$model.recoveryExport) { item in LedgerBackupShareSheet(url:item.url) }
+            .fileImporter(isPresented:$importing,allowedContentTypes:[.json]) { result in
+                do {
+                    let url = try result.get()
+                    let scoped = url.startAccessingSecurityScopedResource()
+                    defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+                    let data = try Data(contentsOf:url,options:.mappedIfSafe)
+                    guard data.count <= 25_000_000, let text = String(data:data,encoding:.utf8) else { throw LedgerAccountError.message("備份資料無法讀取或檔案過大。") }
+                    localSnapshot = text; pending = "local"
+                } catch { model.error = error.localizedDescription }
+            }
+            .sheet(item:$model.recoveryExport) { item in LedgerBackupShareSheet(url:item.url,removeAfterShare:false) }
         }
     }
 }

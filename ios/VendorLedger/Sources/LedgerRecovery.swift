@@ -155,9 +155,10 @@ struct LedgerRecoveryWebView: UIViewRepresentable {
 
 struct LedgerBackupShareSheet: UIViewControllerRepresentable {
     let url: URL
+    var removeAfterShare = true
     func makeUIViewController(context: Context) -> UIActivityViewController {
         let sheet = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-        sheet.completionWithItemsHandler = { _, _, _, _ in try? FileManager.default.removeItem(at: url) }
+        sheet.completionWithItemsHandler = { _, _, _, _ in if removeAfterShare { try? FileManager.default.removeItem(at: url) } }
         return sheet
     }
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}

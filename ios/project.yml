@@ -44,6 +44,17 @@ targets:
         buildPhase: resources
       - path: VendorLedger/Resources
         buildPhase: resources
+  VendorLedgerUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: VendorLedger
+        PRODUCT_BUNDLE_IDENTIFIER: com.qiaoyu.vendorbookpro.uitests
+    dependencies:
+      - target: VendorLedger
 schemes:
   VendorLedger:
     build:
@@ -52,3 +63,5 @@ schemes:
     archive:
       config: Release
 
+    test:
+      targets: [VendorLedgerUITests]

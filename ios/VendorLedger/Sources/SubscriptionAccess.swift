@@ -119,7 +119,9 @@ struct SubscriptionRootView: View {
         VStack(spacing: 0) {
             LedgerLanguagePicker()
             Group {
-            if access.isChecking {
+            if LedgerDemo.isEnabled {
+                LedgerView()
+            } else if access.isChecking {
                 VStack(spacing: 14) {
                     ProgressView()
                     Text(ledgerLocalized("正在確認訂閱…")).foregroundStyle(.secondary)
@@ -247,15 +249,15 @@ struct LedgerPrivacyView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 Text(ledgerLocalized("攤商記帳王 PRO 隱私權政策")).font(.title2.bold())
-                Text(ledgerLocalized("更新日期：2026 年 10 月 30 日"))
+                Text(ledgerLocalized("更新日期：2026 年 11 月 6 日"))
                 Text(ledgerLocalized("帳本與儲存")).font(.headline)
-                Text(ledgerLocalized("收支、庫存、資產、備忘與攤商資料儲存在此裝置的 App 資料空間。本版本沒有開發者帳號系統或自動雲端同步，也不將帳本金額傳送至開發者伺服器。移除 App 或遺失裝置可能造成資料遺失，請定期匯出備份。"))
+                Text(ledgerLocalized("本機訪客可不註冊使用帳本；選用 Apple 或 Email 登入後，帳目保存在該帳號獨立的裝置空間。雲端備份與還原需由你主動操作，不是即時雙向同步。移除 App 或遺失裝置可能造成資料遺失，請定期備份。"))
                 Text(ledgerLocalized("Apple 訂閱")).font(.headline)
                 Text(ledgerLocalized("訂閱、付款、試用資格與退款由 Apple 處理。App 使用 StoreKit 取得商品、購買驗證與訂閱權益狀態。開發者不會取得你的完整付款卡號。Apple 可能依其隱私權政策處理帳號與付款資料。"))
                 Text(ledgerLocalized("備份與分享")).font(.headline)
-                Text(ledgerLocalized("只有在你主動匯出或分享時，帳本才會交給你選擇的檔案位置或服務。備份可能含營業與財務資訊，請妥善保管。訂閱到期仍可匯出既有資料。"))
+                Text(ledgerLocalized("你主動使用雲端備份時，攤商資料、財務紀錄、配方、備忘與舊版封存會傳送至本 App 的 Firebase 服務，依登入帳號限制存取。Firebase Authentication 處理登入識別與 Email；Firestore 保存帳本備份。這不是端對端加密服務。匯出或分享的檔案由你選擇位置保管；訂閱到期仍可匯出裝置資料。"))
                 Text(ledgerLocalized("資料控制")).font(.headline)
-                Text(ledgerLocalized("你可以在各帳本功能編輯或刪除紀錄，並自行保管或刪除已匯出的備份。本版本不提供廣告追蹤，也未整合第三方廣告或分析 SDK。支援與政策問題請使用 App Store 產品頁的 App 支援連結聯絡。"))
+                Text(ledgerLocalized("你可編輯帳目，於帳號頁申請刪除帳號與雲端資料，並自行刪除已匯出的檔案。刪除帳號不會取消 Apple 訂閱。配方照片在裝置上辨識；目前備份保存辨識文字與配方，不保存原始照片。本 App 未整合廣告或 Google Analytics；Apple 與 Firebase 可能依各自政策處理服務所需的帳號、網路與安全資訊。支援信箱：grost9999@gmail.com。"))
                 Link(ledgerLocalized("Apple 隱私權政策"), destination: URL(string: "https://www.apple.com/legal/privacy/")!)
             }.padding(24).frame(maxWidth: 600)
         }.navigationTitle(ledgerLocalized("隱私權政策")).navigationBarTitleDisplayMode(.inline)

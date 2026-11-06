@@ -14,7 +14,10 @@ struct LedgerView: UIViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator() }
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
-        config.websiteDataStore = account.dataStore
+        config.websiteDataStore = LedgerDemo.isEnabled ? .nonPersistent() : account.dataStore
+        if let demo = LedgerDemo.script {
+            config.userContentController.addUserScript(WKUserScript(source:demo,injectionTime:.atDocumentStart,forMainFrameOnly:true))
+        }
         config.userContentController.add(context.coordinator, name: "backup")
         config.userContentController.add(context.coordinator, name: "recipeOCR")
         // Anchor downloads of blob JSON use the native share sheet on iPhone.
