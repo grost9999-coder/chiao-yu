@@ -21,6 +21,10 @@ struct LedgerAccountShell: View {
         }
         .environmentObject(account)
         .sheet(isPresented:$showAccount) { LedgerAccountView().environmentObject(account) }
+        .onReceive(NotificationCenter.default.publisher(for:ASAuthorizationAppleIDProvider.credentialRevokedNotification)) { _ in
+            guard account.appleLinked else { return }
+            Task { await account.perform { try account.signOut() } }
+        }
     }
 }
 
@@ -79,6 +83,7 @@ struct LedgerAccountView: View {
                     Section(t("選擇登入方式")) {
                         Text(t("可使用 Apple，或以 Email 註冊。登入後會開啟獨立帳本；原有本機訪客資料會保留。"))
                             .font(.footnote).foregroundStyle(.secondary)
+                        Text(t("登入前請先儲存正在編輯的帳目；登入會重新載入帳本。")).font(.footnote).foregroundStyle(.secondary)
                         Toggle(t("我已閱讀隱私權政策，並同意建立帳號"),isOn:$consent)
                         Button(t("帳號與雲端隱私權政策")) { showPrivacy = true }
                         appleButton(.signIn).disabled(!consent)
@@ -210,11 +215,19 @@ struct LedgerCloudBackupView: View {
             .interactiveDismissDisabled(model.busy)
             .task { model.loadRecoveryFiles(); await model.run { try await model.inspect() } }
             .confirmationDialog(ledgerLocalized(pending == "upload" ? "確認以此裝置帳本建立新的雲端備份？" : pending == "local" ? "確認以匯入備份取代此帳號的本機資料？" : "確認以雲端帳本取代此帳號的本機資料？"),isPresented:Binding(get:{pending != nil},set:{if !$0 {pending = nil}}),titleVisibility:.visible) {
-                Button(ledgerLocalized("確認"),role:.destructive) {
-                    let action = pending; pending = nil
-                    Task { await model.run { if action == "upload" { try await model.upload() } else if action == "local", let text = localSnapshot { try await model.importSnapshot(text); localSnapshot = nil } else { try await model.restore() } } }
+                if let action = pending {
+                    let selectedText = localSnapshot
+                    Button(ledgerLocalized("確認"),role:.destructive) {
+                        pending = nil; localSnapshot = nil
+                        Task { await model.run {
+                            if action == "upload" { try await model.upload() }
+                            else if action == "restore" { try await model.restore() }
+                            else if action == "local", let text = selectedText { try await model.importSnapshot(text) }
+                            else { throw LedgerAccountError.message("備份資料無法讀取或檔案過大。") }
+                        } }
+                    }
                 }
-                Button(ledgerLocalized("取消"),role:.cancel) { pending = nil }
+                Button(ledgerLocalized("取消"),role:.cancel) { pending = nil; localSnapshot = nil }
             }
             .fileImporter(isPresented:$importing,allowedContentTypes:[.json]) { result in
                 do {
