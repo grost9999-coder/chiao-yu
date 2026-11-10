@@ -190,11 +190,11 @@ struct LedgerSubscriptionPlans: View {
                     .font(.headline).foregroundStyle(.secondary)
                 Text(ledgerLocalized("每日收支・毛利分析・庫存盤點・多攤商帳本・JSON 備份"))
                     .font(.subheadline).multilineTextAlignment(.center)
-                if access.trialAvailable {
-                    Text(ledgerLocalized("符合資格的新訂閱者享 1 個月免費試用"))
-                        .font(.subheadline.weight(.semibold))
-                        .padding(12).background(.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
-                }
+                // Always visible: the wording already limits it to eligible new subscribers,
+                // so it stays accurate whether or not this Apple account can still claim the trial.
+                Text(ledgerLocalized("符合資格的新訂閱者享 1 個月免費試用"))
+                    .font(.subheadline.weight(.semibold)).multilineTextAlignment(.center)
+                    .padding(12).background(.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
                 if !access.products.isEmpty {
                     SubscriptionStoreView(subscriptions: access.products)
                         .subscriptionStoreControlStyle(.prominentPicker)
