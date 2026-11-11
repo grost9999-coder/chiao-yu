@@ -14,6 +14,9 @@ struct CopyStudioView: View {
                         Button { store.selectedTab = 4 } label: { Label(store.connected ? "Gemini 已連接・免費優先" : "先連接 Gemini，或直接手動創作", systemImage: store.connected ? "checkmark.shield" : "key") }.font(.subheadline)
                     }.padding(.vertical, 8)
                     NavigationLink { FreeVideoView() } label: { Label("免費文生影片", systemImage: "video.badge.waveform").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12) }.buttonStyle(.borderedProminent)
+                    NavigationLink { SocialStudioView() } label: {
+                        Label("社群企劃室・口吻、貼文與成效", systemImage: "text.bubble").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 12)
+                    }.buttonStyle(.bordered)
                     StudioCard("認識你的商品", icon: "square.and.pencil") {
                         Button("帶入豆乳雞範例") { store.example() }.font(.subheadline)
                         StudioField(title: "品牌名稱", text: $store.brief.brand)

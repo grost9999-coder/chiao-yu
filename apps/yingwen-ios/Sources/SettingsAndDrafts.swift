@@ -31,6 +31,12 @@ struct SettingsView: View {
                 } header: { Text("資料與隱私") }
 
                 Section {
+                    Text("社群企劃室的範例、口吻卡、計畫、草稿與成效快照儲存在手機。只有按下分析口吻時會傳送原始範例給 Google；生成貼文、計畫與回覆只傳送口吻卡與當次素材。")
+                    Text("沒有自動發布、帳號登入或自動回覆；所有草稿由你檢查後自行分享。")
+                    NavigationLink("社群功能來源與 MIT 授權") { SocialCreditsView() }
+                } header: { Text("社群企劃室") }
+
+                Section {
                     Link("開啟映文網頁工作室", destination: URL(string: "https://hanben-creative-studio.grost9999.chatgpt.site")!)
                     NavigationLink("隱私政策") { PrivacyView() }
                     Text("映文 1.0.0・iPhone 安裝版").foregroundStyle(.secondary)
@@ -47,6 +53,7 @@ struct PrivacyView: View {
             VStack(alignment: .leading, spacing: 16) {
                 Text("映文隱私政策").font(.title2.bold())
                 Text("生效日期：2026年10月30日")
+                Text("社群功能補充：原始範例僅在你勾選授權並按下「分析口吻」時送交 Google。其他社群生成使用口吻卡、內容 brief 和當次留言，不重送原始範例。手動成效數據不會送交 AI；清除本機範例不會刪除已由 Google 處理的內容。社群資料隨 App 儲存在手機，未提供雲端同步，刪除 App 可能遺失。")
                 Text("映文的草稿、匯入照片、影片與輸出作品儲存在你的手機。App沒有自建使用者帳號、廣告或追蹤分析SDK。刪除App時，這些本機資料可能一併移除，請先將需要的作品分享或另存檔案。")
                 Text("Gemini金鑰以iPhone鑰匙圈保存。App只在你點選AI生成、連接測試或辨識時，將必要的文字、錄音／影片及金鑰傳送給Google Gemini。若在文生影片頁勾選並按下提示詞優化，該描述也會傳給Gemini；優化結果會先留在手機供你檢查。照片成片與手動剪輯不會把照片或影片送到我們的伺服器。")
                 Text("使用AI辨識時，影片暫存上傳到Google Files；App會在辨識成功或失敗後嘗試刪除暫存檔，若網路中斷則仍受Google的檔案保存政策約束。Google依其條款處理資料，免費層內容可能用於改善產品。")
