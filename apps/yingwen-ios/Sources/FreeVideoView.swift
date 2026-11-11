@@ -19,6 +19,9 @@ struct FreeVideoView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 18) {
+                NavigationLink { StoryboardView() } label: {
+                    Label("先寫分鏡，再分段生成影片", systemImage: "film.stack").font(.headline)
+                }.buttonStyle(.borderedProminent)
                 StudioCard("免費純文字生影片・實驗版", icon: "video.badge.waveform") {
                     Text("這是純文字生影片：不需要上傳照片，模型會從文字描述創作新畫面。")
                         .font(.subheadline.weight(.semibold))

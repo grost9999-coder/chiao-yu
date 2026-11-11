@@ -32,7 +32,7 @@ struct SettingsView: View {
 
                 Section {
                     Text("社群企劃室的範例、口吻卡、計畫、草稿與成效快照儲存在手機。只有按下分析口吻時會傳送原始範例給 Google；生成貼文、計畫與回覆只傳送口吻卡與當次素材。")
-                    Text("沒有自動發布、帳號登入或自動回覆；所有草稿由你檢查後自行分享。")
+                    Text("沒有自動發布、帳號登入或自動回覆；所有草稿由你檢查後自行分享。分鏡腳本由 Gemini 產生；你同意並按下逐鏡或批次生成後，只把共同描述及各鏡提示詞傳給 Hugging Face。字幕合併在手機處理。")
                     NavigationLink("社群功能來源與 MIT 授權") { SocialCreditsView() }
                 } header: { Text("社群企劃室") }
 

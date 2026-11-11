@@ -20,6 +20,9 @@ struct SocialStudioView: View {
                 Picker("社群工具", selection: $section) {
                     ForEach(["口吻", "貼文", "計畫", "成效", "回覆"], id: \.self) { Text($0) }
                 }.pickerStyle(.segmented)
+                NavigationLink { StoryboardView(brief: social.data.brief, voice: social.data.voice) } label: {
+                    Label("生成分鏡腳本・分段影片", systemImage: "film.stack").font(.headline)
+                }.buttonStyle(.borderedProminent)
                 if saved { Text("已儲存到手機").font(.footnote).foregroundStyle(.secondary) }
                 switch section {
                 case "口吻": voiceSection

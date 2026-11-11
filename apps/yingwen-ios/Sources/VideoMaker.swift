@@ -158,6 +158,34 @@ enum VideoMaker {
             reader.cancelReading(); writer.cancelWriting(); try? FileManager.default.removeItem(at: url); throw error
         }
     }
+    static func storyboardMovie(_ project: FilmProject, captions: Bool) async throws -> URL {
+        guard !project.shots.isEmpty, project.pendingIDs.isEmpty else { throw StudioError.message("請先完成目前版本的所有片段，再合併影片。") }
+        let composition = AVMutableComposition()
+        guard let target = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+            throw StudioError.message("無法建立分鏡合併軌道。")
+        }
+        var intermediates: [URL] = []
+        defer { for url in intermediates { try? FileManager.default.removeItem(at: url) } }
+        var cursor = CMTime.zero
+        for shot in project.shots {
+            try Task.checkCancellation()
+            guard let clip = project.currentClip(for: shot) else { throw StudioError.message("分鏡片段已遺失，請重新生成該鏡。") }
+            let asset = AVURLAsset(url: clip.url)
+            let duration = try await asset.load(.duration).seconds
+            guard duration.isFinite, duration > 0, duration <= 30 else { throw StudioError.message("片段時長無效，請重新生成該鏡。") }
+            let subtitles = captions && !shot.script.caption.isEmpty ? [Caption(start: 0, end: duration, text: shot.script.caption)] : []
+            // Existing CPU renderer normalizes orientation/size and burns each caption over its actual clip duration.
+            let normalized = try await trim(video: clip.url, start: 0, end: duration, ratio: project.portrait ? .portrait : .landscape,
+                                            fill: false, keepAudio: false, captions: subtitles)
+            intermediates.append(normalized)
+            let normalizedAsset = AVURLAsset(url: normalized)
+            guard let source = try await normalizedAsset.loadTracks(withMediaType: .video).first else { throw StudioError.message("片段沒有影片畫面。") }
+            let length = try await normalizedAsset.load(.duration)
+            try target.insertTimeRange(CMTimeRange(start: .zero, duration: length), of: source, at: cursor)
+            cursor = CMTimeAdd(cursor, length)
+        }
+        return try await export(composition: composition, videoComposition: nil)
+    }
     private static func export(composition: AVMutableComposition, videoComposition: AVMutableVideoComposition?) async throws -> URL {
         let url = try outputURL("映文剪輯")
         guard let session = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality) else { throw StudioError.message("無法建立匯出工作。") }
