@@ -27,6 +27,7 @@ jobs:
           node ios/tests/recipe-import.test.cjs
           node ios/tests/recipe-multi.test.cjs
           node ios/tests/legacy-purchase.test.cjs
+          node ios/tests/cash-denominations.test.cjs
           node ios/tests/profit.test.cjs
           node ios/tests/inventory.test.cjs
           node ios/tests/subscription-recovery.test.cjs

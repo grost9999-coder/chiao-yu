@@ -23,6 +23,7 @@ jobs:
           npx playwright install --with-deps webkit
       - name: Exercise actual iPhone touch controls and saved data
         run: |
+          node ios/tests/cash-denominations-browser.cjs
           node ios/tests/catalog-browser.cjs
           node ios/tests/processing-browser.cjs
           node ios/tests/purchase-marinade-browser.cjs
