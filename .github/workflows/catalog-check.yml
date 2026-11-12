@@ -17,8 +17,19 @@ jobs:
           node-version: '22'
       - name: Verify catalog and existing accounting features
         run: |
+          python3 ios/tests/bundle_test.py
+          node ios/tests/account-storage.test.cjs
+          node ios/tests/local-only.test.cjs
           node ios/tests/i18n.test.cjs
           node ios/tests/catalog.test.cjs
+          node ios/tests/processing.test.cjs
+          node ios/tests/purchase-marinade.test.cjs
+          node ios/tests/recipe-import.test.cjs
+          node ios/tests/recipe-multi.test.cjs
+          node ios/tests/legacy-purchase.test.cjs
+          node ios/tests/cash-denominations.test.cjs
           node ios/tests/profit.test.cjs
           node ios/tests/inventory.test.cjs
           node ios/tests/subscription-recovery.test.cjs
+
+

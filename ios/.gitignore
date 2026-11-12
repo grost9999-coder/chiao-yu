@@ -5,3 +5,9 @@ build/
 *.p8
 *.mobileprovision
 .DS_Store
+
+__pycache__/
+*.py[cod]
+
+VendorLedger/Resources/GoogleService-Info.plist
+

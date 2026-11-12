@@ -14,7 +14,7 @@
       "displayNameZhHant": "攤商記帳 PRO 月繳",
       "descriptionZhHant": "解鎖每日記帳、進貨、庫存、資產與營運分析。",
       "duration": "ONE_MONTH",
-      "requestedPrice": "99.00",
+      "requestedPrice": "100.00",
       "level": 1,
       "introductoryOffer": {"mode": "FREE_TRIAL", "duration": "ONE_MONTH", "periods": 1}
     },
@@ -37,3 +37,4 @@
     "Do not enable Family Sharing or add paid tiers without a separate product decision."
   ]
 }
+

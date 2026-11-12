@@ -1,0 +1,23 @@
+const {webkit,devices}=require('playwright');
+const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
+(async()=>{const web=path.join(__dirname,'../VendorLedger/Web');const server=http.createServer((req,res)=>{const name=req.url.split('?')[0].endsWith('i18n.js')?'i18n.js':req.url.split('?')[0].endsWith('account-storage.js')?'account-storage.js':'index.html';res.setHeader('Content-Type',name.endsWith('.js')?'text/javascript':'text/html');res.end(fs.readFileSync(path.join(web,name)))});await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;
+try{browser=await webkit.launch({headless:true});const page=await browser.newPage({...devices['iPhone 13']});const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:'+server.address().port+'/?language=zh-Hant');
+const go=async()=>{await page.getByRole('button',{name:'加工',exact:true}).tap();await page.getByTestId('processing-page').waitFor()};await go();const field=name=>page.getByLabel(name,{exact:true}),button=name=>page.getByRole('button',{name,exact:true});
+await field('成品名稱').fill('自製翅腿');await field('配方名稱').fill('第一批配方');await field('生肉／主原料重量（公斤）').fill('340');await field('原料每公斤單價').fill('55');await field('成品重量／數量').fill('360');
+await button('＋新增醃料成分').tap();await field('成分名稱 1').fill('測試醃料');await field('本批用量 1').fill('1000');await field('購入總價 1').fill('2024');
+assert.match(await page.getByTestId('batch-summary').innerText(),/20,724\.00/);
+await button('儲存為配方範本').tap();await page.getByRole('status').filter({hasText:'配方已儲存'}).waitFor();await button('儲存加工批次').tap();await page.getByRole('status').filter({hasText:'本批加工已儲存'}).waitFor();
+let rows=await page.evaluate(()=>JSON.parse(localStorage.getItem('vb_processing_v29')));assert.equal(rows.length,1);assert.equal(rows[0].costing.totalCost,20724);const original=JSON.stringify(rows[0]);
+await page.reload();await go();assert.equal(await button('編輯此批次').count(),1);await field('套用已儲存配方').selectOption({label:'第一批配方'});await field('生肉／主原料重量（公斤）').fill('');await field('生肉／主原料重量（公斤）').pressSequentially('170');assert.equal(Number(await field('本批用量 1').inputValue()),500);assert.equal(Number(await field('成品重量／數量').inputValue()),180);
+await field('配方名稱').fill('第二批調整');await field('購入總價 1').fill('100');await button('＋新增醃料成分').tap();await field('成分名稱 2').fill('糖');await field('本批用量 2').fill('1000');await field('購入總價 2').fill('20');await button('儲存加工批次').tap();await page.getByRole('status').filter({hasText:'本批加工已儲存'}).waitFor();
+rows=await page.evaluate(()=>JSON.parse(localStorage.getItem('vb_processing_v29')));assert.equal(rows.length,2);assert.equal(JSON.stringify(rows[0]),original);assert.equal(rows[1].costing.totalCost,9420);
+// Cancel leaves persisted records untouched. Missing prices cannot save a misleading zero-cost row.
+await button('編輯此批次').first().tap();await field('配方名稱').fill('取消的變更');await button('取消編輯').tap();rows=await page.evaluate(()=>JSON.parse(localStorage.getItem('vb_processing_v29')));assert.equal(rows.some(r=>r.recipe==='取消的變更'),false);
+await field('套用已儲存配方').selectOption({label:'第一批配方'});await field('購入總價 1').fill('');await button('儲存加工批次').tap();await page.getByRole('alert').waitFor();assert.equal((await page.evaluate(()=>JSON.parse(localStorage.getItem('vb_processing_v29')))).length,2);
+// Simulate a full device: no draft reset or success message if storage rejects the write.
+await field('購入總價 1').fill('10');await page.evaluate(()=>{window.__set=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(k==='vb_processing_v29')throw new DOMException('full','QuotaExceededError');return window.__set.call(this,k,v)}});await button('儲存加工批次').tap();assert.equal(await field('配方名稱').inputValue(),'第一批配方');await page.evaluate(()=>Storage.prototype.setItem=window.__set);
+// Reload into a different vendor. Neither recipes nor batch rows leak across vendors.
+await page.evaluate(()=>localStorage.setItem('vb_vendor_v29',JSON.stringify('v2')));await page.reload();await go();assert.equal(await field('套用已儲存配方').locator('option').count(),1);assert.equal(await button('編輯此批次').count(),0);
+assert.deepEqual(errors,[]);console.log('PASS: iPhone batch recipe costing, scaling, edit/cancel, snapshots, reload, missing prices, storage failure and vendor isolation');
+}finally{await browser?.close();await new Promise(r=>server.close(r))}})().catch(e=>{console.error(e);console.log('::error::'+String(e.stack||e).replace(/\n/g,'%0A'));process.exitCode=1});
+

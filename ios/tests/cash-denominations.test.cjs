@@ -1,0 +1,23 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
+const html=fs.readFileSync(path.join(__dirname,'../VendorLedger/Web/index.html'),'utf8');
+const helper=html.match(/function dailyCashWithThousand\(record\)\{[^\n]*\}/)[0];
+const ctx=vm.createContext({});vm.runInContext(helper,ctx);
+const normalize=r=>JSON.parse(vm.runInContext('JSON.stringify(dailyCashWithThousand('+JSON.stringify(r)+'))',ctx));
+const original={id:'old',openCash:{100:3,500:2},closeCash:{100:5,500:4},sales:[{amount:1500}],platforms:[]};
+const copy=normalize(original);
+assert.equal(copy.openCash[1000],0);assert.equal(copy.closeCash[1000],0);
+assert.equal(copy.openCash[500],2);assert.equal(copy.closeCash[100],5);
+assert.equal(original.openCash[1000],undefined);
+const imported=normalize({...original,openCash:{1000:4,2000:2},closeCash:{1000:7,2000:1}});
+assert.equal(imported.openCash[1000],4);assert.equal(imported.closeCash[1000],7);assert.equal(imported.openCash[2000],2);
+// Use the actual daily cash summation expression, independent from sales revenue.
+const sumSource=html.match(/let H=\(B\)=>(o0\(Object\.entries\(B\)\.map\(\(\[F,O\]\)=>parseInt\(F\)\*\(O\|\|0\)\)\))/)[1];
+ctx.o0=a=>a.reduce((x,y)=>x+y,0);const total=v=>{ctx.value=v;return vm.runInContext('((B)=>'+sumSource+')(value)',ctx)};
+assert.equal(total(copy.openCash),1300);assert.equal(total(copy.closeCash),2500);
+assert.equal(total(imported.openCash),8000);assert.equal(total(imported.closeCash),9000);
+assert.equal(total(imported.closeCash)-total(imported.openCash)-1500,-500);
+const daily=html.slice(html.indexOf('function V10('),html.indexOf('function ',html.indexOf('function V10(')+15));
+assert.equal((daily.match(/"1000":0/g)||[]).length,4);
+assert.equal((daily.match(/Y\(dailyCashWithThousand\(B\)\)/g)||[]).length,2);
+assert.ok(daily.includes('M?dailyCashWithThousand(M)'));
+console.log('Daily NT$1000 denomination: defaults, old/imported records, totals and cash discrepancy passed');

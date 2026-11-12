@@ -86,12 +86,13 @@ enum LedgerRecoveryScripts {
       const k=localStorage.key(i);
       if(k.startsWith('vb_options_')&&k.endsWith('_'+id)) options[k.slice(0,-id.length)]=read(k,[]);
     }
-    return JSON.stringify({app:'vendor_v29_backup',version:1,exportedAt:new Date().toISOString(),vendor:read('vb_profiles_v30',[]).find(p=>p.id===id),data,options,legacyArchives:read('vb_legacy_archives_v31',{})[id]||[]});
+    return JSON.stringify({app:'vendor_v29_backup',version:1,exportedAt:new Date().toISOString(),vendor:read('vb_profiles_v30',[]).find(p=>p.id===id),data,options,recipes:read('vb_recipes_v32_'+id,[]),legacyArchives:read('vb_legacy_archives_v31',{})[id]||[]});
     """#
 }
 
 @MainActor
 struct LedgerRecoveryView: View {
+    var dataStore: WKWebsiteDataStore = .default()
     @StateObject private var model = LedgerRecoveryModel()
     @Environment(\.dismiss) private var dismiss
     var body: some View {
@@ -114,7 +115,7 @@ struct LedgerRecoveryView: View {
                 }
                 // Reuse exactly the bundled file URL and persistent WebKit store.
                 // The hidden web view never exposes paid editing UI or sends data.
-                LedgerRecoveryWebView(model: model).frame(height: 1).opacity(0)
+                LedgerRecoveryWebView(model: model, dataStore: dataStore).frame(height: 1).opacity(0)
                     .accessibilityHidden(true).allowsHitTesting(false)
             }
             .navigationTitle(ledgerLocalized("匯出既有帳本"))
@@ -127,10 +128,11 @@ struct LedgerRecoveryView: View {
 
 struct LedgerRecoveryWebView: UIViewRepresentable {
     let model: LedgerRecoveryModel
+    let dataStore: WKWebsiteDataStore
     func makeCoordinator() -> Coordinator { Coordinator(model: model) }
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = .default()
+        configuration.websiteDataStore = dataStore
         let web = WKWebView(frame: .zero, configuration: configuration)
         web.navigationDelegate = context.coordinator
         if let url = Bundle.main.url(forResource: "index", withExtension: "html", subdirectory: "Web") {
@@ -153,10 +155,13 @@ struct LedgerRecoveryWebView: UIViewRepresentable {
 
 struct LedgerBackupShareSheet: UIViewControllerRepresentable {
     let url: URL
+    var removeAfterShare = true
     func makeUIViewController(context: Context) -> UIActivityViewController {
         let sheet = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-        sheet.completionWithItemsHandler = { _, _, _, _ in try? FileManager.default.removeItem(at: url) }
+        sheet.completionWithItemsHandler = { _, _, _, _ in if removeAfterShare { try? FileManager.default.removeItem(at: url) } }
         return sheet
     }
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
+
+

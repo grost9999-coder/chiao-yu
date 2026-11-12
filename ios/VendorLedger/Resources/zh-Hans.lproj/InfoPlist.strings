@@ -1,0 +1,2 @@
+"NSCameraUsageDescription" = "拍摄配方图片，在设备识别成分与用量。";
+"NSPhotoLibraryUsageDescription" = "选取多张配方图片，在设备识别文字并建立可编辑配方。";

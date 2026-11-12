@@ -1,0 +1,13 @@
+const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path'),assert=require('node:assert/strict');
+const h=fs.readFileSync(path.join(__dirname,'../VendorLedger/Web/index.html'),'utf8'),context=vm.createContext({});
+vm.runInContext(h.slice(h.indexOf('const LedgerProfit='),h.indexOf('function VendorBackupPage('))+h.slice(h.indexOf('const LedgerPurchase='),h.indexOf('function L10('))+';globalThis.api={convert:legacyConvert,validate:validateLedgerRows,P:LedgerProfit,prices:LedgerPurchase.prices}',context);
+const api=context.api,fixture={"app":"qy_v3","dailyRecs":[],"purchaseRecs":[{"id":"p1","date":"2026-11-01","type":"marinade","items":[{"name":"醬油","qty":2,"unit":"公斤","total":60,"unitCost":30}],"note":"實際進貨"}],"marinadeRecs":[{"id":"m1","date":"2026-11-02","item":"自製翅腿","rawKg":340,"cookedKg":360,"meatCost":18700,"marinadeCost":2024,"totalCost":20724,"recipeId":"custom_1"}]},rows=api.convert(fixture,'v1');let checks=0;const eq=(a,b)=>{assert.equal(a,b);checks++};api.validate(rows);checks++;
+eq(rows.vb_purchase_v29.length,1);eq(rows.vb_purchase_v29[0].category,'醃料');eq(rows.vb_purchase_v29[0].price,60);eq(rows.vb_purchase_v29[0].qty,2);eq(rows.vb_purchase_v29[0].recordKind,'procurement');eq(api.prices(rows.vb_purchase_v29,'v1')[0].packPrice,60);eq(api.prices(rows.vb_purchase_v29,'other').length,0);
+const cost=rows.vb_processing_v29[0].legacyCosting;eq(cost.marinadeCost,2024);eq(cost.rawCost,18700);eq(cost.totalCost,20724);eq(cost.costPerKg,20724/360);eq(rows.vb_processing_v29[0].legacyRecipeId,'custom_1');
+eq(api.P.summarize([],rows.vb_purchase_v29,[],[],{start:'2026-11-01',end:'2026-11-30'}).net,0);
+const again=api.convert(fixture,'v1');eq(new Map([...rows.vb_purchase_v29,...again.vb_purchase_v29].map(r=>[r.id,r])).size,1);
+const unknown=api.convert({...fixture,marinadeRecs:[{id:'none',date:'2026-11-01',rawKg:1,cookedKg:1}]},'v1');api.validate(unknown);eq(unknown.vb_processing_v29[0].legacyCosting.totalCost,null);
+eq(unknown.vb_processing_v29[0].legacyCosting.marinadeCost,null);
+assert.throws(()=>api.convert({...fixture,purchaseRecs:[{id:'bad',date:'2026-11-01',items:[{name:'missing cost',qty:1}]}]},'v1'));checks++;
+const allTypes=api.convert({...fixture,purchaseRecs:['marinade','supplies','chicken-raw','chicken-purchased'].map((type,i)=>({...fixture.purchaseRecs[0],id:'p'+i,type}))},'v1');eq(allTypes.vb_purchase_v29.length,4);eq(allTypes.vb_purchase_v29[1].category,'包材／耗材');eq(allTypes.vb_purchase_v29[2].category,'生肉／主原料');
+console.log('Legacy procurement, historical batch costs, missing values and no double expense: '+checks+' checks passed');

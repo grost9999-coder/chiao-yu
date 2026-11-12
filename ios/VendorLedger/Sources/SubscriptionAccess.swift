@@ -118,7 +118,9 @@ struct SubscriptionRootView: View {
         VStack(spacing: 0) {
             LedgerLanguagePicker()
             Group {
-            if access.isChecking {
+            if LedgerDemo.isEnabled {
+                LedgerView()
+            } else if access.isChecking {
                 VStack(spacing: 14) {
                     ProgressView()
                     Text(ledgerLocalized("正在確認訂閱…")).foregroundStyle(.secondary)
@@ -188,11 +190,11 @@ struct LedgerSubscriptionPlans: View {
                     .font(.headline).foregroundStyle(.secondary)
                 Text(ledgerLocalized("每日收支・毛利分析・庫存盤點・多攤商帳本・JSON 備份"))
                     .font(.subheadline).multilineTextAlignment(.center)
-                if access.trialAvailable {
-                    Text(ledgerLocalized("符合資格的新訂閱者享 1 個月免費試用"))
-                        .font(.subheadline.weight(.semibold))
-                        .padding(12).background(.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
-                }
+                // Always visible: the wording already limits it to eligible new subscribers,
+                // so it stays accurate whether or not this Apple account can still claim the trial.
+                Text(ledgerLocalized("符合資格的新訂閱者享 1 個月免費試用"))
+                    .font(.subheadline.weight(.semibold)).multilineTextAlignment(.center)
+                    .padding(12).background(.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
                 if !access.products.isEmpty {
                     SubscriptionStoreView(subscriptions: access.products)
                         .subscriptionStoreControlStyle(.prominentPicker)
@@ -209,7 +211,7 @@ struct LedgerSubscriptionPlans: View {
                         Task { await access.loadProducts() }
                     }.buttonStyle(.borderedProminent)
                 }
-                Text(ledgerLocalized("免費試用僅限符合資格的 Apple 帳號，且須先確認訂閱。試用結束後，按所選月繳或年繳方案自動續訂並收費。請於試用或當期結束至少 24 小時前取消，以免續訂。實際價格、試用資格與扣款日期以 App Store 確認畫面為準。"))
+                Text(ledgerLocalized(access.trialAvailable ? "免費試用僅限符合資格的 Apple 帳號，且須先確認訂閱。試用結束後，按所選月繳或年繳方案自動續訂並收費。請於試用或當期結束至少 24 小時前取消，以免續訂。實際價格、試用資格與扣款日期以 App Store 確認畫面為準。" : "確認訂閱後，將依所選方案收費並自動續訂。請於當期結束至少 24 小時前取消，以免續訂。實際價格與扣款日期以 App Store 確認畫面為準。"))
                     .font(.footnote).foregroundStyle(.secondary)
                 if let message = access.message {
                     Text(message).font(.footnote)
@@ -245,17 +247,18 @@ struct LedgerPrivacyView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 Text(ledgerLocalized("攤商記帳王 PRO 隱私權政策")).font(.title2.bold())
-                Text(ledgerLocalized("更新日期：2026 年 10 月 30 日"))
+                Text(ledgerLocalized("更新日期：2026 年 11 月 6 日"))
                 Text(ledgerLocalized("帳本與儲存")).font(.headline)
-                Text(ledgerLocalized("收支、庫存、資產、備忘與攤商資料儲存在此裝置的 App 資料空間。本版本沒有開發者帳號系統或自動雲端同步，也不將帳本金額傳送至開發者伺服器。移除 App 或遺失裝置可能造成資料遺失，請定期匯出備份。"))
+                Text(ledgerLocalized("免註冊、免登入。帳本、進貨、配方與加工紀錄儲存在此裝置，不會自動上傳至開發者伺服器。移除 App、遺失或更換裝置前，請先匯出備份。"))
                 Text(ledgerLocalized("Apple 訂閱")).font(.headline)
                 Text(ledgerLocalized("訂閱、付款、試用資格與退款由 Apple 處理。App 使用 StoreKit 取得商品、購買驗證與訂閱權益狀態。開發者不會取得你的完整付款卡號。Apple 可能依其隱私權政策處理帳號與付款資料。"))
                 Text(ledgerLocalized("備份與分享")).font(.headline)
-                Text(ledgerLocalized("只有在你主動匯出或分享時，帳本才會交給你選擇的檔案位置或服務。備份可能含營業與財務資訊，請妥善保管。訂閱到期仍可匯出既有資料。"))
+                Text(ledgerLocalized("可自行匯出 JSON，儲存至你選擇的檔案位置，再於新裝置匯入還原。若選擇 iCloud Drive 或其他雲端位置，由該服務處理檔案。本 App 不提供帳號或自動雲端同步；訂閱到期仍可匯出本機帳本。"))
                 Text(ledgerLocalized("資料控制")).font(.headline)
-                Text(ledgerLocalized("你可以在各帳本功能編輯或刪除紀錄，並自行保管或刪除已匯出的備份。本版本不提供廣告追蹤，也未整合第三方廣告或分析 SDK。支援與政策問題請使用 App Store 產品頁的 App 支援連結聯絡。"))
+                Text(ledgerLocalized("你可在 App 編輯或刪除紀錄，已匯出的備份需自行保管與刪除。配方照片在裝置辨識，備份包含文字與配方，不含原始照片。沒有廣告、追蹤或 Firebase 帳號服務。刪除 App 不會取消 Apple 訂閱。支援：grost9999@gmail.com。"))
                 Link(ledgerLocalized("Apple 隱私權政策"), destination: URL(string: "https://www.apple.com/legal/privacy/")!)
             }.padding(24).frame(maxWidth: 600)
         }.navigationTitle(ledgerLocalized("隱私權政策")).navigationBarTitleDisplayMode(.inline)
     }
 }
+
